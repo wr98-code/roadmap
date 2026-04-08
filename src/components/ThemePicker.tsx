@@ -66,11 +66,8 @@ export function ThemePicker() {
                     }`}
                   >
                     <div
-                      className="h-5 w-5 rounded-full ring-2 ring-offset-1 ring-offset-card"
-                      style={{
-                        backgroundColor: ACCENTS[key].preview,
-                        ringColor: accent === key ? ACCENTS[key].preview : "transparent",
-                      }}
+                      className={`h-5 w-5 rounded-full ${accent === key ? "ring-2 ring-offset-1 ring-offset-card" : ""}`}
+                      style={{ backgroundColor: ACCENTS[key].preview }}
                     />
                     <span className="text-muted-foreground">{ACCENTS[key].label}</span>
                   </button>
