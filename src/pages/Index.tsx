@@ -4,6 +4,7 @@ import {
   Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User,
   Menu, X, Plus, Check
 } from "lucide-react";
+import { ThemePicker } from "@/components/ThemePicker";
 import { DashboardPage } from "./DashboardPage";
 import { BuildLabPage } from "./BuildLabPage";
 import { TradingPage } from "./TradingPage";
@@ -130,8 +131,9 @@ const Index = () => {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-border flex items-center justify-between">
           <p className="text-xs text-muted-foreground font-heading">ZERØ v1.0</p>
+          <ThemePicker />
         </div>
       </aside>
 
