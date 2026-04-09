@@ -5,9 +5,23 @@
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════
-   ZERØ — PREMIUM DESIGN SYSTEM
-   Apple clarity · Notion calm · Linear precision
+   ZERØ — PREMIUM DESIGN SYSTEM v4.0
+   Linear precision · Apple clarity · Notion calm
+   + Grainy mesh bg · Radial glow · Dot grid · Glass
 ═══════════════════════════════════════════════════ */
+
+/* ── SVG NOISE FILTER (grainy texture) ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px 180px;
+}
 
 @layer base {
   :root {
@@ -54,8 +68,13 @@
     --color-card: #ffffff;
     --color-primary: #d97706;
     --color-sidebar-bg: #0c1018;
-    --card-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-    --card-shadow-hover: 0 6px 20px rgba(0,0,0,0.09), 0 2px 6px rgba(0,0,0,0.05);
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03);
+    --card-shadow-hover: 0 8px 28px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
+    /* glow colors for morning (warm gold) */
+    --glow-1: rgba(251, 191, 36, 0.12);
+    --glow-2: rgba(217, 119, 6, 0.07);
+    --dot-color: rgba(17, 19, 24, 0.055);
+    --bg-base: #fafaf8;
   }
 
   /* ── 💼  AFTERNOON ── */
@@ -94,8 +113,13 @@
     --color-card: #ffffff;
     --color-primary: #2563eb;
     --color-sidebar-bg: #06091a;
-    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --card-shadow-hover: 0 6px 20px rgba(37,99,235,0.08), 0 2px 6px rgba(0,0,0,0.04);
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03);
+    --card-shadow-hover: 0 8px 28px rgba(37,99,235,0.09), 0 2px 8px rgba(0,0,0,0.04);
+    /* glow colors for afternoon (cool blue) */
+    --glow-1: rgba(96, 165, 250, 0.13);
+    --glow-2: rgba(37, 99, 235, 0.07);
+    --dot-color: rgba(13, 21, 38, 0.05);
+    --bg-base: #f7f9fc;
   }
 
   /* ── 🌙  NIGHT ── */
@@ -135,12 +159,21 @@
     --color-primary: #c9a84c;
     --color-sidebar-bg: #050510;
     --card-shadow: 0 1px 4px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
-    --card-shadow-hover: 0 6px 24px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    --card-shadow-hover: 0 8px 32px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.3);
+    /* glow colors for night (gold) */
+    --glow-1: rgba(201, 168, 76, 0.1);
+    --glow-2: rgba(251, 191, 36, 0.06);
+    --dot-color: rgba(212, 212, 232, 0.04);
+    --bg-base: #0d0d14;
   }
 
   .light-mode {}
 
   * { @apply border-border; }
+
+  html {
+    background: var(--bg-base);
+  }
 
   body {
     font-family: var(--font-sans);
@@ -150,6 +183,18 @@
     -moz-osx-font-smoothing: grayscale;
     font-size: 14px;
     line-height: 1.6;
+    /* ── PREMIUM BACKGROUND SYSTEM ── */
+    background-color: var(--bg-base);
+    background-image:
+      /* Radial glow top-right */
+      radial-gradient(ellipse 80% 50% at 75% -10%, var(--glow-1), transparent),
+      /* Radial glow bottom-left */
+      radial-gradient(ellipse 60% 40% at -5% 80%, var(--glow-2), transparent),
+      /* Dot grid pattern */
+      radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 26px 26px;
+    background-attachment: fixed;
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -196,18 +241,43 @@
 }
 
 /* ───────────────────────────────────────
-   CARDS
+   CARDS — glassmorphism premium
 ─────────────────────────────────────── */
 .z-card {
-  background: var(--color-card);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border-radius: 12px;
-  border: 1px solid var(--color-border);
-  box-shadow: var(--card-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  /* Top highlight border — signature luxury detail */
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255,255,255,0.9);
 }
+
+/* Night mode: glass dark */
+.theme-night .z-card,
+.dark-mode .z-card {
+  background: rgba(20, 20, 30, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+
 .z-card-hover { transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s; }
 .z-card-hover:hover {
-  box-shadow: var(--card-shadow-hover);
+  box-shadow:
+    var(--card-shadow-hover),
+    inset 0 1px 0 rgba(255,255,255,0.9);
   transform: translateY(-1px);
+  border-color: hsl(var(--primary) / 0.2);
+}
+.theme-night .z-card-hover:hover,
+.dark-mode .z-card-hover:hover {
+  box-shadow:
+    var(--card-shadow-hover),
+    inset 0 1px 0 rgba(255,255,255,0.07);
   border-color: hsl(var(--primary) / 0.25);
 }
 
@@ -225,10 +295,18 @@
    HEADER
 ─────────────────────────────────────── */
 .zero-header {
-  background: hsl(var(--background) / 0.85);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-bottom: 1px solid hsl(var(--border));
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+}
+
+.theme-night .zero-header,
+.dark-mode .zero-header {
+  background: rgba(13, 13, 24, 0.8);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
 }
 
 /* ───────────────────────────────────────
@@ -262,6 +340,16 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 @keyframes auraProgress { from { width: 100%; } to { width: 0%; } }
+
+/* Slow drift animation for glow blobs — purely cosmetic, GPU only */
+@keyframes driftA {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(3%, 2%) scale(1.04); }
+}
+@keyframes driftB {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%       { transform: translate(-2%, 3%) scale(1.03); }
+}
 
 .animate-fade-up { animation: fadeUp 0.3s ease both; }
 .animate-fade-in { animation: fadeIn 0.25s ease both; }
