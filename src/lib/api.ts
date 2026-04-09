@@ -1,6 +1,18 @@
+// ─── ZERO COMMAND — api.ts ────────────────────────────────────────────────────
+// Env key takes priority over localStorage key.
+// Set VITE_ANTHROPIC_KEY in your .env file for zero-friction usage.
+
 const API_KEY_STORAGE = 'zero-anthropic-key';
 
+export function isEnvKey(): boolean {
+  return !!import.meta.env.VITE_ANTHROPIC_KEY;
+}
+
 export function getApiKey(): string {
+  // Env var takes priority
+  if (import.meta.env.VITE_ANTHROPIC_KEY) {
+    return import.meta.env.VITE_ANTHROPIC_KEY as string;
+  }
   return localStorage.getItem(API_KEY_STORAGE) || '';
 }
 
@@ -15,11 +27,12 @@ export function hasApiKey(): boolean {
 export interface ClaudeOptions {
   search?: boolean;
   maxTokens?: number;
+  systemPrompt?: string;
 }
 
 export async function callClaude(
   prompt: string,
-  { search = true, maxTokens = 1800 }: ClaudeOptions = {}
+  { search = true, maxTokens = 2000, systemPrompt }: ClaudeOptions = {}
 ): Promise<string> {
   const key = getApiKey();
   if (!key) throw new Error('NO_API_KEY');
@@ -29,6 +42,10 @@ export async function callClaude(
     max_tokens: maxTokens,
     messages: [{ role: 'user', content: prompt }],
   };
+
+  if (systemPrompt) {
+    body.system = systemPrompt;
+  }
 
   if (search) {
     body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
