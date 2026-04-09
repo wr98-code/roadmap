@@ -1,17 +1,16 @@
 // ─── ZERO COMMAND — api.ts ────────────────────────────────────────────────────
-// Env key takes priority over localStorage key.
-// Set VITE_ANTHROPIC_KEY in your .env file for zero-friction usage.
+// Menggunakan Gemini API (GRATIS) dari Google
+// Set VITE_GEMINI_KEY di Cloudflare Environment Variables
 
-const API_KEY_STORAGE = 'zero-anthropic-key';
+const API_KEY_STORAGE = 'zero-gemini-key';
 
 export function isEnvKey(): boolean {
-  return !!import.meta.env.VITE_ANTHROPIC_KEY;
+  return !!import.meta.env.VITE_GEMINI_KEY;
 }
 
 export function getApiKey(): string {
-  // Env var takes priority
-  if (import.meta.env.VITE_ANTHROPIC_KEY) {
-    return import.meta.env.VITE_ANTHROPIC_KEY as string;
+  if (import.meta.env.VITE_GEMINI_KEY) {
+    return import.meta.env.VITE_GEMINI_KEY as string;
   }
   return localStorage.getItem(API_KEY_STORAGE) || '';
 }
@@ -32,35 +31,29 @@ export interface ClaudeOptions {
 
 export async function callClaude(
   prompt: string,
-  { search = true, maxTokens = 2000, systemPrompt }: ClaudeOptions = {}
+  { maxTokens = 2000, systemPrompt }: ClaudeOptions = {}
 ): Promise<string> {
   const key = getApiKey();
   if (!key) throw new Error('NO_API_KEY');
 
-  const body: Record<string, unknown> = {
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: maxTokens,
-    messages: [{ role: 'user', content: prompt }],
+  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+
+  const body = {
+    contents: [{ parts: [{ text: fullPrompt }] }],
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
+    },
   };
 
-  if (systemPrompt) {
-    body.system = systemPrompt;
-  }
-
-  if (search) {
-    body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
-  }
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify(body),
-  });
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }
+  );
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -68,13 +61,9 @@ export async function callClaude(
   }
 
   const data = await res.json();
-  const text = ((data.content as any[]) || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-  return text || 'No response received.';
+  return text.trim() || 'No response received.';
 }
 
 export function formatTimestamp(date = new Date()): string {
