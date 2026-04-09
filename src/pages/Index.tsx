@@ -1,6 +1,7 @@
 // ─── ZERO COMMAND — Index.tsx ─────────────────────────────────────────────────
-// Luxury sidebar redesign | Clay × Luxury Lloyd aesthetic
+// Luxury sidebar redesign | Clay × Luxury Lloyd aesthetic | ZERØ AURA toasts
 import { useState } from "react";
+import { AffirmationToast } from "@/components/AffirmationToast";
 import { useAppData } from "@/lib/store";
 import { useTheme, VIBES } from "@/lib/theme";
 import {
@@ -118,6 +119,9 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-background">
 
+      {/* ZERØ AURA — Global floating affirmation toasts */}
+      <AffirmationToast />
+
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -133,6 +137,17 @@ const Index = () => {
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
+        {/* Ghost photo background */}
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 0,
+          backgroundImage: `url(https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=60)`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.07,
+          pointerEvents: "none",
+        }} />
+        {/* Everything else sits above ghost */}
+        <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
         {/* Logo Block */}
         <div style={{
           padding: "18px 16px 14px",
@@ -237,6 +252,7 @@ const Index = () => {
         }}>
           <ThemePicker />
         </div>
+        </div>{/* end inner z-index wrapper */}
       </aside>
 
       {/* ── MAIN CONTENT ─────────────────────────────────── */}
