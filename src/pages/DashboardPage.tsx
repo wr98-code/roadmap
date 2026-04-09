@@ -1,10 +1,9 @@
-// ─── ZERO COMMAND — DashboardPage.tsx ────────────────────────────────────────
-// Vision Board | Billionaire Affirmation Hero | Status Board | Quick Links
+// ─── ZERØ COMMAND — DashboardPage.tsx ────────────────────────────────────────
+// Clean Premium · Auto Slideshow · Apple × Notion aesthetic
 import { useState, useEffect } from "react";
 import { AppData } from "@/lib/store";
-import { SectionCard } from "@/components/SectionCard";
 import { EditableText } from "@/components/EditableText";
-import { Activity, Zap, TrendingUp, Globe, Calendar, DollarSign, User, RefreshCw } from "lucide-react";
+import { Zap, TrendingUp, Globe, Calendar, DollarSign, User } from "lucide-react";
 
 interface Props {
   data: AppData;
@@ -12,279 +11,166 @@ interface Props {
   onNavigate: (section: string) => void;
 }
 
-// ─── CURATED BILLIONAIRE LIFESTYLE PHOTOS (Unsplash) ──────────────────────────
-// High-life, luxury workspace, city views, private aviation, architecture
-const VISION_PHOTOS = [
-  {
-    id: "photo-1486406146926-c627a92ad1ab", // Manhattan skyline aerial
-    caption: "Think at the top.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1545324418-cc1a3fa10c00", // Luxury high-rise interior
-    caption: "Design your environment, design your life.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1512453979798-5ea266f8880c", // Dubai skyline
-    caption: "Cities are built by those who refused to settle.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1470075801209-17f9ec0099cd", // Aerial city night lights
-    caption: "While the world sleeps, you build.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1497366216548-37526070297c", // Minimalist luxury office
-    caption: "Clarity creates wealth.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1497366754035-f200968a6e72", // Open plan modern workspace
-    caption: "Build systems, not just hustle.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1507003211169-0a1dd7228f2d", // Luxury hotel lobby
-    caption: "Move with intention. Arrive with precision.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1600607687939-ce8a6c25118c", // Luxury penthouse living
-    caption: "Scarcity is a mindset. Abundance is a decision.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1449824913935-59a10b8d2000", // City skyline sunrise
-    caption: "Every sunrise is a new balance sheet.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1464082354059-27db6ce50048", // Aerial ocean view luxury coast
-    caption: "The ocean doesn't apologize for its depth.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1568992687947-868a62a9f521", // Modern glass architecture
-    caption: "Precision is the language of excellence.",
-    credit: "Unsplash",
-  },
-  {
-    id: "photo-1534430480872-3498386e7856", // Luxury interior design
-    caption: "Your standard becomes your ceiling. Raise it.",
-    credit: "Unsplash",
-  },
+const SLIDES = [
+  { photo: "photo-1486406146926-c627a92ad1ab", tag: "Vision",      quote: "Financial freedom is built in the hours others waste." },
+  { photo: "photo-1512453979798-5ea266f8880c", tag: "Ambition",    quote: "Cities are built by those who refused to settle." },
+  { photo: "photo-1470075801209-17f9ec0099cd", tag: "Discipline",  quote: "While the world sleeps, you build your empire." },
+  { photo: "photo-1497366216548-37526070297c", tag: "Clarity",     quote: "Clarity is the most underrated form of wealth." },
+  { photo: "photo-1449824913935-59a10b8d2000", tag: "Growth",      quote: "Every sunrise is a new balance sheet." },
+  { photo: "photo-1568992687947-868a62a9f521", tag: "Excellence",  quote: "Precision is the language of the elite." },
+  { photo: "photo-1600607687939-ce8a6c25118c", tag: "Abundance",   quote: "Scarcity is a mindset. Abundance is a decision." },
+  { photo: "photo-1464082354059-27db6ce50048", tag: "Confidence",  quote: "The ocean doesn't apologize for its depth." },
 ];
 
-// ─── DAILY AFFIRMATIONS ────────────────────────────────────────────────────────
-const AFFIRMATIONS = [
-  "Gue bukan waiting for opportunity — gue adalah opportunity itu sendiri.",
-  "Modal kecil, mental billionaire. That's the edge.",
-  "Every trade is data. Every loss is tuition. Keep going.",
-  "Wealth isn't luck. It's compounding small right decisions.",
-  "Gue build empire dari layar laptop ini. Satu line of code, satu trade, satu hari.",
-  "The best investment is the one you understand deeply.",
-  "Patience is the ultimate leverage. Billionaires know this.",
-  "Gue punya visi yang lebih besar dari rasa takutnya.",
-  "Financial freedom is built in the hours others waste.",
-  "First million is a mindset. Then it becomes math.",
-  "Gue bukan nunggu siap. Gue belajar sambil bergerak.",
-  "Risk isn't the enemy. Ignorance is.",
+const QUICK = [
+  { key: "build-lab", label: "Build Lab",  icon: Zap,        color: "#f59e0b" },
+  { key: "trading",   label: "Trading",    icon: TrendingUp, color: "#10b981" },
+  { key: "crypto",    label: "Crypto",     icon: Globe,      color: "#6366f1" },
+  { key: "roadmap",   label: "Roadmap",    icon: Calendar,   color: "#3b82f6" },
+  { key: "keuangan",  label: "Keuangan",   icon: DollarSign, color: "#ec4899" },
+  { key: "personal",  label: "Personal",   icon: User,       color: "#8b5cf6" },
 ];
 
-// Get deterministic daily photo & affirmation (changes daily, consistent per day)
-function getDailyIndex(len: number): number {
-  const day = Math.floor(Date.now() / 86_400_000);
-  return day % len;
+function statusStyle(s: string) {
+  if (s.includes("AKTIF"))    return { dot: "#22c55e", bg: "#f0fdf4", text: "#15803d" };
+  if (s.includes("✅"))       return { dot: "#3b82f6", bg: "#eff6ff", text: "#1d4ed8" };
+  if (s.includes("CRITICAL")) return { dot: "#ef4444", bg: "#fef2f2", text: "#dc2626" };
+  return { dot: "#9ca3af", bg: "#f9fafb", text: "#6b7280" };
 }
 
-const quickLinks = [
-  { key: "build-lab", label: "BUILD LAB", icon: Zap },
-  { key: "trading",   label: "Trading",   icon: TrendingUp },
-  { key: "crypto",    label: "Crypto",    icon: Globe },
-  { key: "roadmap",   label: "Roadmap",   icon: Calendar },
-  { key: "keuangan",  label: "Keuangan",  icon: DollarSign },
-  { key: "personal",  label: "Personal",  icon: User },
-];
-
 export function DashboardPage({ data, update, onNavigate }: Props) {
+  const [cur, setCur] = useState(0);
+  const [prev, setPrev] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const goTo = (idx: number) => {
+    if (idx === cur || busy) return;
+    setBusy(true);
+    setPrev(cur);
+    setCur(idx);
+    setTimeout(() => { setPrev(null); setBusy(false); }, 800);
+  };
+
+  useEffect(() => {
+    const id = setInterval(() => goTo((cur + 1) % SLIDES.length), 10000);
+    return () => clearInterval(id);
+  }, [cur]);
+
+  const slide = SLIDES[cur];
   const statuses = data.buildLab.statusBoard;
-  const [photoIdx, setPhotoIdx] = useState(() => getDailyIndex(VISION_PHOTOS.length));
-  const [affirmIdx, setAffirmIdx] = useState(() => getDailyIndex(AFFIRMATIONS.length));
-  const [imgLoaded, setImgLoaded] = useState(false);
 
-  const photo = VISION_PHOTOS[photoIdx];
-  const affirmation = AFFIRMATIONS[affirmIdx];
-
-  const nextPhoto = () => {
-    setImgLoaded(false);
-    setPhotoIdx((i) => (i + 1) % VISION_PHOTOS.length);
-    setAffirmIdx((i) => (i + 1) % AFFIRMATIONS.length);
-  };
-
-  const statusColor = (s: string) => {
-    if (s.includes("AKTIF"))    return "bg-primary/20 text-primary";
-    if (s.includes("✅"))       return "bg-emerald-900/30 text-emerald-400";
-    if (s.includes("CRITICAL")) return "bg-destructive/20 text-destructive";
-    return "bg-muted text-muted-foreground";
-  };
+  const isDark = typeof document !== "undefined" &&
+    (document.documentElement.classList.contains("theme-night") ||
+     document.documentElement.classList.contains("dark-mode"));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
-      {/* ── VISION BOARD HERO ──────────────────────────────────────────── */}
-      <div style={{
-        position: "relative",
-        borderRadius: 16,
-        overflow: "hidden",
-        height: 240,
-        background: "#0a0a14",
-        border: "1px solid var(--color-border)",
-      }}>
-        {/* Photo */}
-        <img
-          key={photo.id}
-          src={`https://images.unsplash.com/${photo.id}?auto=format&fit=crop&w=1200&q=80`}
-          alt="Vision"
-          onLoad={() => setImgLoaded(true)}
-          style={{
-            position: "absolute", inset: 0,
-            width: "100%", height: "100%",
-            objectFit: "cover",
-            opacity: imgLoaded ? 1 : 0,
-            transition: "opacity 0.8s ease",
-            filter: "brightness(0.55) saturate(1.1)",
-          }}
-        />
+      {/* ── VISION SLIDESHOW ─────────────────────────────────── */}
+      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 300, background: "#080810" }}>
 
-        {/* Gradient overlay */}
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.1) 100%)",
-        }} />
+        {/* Prev slide fades out */}
+        {prev !== null && (
+          <div key={`prev-${prev}`} style={{ position: "absolute", inset: 0, zIndex: 1, animation: "crossFadeOut 0.8s ease forwards" }}>
+            <img src={`https://images.unsplash.com/${SLIDES[prev].photo}?auto=format&fit=crop&w=1400&q=80`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.42) saturate(1.1)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.1) 60%, transparent 100%)" }} />
+          </div>
+        )}
 
-        {/* Content overlay */}
-        <div style={{
-          position: "absolute", inset: 0,
-          display: "flex", flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "16px 20px",
-        }}>
-          {/* Top: label */}
+        {/* Current slide fades in */}
+        <div key={`cur-${cur}`} style={{ position: "absolute", inset: 0, zIndex: 2, animation: "crossFadeIn 0.8s ease forwards" }}>
+          <img src={`https://images.unsplash.com/${slide.photo}?auto=format&fit=crop&w=1400&q=80`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.42) saturate(1.1)" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.12) 55%, transparent 100%)" }} />
+        </div>
+
+        {/* UI layer */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 3, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "18px 24px 20px" }}>
+          {/* Top */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{
-              fontFamily: "Space Mono, monospace",
-              fontSize: 9,
-              letterSpacing: "0.2em",
-              color: "rgba(255,255,255,0.5)",
-              textTransform: "uppercase",
-            }}>
-              Vision Board · {new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>
+              {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
             </span>
-            <button
-              onClick={nextPhoto}
-              title="Next photo"
-              style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: 8, padding: "4px 8px",
-                cursor: "pointer", color: "rgba(255,255,255,0.6)",
-                display: "flex", alignItems: "center", gap: 4,
-                fontSize: 10, fontFamily: "Space Grotesk, sans-serif",
-                backdropFilter: "blur(8px)",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.18)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
-            >
-              <RefreshCw size={10} /> Next
-            </button>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", color: "rgba(255,255,255,0.4)", background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)", padding: "2px 10px", borderRadius: 20, textTransform: "uppercase" }}>
+              {slide.tag}
+            </span>
           </div>
 
-          {/* Bottom: caption + affirmation */}
+          {/* Bottom: quote + controls */}
           <div>
-            <p style={{
-              fontFamily: "Space Grotesk, sans-serif",
-              fontSize: 11,
-              fontStyle: "italic",
-              color: "rgba(255,255,255,0.5)",
-              marginBottom: 6,
-              letterSpacing: "0.02em",
-            }}>
-              "{photo.caption}"
+            <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 22, fontWeight: 400, color: "rgba(255,255,255,0.92)", lineHeight: 1.35, letterSpacing: "-0.01em", maxWidth: 520, marginBottom: 18 }}>
+              "{slide.quote}"
             </p>
-            <p style={{
-              fontFamily: "Space Grotesk, sans-serif",
-              fontSize: 14,
-              fontWeight: 600,
-              color: "rgba(255,255,255,0.92)",
-              lineHeight: 1.4,
-              letterSpacing: "0.01em",
-              maxWidth: 480,
-            }}>
-              {affirmation}
-            </p>
+
+            {/* Dots + progress */}
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {SLIDES.map((_, i) => (
+                <button key={i} onClick={() => goTo(i)} style={{ width: i === cur ? 20 : 5, height: 5, borderRadius: 3, background: i === cur ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.22)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.35s ease", flexShrink: 0 }} />
+              ))}
+              <div style={{ flex: 1, height: 2, background: "rgba(255,255,255,0.08)", borderRadius: 1, overflow: "hidden", marginLeft: 8 }}>
+                <div key={cur} style={{ height: "100%", background: "rgba(255,255,255,0.4)", borderRadius: 1, animation: "slideProgress 10s linear forwards" }} />
+              </div>
+            </div>
           </div>
         </div>
+
+        <style>{`
+          @keyframes crossFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes crossFadeOut { from { opacity: 1; } to { opacity: 0; } }
+          @keyframes slideProgress { from { width: 100%; } to { width: 0%; } }
+        `}</style>
       </div>
 
-      {/* ── STATUS BOARD ───────────────────────────────────────────────── */}
-      <SectionCard title="Status Board" icon={<Activity className="h-4 w-4" />}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="pb-2 font-heading text-xs text-muted-foreground">Area</th>
-                <th className="pb-2 font-heading text-xs text-muted-foreground">Status</th>
-                <th className="pb-2 font-heading text-xs text-muted-foreground">Prioritas</th>
-              </tr>
-            </thead>
-            <tbody>
-              {statuses.map((s) => (
-                <tr key={s.id} className="border-b border-border/50">
-                  <td className="py-2.5 text-foreground">{s.area}</td>
-                  <td className="py-2.5">
-                    <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColor(s.status)}`}>
-                      {s.status}
-                    </span>
-                  </td>
-                  <td className="py-2.5 text-muted-foreground font-heading text-xs">{s.prioritas}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
-
-      {/* ── TODAY'S FOCUS ──────────────────────────────────────────────── */}
-      <SectionCard title="Today's Focus">
-        <EditableText
-          value={data.dashboard.todayFocus}
-          onChange={(val) =>
-            update((d) => ({ ...d, dashboard: { ...d.dashboard, todayFocus: val } }))
-          }
-        />
-      </SectionCard>
-
-      {/* ── QUICK LINKS ────────────────────────────────────────────────── */}
-      <SectionCard title="Quick Links">
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {quickLinks.map((link) => (
-            <button
-              key={link.key}
-              onClick={() => onNavigate(link.key)}
-              className="flex items-center gap-2 p-3 rounded-md bg-muted/50 hover:bg-primary/10 hover:border-primary/30 border border-transparent text-sm text-foreground transition-all"
+      {/* ── QUICK LINKS ─────────────────────────────────────── */}
+      <div>
+        <span className="z-label">Quick Access</span>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          {QUICK.map(q => (
+            <button key={q.key} onClick={() => onNavigate(q.key)}
+              className="z-card z-card-hover"
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", cursor: "pointer", border: "1px solid var(--color-border)", background: "var(--color-card)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = q.color + "40"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--color-border)"; }}
             >
-              <link.icon className="h-4 w-4 text-primary" />
-              {link.label}
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: q.color + "16", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <q.icon size={14} color={q.color} />
+              </div>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 500, color: "var(--color-text)" }}>{q.label}</span>
             </button>
           ))}
         </div>
-      </SectionCard>
+      </div>
 
-      <p className="text-xs text-muted-foreground text-right">
-        Last updated: {new Date(data.dashboard.lastUpdated).toLocaleString("id-ID")}
+      {/* ── STATUS BOARD ────────────────────────────────────── */}
+      <div>
+        <span className="z-label">Status Board</span>
+        <div className="z-card" style={{ overflow: "hidden" }}>
+          {statuses.map((s, i) => {
+            const st = statusStyle(s.status);
+            return (
+              <div key={s.id} style={{ display: "flex", alignItems: "center", padding: "13px 18px", borderBottom: i < statuses.length - 1 ? "1px solid var(--color-border)" : "none", gap: 14 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: st.dot, flexShrink: 0 }} />
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 400, color: "var(--color-text)", flex: 1 }}>{s.area}</span>
+                <span style={{ fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 500, background: st.bg, color: st.text, padding: "2px 10px", borderRadius: 20, whiteSpace: "nowrap" }}>{s.status}</span>
+                <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted)", minWidth: 36, textAlign: "right" }}>{s.prioritas}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── TODAY'S FOCUS ────────────────────────────────────── */}
+      <div>
+        <span className="z-label">Today's Focus</span>
+        <div className="z-card" style={{ padding: "14px 18px" }}>
+          <EditableText
+            value={data.dashboard.todayFocus}
+            onChange={val => update(d => ({ ...d, dashboard: { ...d.dashboard, todayFocus: val } }))}
+          />
+        </div>
+      </div>
+
+      <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted)", textAlign: "right", letterSpacing: "0.04em" }}>
+        Updated {new Date(data.dashboard.lastUpdated).toLocaleString("id-ID")}
       </p>
     </div>
   );
