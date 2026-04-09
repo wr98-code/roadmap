@@ -1,8 +1,10 @@
+// ─── ZERO COMMAND — Index.tsx ─────────────────────────────────────────────────
 import { useState } from "react";
 import { useAppData } from "@/lib/store";
 import {
   Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User,
-  Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare,
+  Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen,
+  CheckSquare, GraduationCap,
 } from "lucide-react";
 import { ThemePicker } from "@/components/ThemePicker";
 import { DashboardPage } from "./DashboardPage";
@@ -16,6 +18,7 @@ import { IntelPage } from "./IntelPage";
 import { MarketsPage } from "./MarketsPage";
 import { JournalPage } from "./JournalPage";
 import { MyDayPage } from "./MyDayPage";
+import { LearnPage } from "./LearnPage";
 
 const sections = [
   { key: "dashboard", label: "Home", icon: Home, emoji: "🏠", group: "main" },
@@ -23,10 +26,11 @@ const sections = [
   { key: "markets", label: "Market Prices", icon: BarChart2, emoji: "💹", group: "intel" },
   { key: "my-day", label: "My Day", icon: CheckSquare, emoji: "✅", group: "intel" },
   { key: "journal", label: "Journal", icon: BookOpen, emoji: "📝", group: "intel" },
+  { key: "learn", label: "Learn Hub", icon: GraduationCap, emoji: "🧠", group: "intel" },
   { key: "build-lab", label: "ZERØ BUILD LAB", icon: Zap, emoji: "⚡", group: "zero" },
   { key: "keuangan", label: "Keuangan", icon: DollarSign, emoji: "💰", group: "zero" },
   { key: "roadmap", label: "Roadmap", icon: Calendar, emoji: "📅", group: "zero" },
-  { key: "trading", label: "Trading", icon: TrendingUp, emoji: "💹", group: "zero" },
+  { key: "trading", label: "Trading", icon: TrendingUp, emoji: "📈", group: "zero" },
   { key: "crypto", label: "Crypto Market", icon: Globe, emoji: "🌐", group: "zero" },
   { key: "personal", label: "Personal", icon: User, emoji: "🧘", group: "zero" },
 ];
@@ -37,6 +41,7 @@ const sectionTitles: Record<string, string> = {
   markets: "Market Prices",
   "my-day": "My Day",
   journal: "Journal",
+  learn: "Learn Hub",
   "build-lab": "ZERØ BUILD LAB",
   trading: "Trading",
   crypto: "Crypto Market",
@@ -45,10 +50,10 @@ const sectionTitles: Record<string, string> = {
   personal: "Personal",
 };
 
-const groups: Record<string, { label: string; color: string }> = {
-  main: { label: "", color: "transparent" },
-  intel: { label: "INTELLIGENCE", color: "#2563eb" },
-  zero: { label: "ZERØ BUILD LAB", color: "var(--primary)" },
+const groups: Record<string, { label: string }> = {
+  main: { label: "" },
+  intel: { label: "INTELLIGENCE" },
+  zero: { label: "ZERØ BUILD LAB" },
 };
 
 const Index = () => {
@@ -62,8 +67,7 @@ const Index = () => {
   };
 
   const addNote = () => {
-    const section = activeSection;
-    const sectionKey = section === "build-lab" ? "buildLab" : section;
+    const sectionKey = activeSection === "build-lab" ? "buildLab" : activeSection;
     const dataSection = (data as any)[sectionKey];
     if (dataSection && "notes" in dataSection) {
       const note = {
@@ -75,10 +79,7 @@ const Index = () => {
       };
       update((d: any) => ({
         ...d,
-        [sectionKey]: {
-          ...d[sectionKey],
-          notes: [note, ...d[sectionKey].notes],
-        },
+        [sectionKey]: { ...d[sectionKey], notes: [note, ...d[sectionKey].notes] },
       }));
     }
   };
@@ -90,8 +91,9 @@ const Index = () => {
       case "markets": return <MarketsPage />;
       case "my-day": return <MyDayPage />;
       case "journal": return <JournalPage />;
+      case "learn": return <LearnPage />;
       case "build-lab": return <BuildLabPage data={data} update={update} />;
-      case "trading": return <TradingPage data={data} update={update} />;
+      case "trading": return <TradingPage />;
       case "crypto": return <CryptoPage data={data} update={update} />;
       case "roadmap": return <RoadmapPage data={data} update={update} />;
       case "keuangan": return <KeuanganPage data={data} update={update} />;
@@ -100,18 +102,19 @@ const Index = () => {
     }
   };
 
-  // Group sections for sidebar rendering
   const groupedSections = sections.reduce<Record<string, typeof sections>>((acc, s) => {
     if (!acc[s.group]) acc[s.group] = [];
     acc[s.group].push(s);
     return acc;
   }, {});
 
-  const hasNoteSupport = ["build-lab", "trading", "crypto", "roadmap", "keuangan", "personal"].includes(activeSection);
+  const hasNoteSupport = [
+    "build-lab", "trading", "crypto", "roadmap", "keuangan", "personal",
+  ].includes(activeSection);
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Mobile overlay */}
+      {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
@@ -133,10 +136,7 @@ const Index = () => {
               {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
             </p>
           </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden p-1 text-muted-foreground hover:text-foreground"
-          >
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 text-muted-foreground hover:text-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -176,14 +176,14 @@ const Index = () => {
 
         {/* Footer */}
         <div className="p-4 border-t border-border flex items-center justify-between">
-          <p className="text-xs text-muted-foreground font-heading">ZERØ v2.0</p>
+          <p className="text-xs text-muted-foreground font-heading">ZERØ v3.0</p>
           <ThemePicker />
         </div>
       </aside>
 
-      {/* Main */}
+      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top bar */}
+        {/* Header */}
         <header className="sticky top-0 z-30 h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-3">
             <button
@@ -196,7 +196,6 @@ const Index = () => {
               {sectionTitles[activeSection]}
             </h2>
           </div>
-
           <div className="flex items-center gap-3">
             {saved && (
               <span className="flex items-center gap-1 text-xs text-primary animate-fade-in">
@@ -214,7 +213,7 @@ const Index = () => {
           </div>
         </header>
 
-        {/* Content */}
+        {/* Page */}
         <main className="flex-1 p-4 lg:p-6 max-w-4xl w-full mx-auto">
           {renderPage()}
         </main>
