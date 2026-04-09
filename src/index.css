@@ -1,173 +1,418 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════
+   ZERØ COMMAND — LUXURY TIME-BASED THEME SYSTEM
+   Clay × Luxury Lloyd aesthetic
+   3 vibes: Morning ☀️ | Afternoon 💼 | Night 🌙
+═══════════════════════════════════════════════════════════════ */
+
 @layer base {
-  /* ── Light mode (default) ──────────────────────────── */
+
+  /* ── BASE RESET ─────────────────────────────────────── */
   :root {
-    --background: 0 0% 97%;
-    --foreground: 220 13% 10%;
+    --radius: 0.5rem;
+    --transition-theme: background 0.6s cubic-bezier(0.4,0,0.2,1),
+                        color 0.4s ease,
+                        border-color 0.4s ease;
+  }
 
+  /* ══════════════════════════════════════════════════════
+     ☀️  MORNING  05:00 – 11:59
+     Warm cream, golden accents, energizing
+  ══════════════════════════════════════════════════════ */
+  :root,
+  .theme-morning {
+    /* Tailwind shadcn tokens */
+    --background: 40 30% 97%;
+    --foreground: 30 25% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 10%;
-
+    --card-foreground: 30 25% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 10%;
-
-    --primary: 73 89% 40%;
+    --popover-foreground: 30 25% 10%;
+    --primary: 38 92% 45%;
     --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 14% 95%;
-    --secondary-foreground: 220 13% 30%;
-
-    --muted: 220 14% 93%;
-    --muted-foreground: 220 9% 46%;
-
-    --accent: 73 89% 40%;
+    --secondary: 40 20% 93%;
+    --secondary-foreground: 30 20% 25%;
+    --muted: 40 15% 90%;
+    --muted-foreground: 30 12% 48%;
+    --accent: 38 92% 45%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
+    --border: 38 20% 86%;
+    --input: 38 20% 86%;
+    --ring: 38 92% 45%;
+    --surface: 40 25% 96%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 73 89% 40%;
+    /* Sidebar — dark rich espresso wood */
+    --sidebar-background: 25 30% 9%;
+    --sidebar-foreground: 38 30% 72%;
+    --sidebar-primary: 38 90% 58%;
+    --sidebar-primary-foreground: 25 30% 9%;
+    --sidebar-accent: 25 30% 14%;
+    --sidebar-accent-foreground: 38 30% 85%;
+    --sidebar-border: 25 30% 14%;
+    --sidebar-ring: 38 90% 58%;
 
-    --radius: 0.5rem;
+    /* Custom vars */
+    --color-text: #1C1208;
+    --color-muted: #8C7560;
+    --color-border: #E5D4B8;
+    --color-surface: #FFF8ED;
+    --color-card: #FFFFFF;
+    --color-accent-blue: #B45309;
+    --color-accent-lime: #D97706;
+    --color-primary: #D4900A;
+    --color-sidebar-bg: #150E06;
 
-    --surface: 0 0% 98%;
-
-    --sidebar-background: 220 27% 10%;
-    --sidebar-foreground: 220 13% 80%;
-    --sidebar-primary: 73 89% 55%;
-    --sidebar-primary-foreground: 0 0% 5%;
-    --sidebar-accent: 220 27% 16%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 220 27% 16%;
-    --sidebar-ring: 73 89% 55%;
-
-    /* Custom vars for new pages */
-    --color-text: #111827;
-    --color-muted: #6b7280;
-    --color-border: #e5e7eb;
-    --color-surface: #f9fafb;
-    --color-card: #ffffff;
-    --color-accent-blue: #2563eb;
-    --color-accent-lime: #84cc16;
+    /* Vibe indicator */
+    --vibe-label: "Morning";
+    --vibe-emoji: "☀️";
+    --vibe-glow: rgba(212, 144, 10, 0.12);
   }
 
-  /* ── Dark mode ─────────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════
+     💼  AFTERNOON  12:00 – 16:59
+     Cool professional, electric blue, focused
+  ══════════════════════════════════════════════════════ */
+  .theme-afternoon {
+    --background: 214 32% 97%;
+    --foreground: 222 47% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 8%;
+    --primary: 217 91% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 214 25% 93%;
+    --secondary-foreground: 222 30% 25%;
+    --muted: 214 20% 90%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 217 91% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 25% 87%;
+    --input: 214 25% 87%;
+    --ring: 217 91% 52%;
+    --surface: 214 30% 96%;
+
+    /* Sidebar — deep navy */
+    --sidebar-background: 224 40% 8%;
+    --sidebar-foreground: 214 25% 65%;
+    --sidebar-primary: 213 90% 62%;
+    --sidebar-primary-foreground: 224 40% 8%;
+    --sidebar-accent: 224 40% 13%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 224 40% 13%;
+    --sidebar-ring: 213 90% 62%;
+
+    --color-text: #0B1221;
+    --color-muted: #64748B;
+    --color-border: #CBD8EA;
+    --color-surface: #EFF4FC;
+    --color-card: #FFFFFF;
+    --color-accent-blue: #2563EB;
+    --color-accent-lime: #0EA5E9;
+    --color-primary: #2563EB;
+    --color-sidebar-bg: #080F1E;
+
+    --vibe-label: "Afternoon";
+    --vibe-emoji: "💼";
+    --vibe-glow: rgba(37, 99, 235, 0.10);
+  }
+
+  /* ══════════════════════════════════════════════════════
+     🌙  NIGHT  17:00 – 04:59
+     Deep luxury dark, platinum gold, calm premium
+  ══════════════════════════════════════════════════════ */
+  .theme-night,
   .dark-mode {
-    --background: 0 0% 4%;
-    --foreground: 0 0% 90%;
-
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 90%;
-
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 90%;
-
-    --primary: 73 89% 66%;
-    --primary-foreground: 0 0% 4%;
-
-    --secondary: 0 0% 7%;
-    --secondary-foreground: 0 0% 70%;
-
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 50%;
-
-    --accent: 73 89% 66%;
-    --accent-foreground: 0 0% 4%;
-
+    --background: 240 15% 6%;
+    --foreground: 240 8% 88%;
+    --card: 240 14% 10%;
+    --card-foreground: 240 8% 88%;
+    --popover: 240 14% 8%;
+    --popover-foreground: 240 8% 88%;
+    --primary: 43 72% 52%;
+    --primary-foreground: 240 15% 6%;
+    --secondary: 240 14% 10%;
+    --secondary-foreground: 240 8% 65%;
+    --muted: 240 12% 14%;
+    --muted-foreground: 240 8% 50%;
+    --accent: 43 72% 52%;
+    --accent-foreground: 240 15% 6%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 95%;
+    --border: 240 12% 18%;
+    --input: 240 12% 18%;
+    --ring: 43 72% 52%;
+    --surface: 240 14% 8%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 73 89% 66%;
+    /* Sidebar — near-black obsidian luxury */
+    --sidebar-background: 240 20% 4%;
+    --sidebar-foreground: 240 8% 60%;
+    --sidebar-primary: 43 80% 58%;
+    --sidebar-primary-foreground: 240 20% 4%;
+    --sidebar-accent: 240 20% 9%;
+    --sidebar-accent-foreground: 240 8% 88%;
+    --sidebar-border: 240 20% 10%;
+    --sidebar-ring: 43 80% 58%;
 
-    --surface: 0 0% 7%;
+    --color-text: #E0E0EE;
+    --color-muted: #7878A0;
+    --color-border: #28284A;
+    --color-surface: #11111E;
+    --color-card: #191928;
+    --color-accent-blue: #C9A84C;
+    --color-accent-lime: #E4C56A;
+    --color-primary: #C9A84C;
+    --color-sidebar-bg: #06060F;
 
-    --sidebar-background: 0 0% 5%;
-    --sidebar-foreground: 0 0% 70%;
-    --sidebar-primary: 73 89% 66%;
-    --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 90%;
-    --sidebar-border: 0 0% 12%;
-    --sidebar-ring: 73 89% 66%;
-
-    --color-text: #e2e8f0;
-    --color-muted: #64748b;
-    --color-border: #1e293b;
-    --color-surface: #0f172a;
-    --color-card: #1e293b;
+    --vibe-label: "Night";
+    --vibe-emoji: "🌙";
+    --vibe-glow: rgba(201, 168, 76, 0.08);
   }
 
-  /* Legacy support — keep .light-mode as alias */
-  .light-mode {
-    /* Already default, no overrides needed */
-  }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground font-body transition-colors duration-200;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply bg-background text-foreground;
+    transition: var(--transition-theme);
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
-  }
-}
-
-@layer utilities {
-  .font-body {
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-
-  .font-heading {
     font-family: 'Space Mono', 'Courier New', monospace;
   }
-
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-lime-500;
-  }
-
-  .glow-accent {
-    box-shadow: 0 0 20px hsl(73 89% 55% / 0.15);
-  }
-
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease;
-  }
-
-  .card-hover {
-    transition: box-shadow 0.15s, transform 0.15s;
-  }
-
-  .card-hover:hover {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transform: translateY(-1px);
-  }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LUXURY SIDEBAR
+═══════════════════════════════════════════════════════════════ */
+
+.zero-sidebar {
+  background: var(--color-sidebar-bg, hsl(var(--sidebar-background)));
+  border-right: 1px solid hsl(var(--sidebar-border));
+  transition: var(--transition-theme);
+  position: relative;
+}
+
+.zero-sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    hsl(var(--sidebar-primary) / 0.3) 30%,
+    hsl(var(--sidebar-primary) / 0.15) 70%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+.zero-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: hsl(var(--sidebar-foreground));
+  cursor: pointer;
+  transition: all 0.18s ease;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+
+.zero-nav-item:hover {
+  background: hsl(var(--sidebar-accent));
+  color: hsl(var(--sidebar-accent-foreground));
+}
+
+.zero-nav-item.active {
+  background: hsl(var(--sidebar-primary) / 0.12);
+  color: hsl(var(--sidebar-primary));
+  font-weight: 500;
+}
+
+.zero-nav-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2.5px;
+  height: 60%;
+  background: hsl(var(--sidebar-primary));
+  border-radius: 0 2px 2px 0;
+}
+
+.zero-group-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: hsl(var(--sidebar-foreground) / 0.4);
+  padding: 0 12px;
+  margin: 14px 0 5px;
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VIBE BADGE
+═══════════════════════════════════════════════════════════════ */
+
+.vibe-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  background: hsl(var(--sidebar-primary) / 0.12);
+  color: hsl(var(--sidebar-primary));
+  border: 1px solid hsl(var(--sidebar-primary) / 0.2);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.vibe-badge:hover {
+  background: hsl(var(--sidebar-primary) / 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARD STYLES
+═══════════════════════════════════════════════════════════════ */
+
+.zero-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  transition: var(--transition-theme);
+}
+
+.zero-card-hover {
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+}
+
+.zero-card-hover:hover {
+  border-color: hsl(var(--primary) / 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px var(--vibe-glow, rgba(0,0,0,0.06));
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════════════ */
+
+.zero-header {
+  background: hsl(var(--background) / 0.85);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-bottom: 1px solid hsl(var(--border));
+  transition: var(--transition-theme);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════════════════════════ */
+
+.font-body {
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+}
+
+.font-heading {
+  font-family: 'Space Mono', 'Courier New', monospace;
+}
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGO MARK
+═══════════════════════════════════════════════════════════════ */
+
+.zero-logo-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: hsl(var(--sidebar-primary) / 0.15);
+  border: 1px solid hsl(var(--sidebar-primary) / 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: hsl(var(--sidebar-primary));
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════════════════════════ */
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+@keyframes pulseGold {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}
+
+.animate-fade-in  { animation: fadeIn  0.3s ease both; }
+.animate-slide-in { animation: slideIn 0.25s ease both; }
+
+/* ═══════════════════════════════════════════════════════════════
+   SCROLLBAR — ultra thin luxury
+═══════════════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar              { width: 3px; height: 3px; }
+::-webkit-scrollbar-track        { background: transparent; }
+::-webkit-scrollbar-thumb        { background: hsl(var(--border)); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover  { background: hsl(var(--primary) / 0.5); }
+
+/* ═══════════════════════════════════════════════════════════════
+   LEGACY COMPAT
+═══════════════════════════════════════════════════════════════ */
+
+.light-mode { /* Morning is default */ }
