@@ -1,143 +1,44 @@
-import { useState, useEffect } from 'react';
-import { RefreshCw, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react';
+// ─── ZERO COMMAND — MarketsPage.tsx ──────────────────────────────────────────
+import { useState } from 'react';
+import { RefreshCw, TrendingUp, ExternalLink, Activity } from 'lucide-react';
 import { callClaude, formatTimestamp, hasApiKey } from '@/lib/api';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+interface MarketSnapshot { rawText: string; timestamp: string; }
 
-interface PriceData {
-  symbol: string;
-  name: string;
-  price: string;
-  change: string;
-  changeDir: 'up' | 'down' | 'neutral';
-  extra?: string;
-}
-
-interface MarketSnapshot {
-  items: PriceData[];
-  timestamp: string;
-  summary: string;
-}
-
-// ─── Storage ──────────────────────────────────────────────────────────────────
-
-const MARKETS_KEY = 'zero-markets-snapshot';
-
+const MARKETS_KEY = 'zero-markets-snapshot-v2';
 function loadSnapshot(): MarketSnapshot | null {
-  try {
-    return JSON.parse(localStorage.getItem(MARKETS_KEY) || 'null');
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(localStorage.getItem(MARKETS_KEY) || 'null'); } catch { return null; }
 }
+function saveSnapshot(s: MarketSnapshot) { localStorage.setItem(MARKETS_KEY, JSON.stringify(s)); }
 
-function saveSnapshot(s: MarketSnapshot) {
-  localStorage.setItem(MARKETS_KEY, JSON.stringify(s));
-}
+// ─── Quick Links ──────────────────────────────────────────────────────────────
+const QUICK_LINKS = [
+  // On-chain / Futures
+  { label: 'Coinglass', url: 'https://coinglass.com', desc: 'Liquidation + OI + Funding', color: '#f59e0b', group: 'crypto' },
+  { label: 'CryptoQuant', url: 'https://cryptoquant.com', desc: 'On-chain analytics', color: '#f59e0b', group: 'crypto' },
+  { label: 'Glassnode', url: 'https://glassnode.com', desc: 'NUPL + on-chain', color: '#f59e0b', group: 'crypto' },
+  { label: 'LookIntoBTC', url: 'https://lookintobitcoin.com', desc: 'Cycle indicators', color: '#f59e0b', group: 'crypto' },
+  // Charts
+  { label: 'TradingView', url: 'https://tradingview.com', desc: 'Charts + scripting', color: '#2563eb', group: 'chart' },
+  { label: 'Bybit', url: 'https://bybit.com', desc: 'Futures trading', color: '#2563eb', group: 'chart' },
+  // Macro
+  { label: 'Farside ETF', url: 'https://farside.co.uk', desc: 'BTC ETF flow', color: '#7c3aed', group: 'macro' },
+  { label: 'FRED', url: 'https://fred.stlouisfed.org', desc: 'Fed data', color: '#7c3aed', group: 'macro' },
+  { label: 'ForexFactory', url: 'https://forexfactory.com', desc: 'Econ kalender', color: '#7c3aed', group: 'macro' },
+  { label: 'Fear & Greed', url: 'https://alternative.me/crypto/fear-and-greed-index', desc: 'Sentiment index', color: '#7c3aed', group: 'macro' },
+  // Research
+  { label: 'Nansen', url: 'https://nansen.ai', desc: 'Smart money tracking', color: '#059669', group: 'research' },
+  { label: 'Token Terminal', url: 'https://tokenterminal.com', desc: 'Protocol fundamentals', color: '#059669', group: 'research' },
+  { label: 'DeFi Llama', url: 'https://defillama.com', desc: 'TVL + DeFi stats', color: '#059669', group: 'research' },
+  { label: 'Dune', url: 'https://dune.com', desc: 'On-chain SQL queries', color: '#059669', group: 'research' },
+];
 
-// ─── Price Card ───────────────────────────────────────────────────────────────
-
-function PriceCard({ item }: { item: PriceData }) {
-  const isUp = item.changeDir === 'up';
-  const isDown = item.changeDir === 'down';
-
-  return (
-    <div style={{
-      background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-      padding: '18px 20px',
-      borderTop: `3px solid ${isUp ? '#10b981' : isDown ? '#ef4444' : '#e5e7eb'}`,
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-        <div>
-          <div style={{ fontSize: 11, fontFamily: 'monospace', color: '#9ca3af', fontWeight: 700, letterSpacing: 1 }}>
-            {item.symbol}
-          </div>
-          <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
-            {item.name}
-          </div>
-        </div>
-        {isUp ? (
-          <TrendingUp size={16} color="#10b981" />
-        ) : isDown ? (
-          <TrendingDown size={16} color="#ef4444" />
-        ) : (
-          <Minus size={16} color="#9ca3af" />
-        )}
-      </div>
-
-      <div style={{ fontSize: 22, fontWeight: 700, color: '#111827', fontFamily: 'monospace', marginBottom: 4 }}>
-        {item.price}
-      </div>
-
-      <div style={{
-        fontSize: 13, fontWeight: 600,
-        color: isUp ? '#10b981' : isDown ? '#ef4444' : '#9ca3af',
-      }}>
-        {item.change}
-      </div>
-
-      {item.extra && (
-        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 6 }}>
-          {item.extra}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Parse AI response ────────────────────────────────────────────────────────
-
-function parseMarketResponse(text: string): PriceData[] {
-  const lines = text.split('\n').filter(l => l.trim());
-  const items: PriceData[] = [];
-
-  const ASSETS = [
-    { symbol: 'BTC', name: 'Bitcoin' },
-    { symbol: 'ETH', name: 'Ethereum' },
-    { symbol: 'S&P500', name: 'S&P 500' },
-    { symbol: 'NASDAQ', name: 'NASDAQ' },
-    { symbol: 'IHSG', name: 'IDX Composite' },
-    { symbol: 'GOLD', name: 'Gold (XAU/USD)' },
-    { symbol: 'DXY', name: 'US Dollar Index' },
-    { symbol: 'OIL', name: 'Crude Oil (WTI)' },
-  ];
-
-  // Try to extract price data from text
-  for (const asset of ASSETS) {
-    const regex = new RegExp(
-      `${asset.symbol}[^\\n]*?(\\$?[\\d,]+\\.?\\d*).*?([+\\-]?\\d+\\.?\\d*%?)`,
-      'i'
-    );
-    const match = text.match(regex);
-
-    if (match) {
-      const priceStr = match[1] || 'N/A';
-      const changeStr = match[2] || '';
-      const isUp = changeStr.includes('+') || (text.toLowerCase().includes(asset.symbol.toLowerCase() + '.*up'));
-      const isDown = changeStr.includes('-');
-
-      items.push({
-        symbol: asset.symbol,
-        name: asset.name,
-        price: priceStr.startsWith('$') ? priceStr : `$${priceStr}`,
-        change: changeStr || 'N/A',
-        changeDir: isUp ? 'up' : isDown ? 'down' : 'neutral',
-      });
-    } else {
-      items.push({
-        symbol: asset.symbol,
-        name: asset.name,
-        price: 'See summary',
-        change: 'N/A',
-        changeDir: 'neutral',
-      });
-    }
-  }
-
-  return items;
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
+const GROUP_LABELS: Record<string, string> = {
+  crypto: '₿ CRYPTO / FUTURES',
+  chart: '📊 CHARTS & TRADING',
+  macro: '🌍 MACRO',
+  research: '🔬 RESEARCH',
+};
 
 export function MarketsPage() {
   const [snapshot, setSnapshot] = useState<MarketSnapshot | null>(loadSnapshot);
@@ -149,68 +50,48 @@ export function MarketsPage() {
       setError('API key belum diset. Pergi ke Intel Feed untuk setup.');
       return;
     }
-    setLoading(true);
-    setError('');
-
+    setLoading(true); setError('');
     try {
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('en-US', {
+      const dateStr = new Date().toLocaleDateString('en-US', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
         hour: '2-digit', minute: '2-digit',
       });
-
       const text = await callClaude(
-        `Current date/time: ${dateStr}. Give me EXACT current market prices for ALL of these assets:\n\n` +
-        `1. BTC (Bitcoin) - price in USD + 24h change %\n` +
-        `2. ETH (Ethereum) - price in USD + 24h change %\n` +
-        `3. S&P500 index - current value + today change %\n` +
-        `4. NASDAQ - current value + today change %\n` +
-        `5. IHSG (Indonesia Stock Exchange / IDX Composite) - current value + today change %\n` +
-        `6. GOLD (XAU/USD) - price per troy oz + today change %\n` +
-        `7. DXY (US Dollar Index) - current value + today change\n` +
-        `8. WTI Crude Oil - price per barrel + today change %\n\n` +
-        `Format each line as: SYMBOL: $PRICE (+/-X.XX%)\n` +
-        `Then add a 2-sentence market summary at the end.\n` +
-        `Use real current data. Be precise.`
+        `Current date/time: ${dateStr}. Give me EXACT current market prices and status:\n\n` +
+        `₿ BTC — price USD + 24h change %\n` +
+        `Ξ ETH — price USD + 24h change %\n` +
+        `📈 S&P 500 — current value + today change %\n` +
+        `💻 NASDAQ — current value + today change %\n` +
+        `🇮🇩 IHSG — current value + today change %\n` +
+        `🥇 GOLD XAU/USD — price per troy oz + today change %\n` +
+        `💵 DXY — current value + today change\n` +
+        `🛢️ WTI Crude — price per barrel + today change %\n` +
+        `😱 Fear & Greed — current value and label\n` +
+        `🔵 BTC Dominance — current %\n` +
+        `💰 Crypto Market Cap — total USD\n\n` +
+        `Format each asset on its own line clearly. Then add a 3-sentence macro summary. Real data only.`
       );
-
-      const items = parseMarketResponse(text);
-      // Extract summary (last paragraph)
-      const lines = text.split('\n').filter(l => l.trim());
-      const summary = lines.slice(-3).join(' ').slice(0, 300);
-
-      const newSnapshot: MarketSnapshot = {
-        items,
-        timestamp: formatTimestamp(),
-        summary: text, // Store full text as summary for display
-      };
-
-      setSnapshot(newSnapshot);
-      saveSnapshot(newSnapshot);
-    } catch (e: any) {
-      setError(e.message);
-    }
-
+      const snap: MarketSnapshot = { rawText: text, timestamp: formatTimestamp() };
+      setSnapshot(snap); saveSnapshot(snap);
+    } catch (e: any) { setError(e.message); }
     setLoading(false);
   };
 
-  const MARKET_GROUPS = [
-    { label: 'Crypto', symbols: ['BTC', 'ETH'] },
-    { label: 'US Markets', symbols: ['S&P500', 'NASDAQ'] },
-    { label: 'Indonesia', symbols: ['IHSG'] },
-    { label: 'Commodities & FX', symbols: ['GOLD', 'OIL', 'DXY'] },
-  ];
+  // Group quick links
+  const grouped = QUICK_LINKS.reduce<Record<string, typeof QUICK_LINKS>>((acc, l) => {
+    if (!acc[l.group]) acc[l.group] = [];
+    acc[l.group].push(l);
+    return acc;
+  }, {});
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 className="font-heading text-lg">Market Prices</h2>
+          <h2 className="font-heading text-lg" style={{ color: 'var(--color-text)' }}>Market Prices</h2>
           <p style={{ fontSize: 12, color: 'var(--color-muted)' }}>
-            {snapshot
-              ? `Last updated: ${snapshot.timestamp}`
-              : 'Klik Refresh untuk dapat harga terkini'}
+            {snapshot ? `Last updated: ${snapshot.timestamp}` : 'Klik Refresh untuk dapat harga terkini'}
           </p>
         </div>
         <button
@@ -218,9 +99,11 @@ export function MarketsPage() {
           disabled={loading}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            background: '#111827', color: 'white', border: 'none',
-            borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
+            background: 'var(--color-text)', color: 'var(--color-bg)',
+            border: 'none', borderRadius: 8, padding: '9px 18px',
+            fontSize: 13, fontWeight: 600,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.7 : 1,
           }}
         >
           <RefreshCw size={13} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
@@ -230,57 +113,118 @@ export function MarketsPage() {
 
       {error && (
         <div style={{
-          fontSize: 13, color: '#dc2626', background: '#fee2e2',
-          padding: '10px 14px', borderRadius: 8,
+          fontSize: 13, color: '#dc2626', background: '#fee2e210',
+          padding: '10px 14px', borderRadius: 8, border: '1px solid #fee2e230',
         }}>
           {error}
         </div>
       )}
 
+      {/* Empty State */}
       {!snapshot && !loading && (
         <div style={{
           textAlign: 'center', padding: '80px 20px',
-          background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
+          background: 'var(--color-card)', borderRadius: 12,
+          border: '1px solid var(--color-border)',
         }}>
-          <TrendingUp size={40} color="#d1d5db" style={{ marginBottom: 12, display: 'block', margin: '0 auto 12px' }} />
-          <p style={{ color: '#6b7280', fontSize: 15, fontWeight: 500 }}>No price data yet</p>
-          <p style={{ color: '#9ca3af', fontSize: 13, marginTop: 4 }}>
+          <TrendingUp size={40} color="var(--color-muted)" style={{ display: 'block', margin: '0 auto 12px' }} />
+          <p style={{ color: 'var(--color-muted)', fontSize: 15, fontWeight: 500 }}>No price data yet</p>
+          <p style={{ color: 'var(--color-muted)', fontSize: 13, marginTop: 4 }}>
             Klik Refresh Prices untuk fetch harga live
           </p>
         </div>
       )}
 
+      {/* Loading */}
       {loading && (
         <div style={{
-          textAlign: 'center', padding: '60px 20px', background: 'white',
-          borderRadius: 12, border: '1px solid #e5e7eb', color: '#6b7280',
+          textAlign: 'center', padding: '60px 20px',
+          background: 'var(--color-card)', borderRadius: 12,
+          border: '1px solid var(--color-border)',
         }}>
-          <RefreshCw size={28} style={{ animation: 'spin 1s linear infinite', display: 'block', margin: '0 auto 12px' }} color="#2563eb" />
-          <p style={{ fontSize: 14 }}>Scanning market data...</p>
+          <Activity size={28} style={{ display: 'block', margin: '0 auto 12px', color: '#2563eb' }} />
+          <p style={{ fontSize: 14, color: 'var(--color-muted)' }}>Scanning market data...</p>
         </div>
       )}
 
+      {/* Snapshot */}
       {snapshot && !loading && (
-        <>
-          {/* Full AI response - readable */}
+        <div style={{
+          background: 'var(--color-card)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 12, overflow: 'hidden',
+        }}>
+          {/* Terminal-style header */}
           <div style={{
-            background: '#0d1b2a', borderRadius: 12, padding: '20px',
+            padding: '10px 20px',
+            background: 'var(--color-surface)',
+            borderBottom: '1px solid var(--color-border)',
+            display: 'flex', alignItems: 'center', gap: 10,
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Clock size={12} color="#64748b" />
-              <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#64748b' }}>
-                LIVE MARKET DATA · {snapshot.timestamp}
-              </span>
-            </div>
             <div style={{
-              fontSize: 14, color: '#e2e8f0', lineHeight: 1.9,
-              whiteSpace: 'pre-wrap', fontFamily: "'DM Sans', sans-serif",
+              width: 7, height: 7, borderRadius: '50%', background: '#84cc16',
+              boxShadow: '0 0 6px #84cc16',
+            }} />
+            <span style={{
+              fontSize: 10, fontFamily: 'monospace',
+              color: 'var(--color-muted)', letterSpacing: 2, fontWeight: 700,
             }}>
-              {snapshot.summary}
+              LIVE MARKET DATA · {snapshot.timestamp}
+            </span>
+          </div>
+          <div style={{ padding: '20px' }}>
+            <div style={{
+              fontSize: 14, color: 'var(--color-text)',
+              lineHeight: 2, whiteSpace: 'pre-wrap',
+              fontFamily: "'DM Mono', 'Courier New', monospace",
+            }}>
+              {snapshot.rawText}
             </div>
           </div>
-        </>
+        </div>
       )}
+
+      {/* Quick Links — Grouped */}
+      {Object.entries(grouped).map(([group, links]) => (
+        <div key={group} style={{
+          background: 'var(--color-card)', borderRadius: 12,
+          border: '1px solid var(--color-border)', padding: '14px 16px',
+        }}>
+          <p style={{
+            fontSize: 9, fontFamily: 'monospace', fontWeight: 700,
+            color: 'var(--color-muted)', letterSpacing: 1.5, marginBottom: 10,
+          }}>
+            {GROUP_LABELS[group]}
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+            {links.map(link => (
+              <a
+                key={link.url}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: 3,
+                  padding: '10px 12px', borderRadius: 8,
+                  border: '1px solid var(--color-border)',
+                  background: 'var(--color-surface)',
+                  textDecoration: 'none', transition: 'border-color .15s',
+                }}
+              >
+                <span style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: 'var(--color-text)',
+                  display: 'flex', alignItems: 'center', gap: 4,
+                }}>
+                  {link.label}
+                  <ExternalLink size={9} color="var(--color-muted)" />
+                </span>
+                <span style={{ fontSize: 10, color: 'var(--color-muted)' }}>{link.desc}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
