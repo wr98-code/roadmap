@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAppData } from "@/lib/store";
 import { useTheme, VIBES } from "@/lib/theme";
-import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap, FolderGit2 } from "lucide-react";
+import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap, FolderGit2, Lightbulb } from "lucide-react";
 import { ThemePicker } from "@/components/ThemePicker";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { DashboardPage } from "./DashboardPage";
@@ -18,26 +18,29 @@ import { JournalPage } from "./JournalPage";
 import { MyDayPage } from "./MyDayPage";
 import { LearnPage } from "./LearnPage";
 import { ProjectsPage } from "./ProjectsPage";
+import { MasterBizPage } from "./MasterBizPage";
 
 const sections = [
-  { key: "dashboard", label: "Home",       icon: Home,          emoji: "🏠", group: "main" },
-  { key: "intel",     label: "Intel Feed", icon: Newspaper,     emoji: "📡", group: "intel" },
-  { key: "markets",   label: "Markets",    icon: BarChart2,     emoji: "💹", group: "intel" },
-  { key: "my-day",    label: "My Day",     icon: CheckSquare,   emoji: "✅", group: "intel" },
-  { key: "journal",   label: "Journal",    icon: BookOpen,      emoji: "📝", group: "intel" },
-  { key: "learn",     label: "Learn Hub",  icon: GraduationCap, emoji: "🧠", group: "intel" },
-  { key: "build-lab", label: "Build Lab",  icon: Zap,           emoji: "⚡", group: "zero" },
-  { key: "keuangan",  label: "Keuangan",   icon: DollarSign,    emoji: "💰", group: "zero" },
-  { key: "roadmap",   label: "Roadmap",    icon: Calendar,      emoji: "📅", group: "zero" },
-  { key: "trading",   label: "Trading",    icon: TrendingUp,    emoji: "📈", group: "zero" },
-  { key: "crypto",    label: "Crypto",     icon: Globe,         emoji: "🌐", group: "zero" },
-  { key: "personal",  label: "Personal",   icon: User,          emoji: "🧘", group: "zero" },
-  { key: "projects",  label: "Projects",   icon: FolderGit2,    emoji: "🗂️", group: "zero" },
+  { key: "dashboard",   label: "Home",         icon: Home,          emoji: "🏠", group: "main" },
+  { key: "intel",       label: "Intel Feed",   icon: Newspaper,     emoji: "📡", group: "intel" },
+  { key: "markets",     label: "Markets",      icon: BarChart2,     emoji: "💹", group: "intel" },
+  { key: "my-day",      label: "My Day",       icon: CheckSquare,   emoji: "✅", group: "intel" },
+  { key: "journal",     label: "Journal",      icon: BookOpen,      emoji: "📝", group: "intel" },
+  { key: "learn",       label: "Learn Hub",    icon: GraduationCap, emoji: "🧠", group: "intel" },
+  { key: "master-biz",  label: "Master Biz",   icon: Lightbulb,     emoji: "🌐", group: "zero" },
+  { key: "build-lab",   label: "Build Lab",    icon: Zap,           emoji: "⚡", group: "zero" },
+  { key: "keuangan",    label: "Keuangan",     icon: DollarSign,    emoji: "💰", group: "zero" },
+  { key: "roadmap",     label: "Roadmap",      icon: Calendar,      emoji: "📅", group: "zero" },
+  { key: "trading",     label: "Trading",      icon: TrendingUp,    emoji: "📈", group: "zero" },
+  { key: "crypto",      label: "Crypto",       icon: Globe,         emoji: "🌐", group: "zero" },
+  { key: "personal",    label: "Personal",     icon: User,          emoji: "🧘", group: "zero" },
+  { key: "projects",    label: "Projects",     icon: FolderGit2,    emoji: "🗂️", group: "zero" },
 ];
 
 const titles: Record<string, string> = {
   dashboard: "Home", intel: "Intel Feed", markets: "Markets",
   "my-day": "My Day", journal: "Journal", learn: "Learn Hub",
+  "master-biz": "Master Biz Intel",
   "build-lab": "Build Lab", trading: "Trading", crypto: "Crypto",
   roadmap: "Roadmap", keuangan: "Keuangan", personal: "Personal",
   projects: "Projects",
@@ -73,19 +76,20 @@ const Index = () => {
 
   const renderPage = () => {
     switch (active) {
-      case "dashboard":  return <DashboardPage data={data} update={update} onNavigate={navigate} />;
-      case "intel":      return <IntelPage />;
-      case "markets":    return <MarketsPage />;
-      case "my-day":     return <MyDayPage />;
-      case "journal":    return <JournalPage />;
-      case "learn":      return <LearnPage />;
-      case "build-lab":  return <BuildLabPage data={data} update={update} />;
-      case "trading":    return <TradingPage />;
-      case "crypto":     return <CryptoPage data={data} update={update} />;
-      case "roadmap":    return <RoadmapPage data={data} update={update} />;
-      case "keuangan":   return <KeuanganPage data={data} update={update} />;
-      case "personal":   return <PersonalPage data={data} update={update} />;
-      case "projects":   return <ProjectsPage />;
+      case "dashboard":   return <DashboardPage data={data} update={update} onNavigate={navigate} />;
+      case "intel":       return <IntelPage />;
+      case "markets":     return <MarketsPage />;
+      case "my-day":      return <MyDayPage />;
+      case "journal":     return <JournalPage />;
+      case "learn":       return <LearnPage />;
+      case "master-biz":  return <MasterBizPage />;
+      case "build-lab":   return <BuildLabPage data={data} update={update} />;
+      case "trading":     return <TradingPage />;
+      case "crypto":      return <CryptoPage data={data} update={update} />;
+      case "roadmap":     return <RoadmapPage data={data} update={update} />;
+      case "keuangan":    return <KeuanganPage data={data} update={update} />;
+      case "personal":    return <PersonalPage data={data} update={update} />;
+      case "projects":    return <ProjectsPage />;
       default: return null;
     }
   };
