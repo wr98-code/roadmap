@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAppData } from "@/lib/store";
 import { useTheme, VIBES } from "@/lib/theme";
-import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap } from "lucide-react";
+import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap, FolderGit2 } from "lucide-react";
 import { ThemePicker } from "@/components/ThemePicker";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { DashboardPage } from "./DashboardPage";
@@ -17,6 +17,7 @@ import { MarketsPage } from "./MarketsPage";
 import { JournalPage } from "./JournalPage";
 import { MyDayPage } from "./MyDayPage";
 import { LearnPage } from "./LearnPage";
+import { ProjectsPage } from "./ProjectsPage";
 
 const sections = [
   { key: "dashboard", label: "Home",       icon: Home,          emoji: "🏠", group: "main" },
@@ -31,6 +32,7 @@ const sections = [
   { key: "trading",   label: "Trading",    icon: TrendingUp,    emoji: "📈", group: "zero" },
   { key: "crypto",    label: "Crypto",     icon: Globe,         emoji: "🌐", group: "zero" },
   { key: "personal",  label: "Personal",   icon: User,          emoji: "🧘", group: "zero" },
+  { key: "projects",  label: "Projects",   icon: FolderGit2,    emoji: "🗂️", group: "zero" },
 ];
 
 const titles: Record<string, string> = {
@@ -38,6 +40,7 @@ const titles: Record<string, string> = {
   "my-day": "My Day", journal: "Journal", learn: "Learn Hub",
   "build-lab": "Build Lab", trading: "Trading", crypto: "Crypto",
   roadmap: "Roadmap", keuangan: "Keuangan", personal: "Personal",
+  projects: "Projects",
 };
 
 const groups: Record<string, string> = {
@@ -82,6 +85,7 @@ const Index = () => {
       case "roadmap":    return <RoadmapPage data={data} update={update} />;
       case "keuangan":   return <KeuanganPage data={data} update={update} />;
       case "personal":   return <PersonalPage data={data} update={update} />;
+      case "projects":   return <ProjectsPage />;
       default: return null;
     }
   };
