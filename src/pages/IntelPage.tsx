@@ -8,6 +8,7 @@ import {
   callClaude, getApiKey, setApiKey, hasApiKey, isEnvKey,
   formatTimestamp, formatFullDate, todayKey,
 } from '@/lib/api';
+import { cloudGet, cloudSet } from '@/lib/cloudStorage';
 
 interface FeedItem {
   id: string;
@@ -61,7 +62,9 @@ function loadFeed(): FeedItem[] {
   try { return JSON.parse(localStorage.getItem(FEED_KEY) || '[]'); } catch { return []; }
 }
 function saveFeed(items: FeedItem[]) {
-  localStorage.setItem(FEED_KEY, JSON.stringify(items.slice(0, 100)));
+  const capped = items.slice(0, 100);
+  localStorage.setItem(FEED_KEY, JSON.stringify(capped));
+  cloudSet(FEED_KEY, capped);
 }
 function loadBrief(): Brief | null {
   try {
@@ -70,7 +73,10 @@ function loadBrief(): Brief | null {
     return null;
   } catch { return null; }
 }
-function saveBrief(brief: Brief) { localStorage.setItem(BRIEF_KEY, JSON.stringify(brief)); }
+function saveBrief(brief: Brief) {
+  localStorage.setItem(BRIEF_KEY, JSON.stringify(brief));
+  cloudSet(BRIEF_KEY, brief);
+}
 
 // ─── API Key Banner (only if no env key) ─────────────────────────────────────
 function ApiKeyBanner({ onSave }: { onSave: () => void }) {
