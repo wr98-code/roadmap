@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Plus, Trash2, Download, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { useCloudState } from '@/lib/cloudStorage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,28 +21,12 @@ const PRIORITY_CONFIG = {
   low: { label: '🟢 Low', color: '#059669', bg: '#d1fae5' },
 };
 
-// ─── Storage ──────────────────────────────────────────────────────────────────
-
-const TASKS_KEY = 'zero-my-day-tasks';
-
-function loadTasks(): Task[] {
-  try {
-    return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveTasks(tasks: Task[]) {
-  localStorage.setItem(TASKS_KEY, JSON.stringify(tasks));
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function MyDayPage() {
-  const [tasks, setTasks] = useState<Task[]>(loadTasks);
-  const [input, setInput] = useState('');
-  const [priority, setPriority] = useState<'high' | 'normal' | 'low'>('normal');
+  const [tasks, setTasks] = useCloudState<Task[]>('zero-my-day-tasks', []);
+  const [input, setInput] = useCloudState<string>('zero-my-day-input-tmp', '');
+  const [priority, setPriority] = useCloudState<'high' | 'normal' | 'low'>('zero-my-day-priority-tmp', 'normal');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const todayStr = new Date().toLocaleDateString('id-ID', {
@@ -50,13 +35,11 @@ export function MyDayPage() {
 
   const todayKey = new Date().toDateString();
 
-  // Today's tasks only
   const todayTasks = tasks.filter(t => t.dateKey === todayKey);
   const doneTasks = todayTasks.filter(t => t.done);
   const pct = todayTasks.length ? Math.round((doneTasks.length / todayTasks.length) * 100) : 0;
 
-  // All tasks (for download, show history)
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useCloudState<boolean>('zero-my-day-show-history', false);
   const historyTasks = tasks.filter(t => t.dateKey !== todayKey);
 
   const addTask = () => {
@@ -69,29 +52,21 @@ export function MyDayPage() {
       priority,
       dateKey: todayKey,
     };
-    const updated = [...tasks, task];
-    setTasks(updated);
-    saveTasks(updated);
+    setTasks([...tasks, task]);
     setInput('');
     inputRef.current?.focus();
   };
 
   const toggle = (id: string) => {
-    const updated = tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
-    setTasks(updated);
-    saveTasks(updated);
+    setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
   };
 
   const deleteTask = (id: string) => {
-    const updated = tasks.filter(t => t.id !== id);
-    setTasks(updated);
-    saveTasks(updated);
+    setTasks(tasks.filter(t => t.id !== id));
   };
 
   const clearDone = () => {
-    const updated = tasks.filter(t => !(t.done && t.dateKey === todayKey));
-    setTasks(updated);
-    saveTasks(updated);
+    setTasks(tasks.filter(t => !(t.done && t.dateKey === todayKey)));
   };
 
   const downloadLog = () => {
