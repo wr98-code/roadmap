@@ -196,44 +196,98 @@ export const defaultData: AppData = {
   },
 };
 
+// ─── STORAGE KEY ───────────────────────────────────────────────────────────────
 const STORAGE_KEY = "zero-command-center-data";
+const CLOUD_API   = "/api/data";
+const SYNC_DEBOUNCE_MS = 1500;
 
-function loadData(): AppData {
+// ─── LOCAL FALLBACK ────────────────────────────────────────────────────────────
+function loadLocal(): AppData | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch {}
-  return structuredClone(defaultData);
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : null;
+  } catch { return null; }
 }
 
-function saveData(data: AppData) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+function saveLocal(data: AppData) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
+// ─── CLOUD READ / WRITE ────────────────────────────────────────────────────────
+async function loadCloud(): Promise<AppData | null> {
+  try {
+    const res = await fetch(CLOUD_API, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json as AppData;
+  } catch { return null; }
+}
+
+async function saveCloud(data: AppData): Promise<boolean> {
+  try {
+    const res = await fetch(CLOUD_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+// ─── HOOK ──────────────────────────────────────────────────────────────────────
 export function useAppData() {
-  const [data, setData] = useState<AppData>(loadData);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-  const [saved, setSaved] = useState(false);
+  const [data, setData]       = useState<AppData>(() => loadLocal() ?? structuredClone(defaultData));
+  const [saved, setSaved]     = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const timerRef              = useRef<ReturnType<typeof setTimeout>>();
+  const initialized           = useRef(false);
+
+  // On mount: try to pull latest from cloud, merge if newer
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    setSyncing(true);
+    loadCloud().then((cloud) => {
+      if (cloud) {
+        const local = loadLocal();
+        const cloudTs = new Date(cloud.dashboard.lastUpdated).getTime();
+        const localTs = local ? new Date(local.dashboard.lastUpdated).getTime() : 0;
+        // Cloud wins if it's newer
+        if (cloudTs >= localTs) {
+          setData(cloud);
+          saveLocal(cloud);
+        }
+      }
+      setSyncing(false);
+    });
+  }, []);
 
   const update = useCallback((updater: (prev: AppData) => AppData) => {
     setData((prev) => {
       const next = updater(prev);
       next.dashboard.lastUpdated = new Date().toISOString();
+
+      // Always write to localStorage immediately (instant, never loses data)
+      saveLocal(next);
+
+      // Debounce cloud write
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => {
-        saveData(next);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
-      }, 500);
+      timerRef.current = setTimeout(async () => {
+        setSyncing(true);
+        const ok = await saveCloud(next);
+        setSyncing(false);
+        if (ok) {
+          setSaved(true);
+          setTimeout(() => setSaved(false), 1500);
+        }
+      }, SYNC_DEBOUNCE_MS);
+
       return next;
     });
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-  return { data, update, saved };
+  return { data, update, saved, syncing };
 }
