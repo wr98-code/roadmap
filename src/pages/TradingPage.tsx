@@ -6,6 +6,7 @@ import {
   DollarSign, AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
   Plus, Trash2, PieChart,
 } from 'lucide-react';
+import { cloudSet } from '@/lib/cloudStorage';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface JournalEntry {
@@ -74,6 +75,7 @@ function loadJournal(): JournalEntry[] {
 }
 function saveJournal(entries: JournalEntry[]) {
   localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries));
+  cloudSet(JOURNAL_KEY, entries);
 }
 
 // ─── SECTION WRAPPER ──────────────────────────────────────────────────────────
