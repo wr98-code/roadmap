@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useAppData } from "@/lib/store";
 import { useTheme, VIBES } from "@/lib/theme";
-import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap, FolderGit2, Lightbulb } from "lucide-react";
+import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap, FolderGit2, Lightbulb, Cloud, Loader2 } from "lucide-react";
 import { ThemePicker } from "@/components/ThemePicker";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { DashboardPage } from "./DashboardPage";
@@ -58,7 +58,7 @@ function greeting(vibe: string) {
 }
 
 const Index = () => {
-  const { data, update, saved } = useAppData();
+  const { data, update, saved, syncing } = useAppData();
   const { vibe } = useTheme();
   const [active, setActive] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -121,7 +121,7 @@ const Index = () => {
             <div className="zero-logo-mark">Z∅</div>
             <div>
               <p style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", color: "hsl(var(--sidebar-primary))", lineHeight: 1 }}>ZERØ</p>
-              <p style={{ fontSize: 9, color: "hsl(var(--sidebar-foreground) / 0.38)", marginTop: 2, lineHeight: 1, letterSpacing: "0.05em" }}>COMMAND v3.0</p>
+              <p style={{ fontSize: 9, color: "hsl(var(--sidebar-foreground) / 0.38)", marginTop: 2, lineHeight: 1, letterSpacing: "0.05em" }}>COMMAND v3.1</p>
             </div>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden" style={{ background: "transparent", border: "none", color: "hsl(var(--sidebar-foreground) / 0.4)", cursor: "pointer", padding: 4 }}>
@@ -175,9 +175,16 @@ const Index = () => {
             </h2>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {saved && (
+            {/* Cloud sync indicator */}
+            {syncing && (
+              <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "hsl(var(--muted-foreground))", opacity: 0.7 }}>
+                <Loader2 size={11} style={{ animation: "spin 1s linear infinite" }} />
+                Syncing…
+              </span>
+            )}
+            {saved && !syncing && (
               <span className="animate-fade-in" style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "hsl(var(--primary))", fontWeight: 500 }}>
-                <Check size={11} /> Saved
+                <Cloud size={11} /> Synced
               </span>
             )}
             {hasNotes && (
