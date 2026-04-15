@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { RefreshCw, TrendingUp, ExternalLink, Activity } from 'lucide-react';
 import { callClaude, formatTimestamp, hasApiKey } from '@/lib/api';
+import { cloudSet } from '@/lib/cloudStorage';
 
 interface MarketSnapshot { rawText: string; timestamp: string; }
 
@@ -9,7 +10,7 @@ const MARKETS_KEY = 'zero-markets-snapshot-v2';
 function loadSnapshot(): MarketSnapshot | null {
   try { return JSON.parse(localStorage.getItem(MARKETS_KEY) || 'null'); } catch { return null; }
 }
-function saveSnapshot(s: MarketSnapshot) { localStorage.setItem(MARKETS_KEY, JSON.stringify(s)); }
+function saveSnapshot(s: MarketSnapshot) { localStorage.setItem(MARKETS_KEY, JSON.stringify(s)); cloudSet(MARKETS_KEY, s); }
 
 // ─── Quick Links ──────────────────────────────────────────────────────────────
 const QUICK_LINKS = [
