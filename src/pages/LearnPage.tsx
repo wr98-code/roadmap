@@ -6,6 +6,7 @@ import {
   TrendingUp, Globe, Cpu, Shield, DollarSign, BarChart2, Lock,
 } from 'lucide-react';
 import { callClaude, hasApiKey } from '@/lib/api';
+import { cloudSet } from '@/lib/cloudStorage';
 
 // ─── TOPIC CATALOG ────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -147,7 +148,7 @@ const LESSONS_KEY = 'zero-lessons-v2';
 function loadLessons(): Record<string, Lesson> {
   try { return JSON.parse(localStorage.getItem(LESSONS_KEY) || '{}'); } catch { return {}; }
 }
-function saveLessons(l: Record<string, Lesson>) { localStorage.setItem(LESSONS_KEY, JSON.stringify(l)); }
+function saveLessons(l: Record<string, Lesson>) { localStorage.setItem(LESSONS_KEY, JSON.stringify(l)); cloudSet(LESSONS_KEY, l); }
 
 // ─── TOPIC CARD ───────────────────────────────────────────────────────────────
 function TopicCard({
