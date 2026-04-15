@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { Download, Trash2, Plus, BookOpen } from 'lucide-react';
+import { useCloudState } from '@/lib/cloudStorage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,22 +25,6 @@ const MOODS = [
 ];
 
 const TAGS = ['📝 Catatan', '✅ Achievement', '💡 Ide', '⚠️ Masalah', '🎯 Focus'];
-
-// ─── Storage ──────────────────────────────────────────────────────────────────
-
-const JOURNAL_KEY = 'zero-journal-entries';
-
-function loadEntries(): JournalEntry[] {
-  try {
-    return JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveEntries(entries: JournalEntry[]) {
-  localStorage.setItem(JOURNAL_KEY, JSON.stringify(entries));
-}
 
 // ─── Entry Card ───────────────────────────────────────────────────────────────
 
@@ -107,7 +92,7 @@ function EntryCard({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export function JournalPage() {
-  const [entries, setEntries] = useState<JournalEntry[]>(loadEntries);
+  const [entries, setEntries] = useCloudState<JournalEntry[]>('zero-journal-entries', []);
   const [text, setText] = useState('');
   const [mood, setMood] = useState('😊');
   const [tag, setTag] = useState('📝 Catatan');
@@ -131,27 +116,23 @@ export function JournalPage() {
       dateKey: now.toDateString(),
     };
 
-    const updated = [entry, ...entries];
-    setEntries(updated);
-    saveEntries(updated);
+    setEntries([entry, ...entries]);
     setText('');
     textRef.current?.focus();
   };
 
   const deleteEntry = (id: string) => {
     if (!confirm('Hapus catatan ini?')) return;
-    const updated = entries.filter(e => e.id !== id);
-    setEntries(updated);
-    saveEntries(updated);
+    setEntries(entries.filter(e => e.id !== id));
   };
 
   const downloadAll = () => {
-    const text = entries.map(e =>
+    const txt = entries.map(e =>
       `[${e.date} ${e.time}] ${e.mood} ${e.tag}\n${'─'.repeat(50)}\n${e.content}\n`
     ).join('\n\n');
 
     const blob = new Blob(
-      [`ZERØ JOURNAL\n${'═'.repeat(50)}\nTotal: ${entries.length} entries\n\n${text}`],
+      [`ZERØ JOURNAL\n${'═'.repeat(50)}\nTotal: ${entries.length} entries\n\n${txt}`],
       { type: 'text/plain; charset=utf-8' }
     );
     const url = URL.createObjectURL(blob);
@@ -162,7 +143,6 @@ export function JournalPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Group entries by date
   const grouped = entries.reduce<Record<string, JournalEntry[]>>((acc, e) => {
     if (!acc[e.dateKey]) acc[e.dateKey] = [];
     acc[e.dateKey].push(e);
