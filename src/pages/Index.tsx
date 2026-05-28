@@ -5,6 +5,7 @@ import { useTheme, VIBES } from "@/lib/theme";
 import { Home, Zap, TrendingUp, Globe, Calendar, DollarSign, User, Menu, X, Plus, Check, Newspaper, BarChart2, BookOpen, CheckSquare, GraduationCap, FolderGit2, Lightbulb, Cloud, Loader2 } from "lucide-react";
 import { ThemePicker } from "@/components/ThemePicker";
 import { AffirmationToast } from "@/components/AffirmationToast";
+import { PWAInstall } from "@/components/PWAInstall";
 import { DashboardPage } from "./DashboardPage";
 import { BuildLabPage } from "./BuildLabPage";
 import { TradingPage } from "./TradingPage";
@@ -106,6 +107,7 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-background">
       <AffirmationToast />
+      <PWAInstall />
 
       {/* Mobile overlay */}
       {sidebarOpen && (
