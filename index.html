@@ -2,30 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
     <title>ZERØ COMMAND</title>
     <meta name="description" content="ZERØ BUILD LAB — Personal Command Center" />
     <meta name="author" content="ZERØ BUILD LAB" />
 
-    <!-- Favicon SVG (works di semua browser modern) -->
+    <!-- PWA: Web App Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- Fallback ICO buat browser lama -->
     <link rel="alternate icon" href="/favicon.ico" />
 
-    <!-- Apple touch icon (iOS home screen) -->
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!-- Apple PWA (iOS / macOS Safari) -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ZERØ" />
 
-    <!-- Theme color — tab Chrome warna gelap premium -->
+    <!-- Theme color — dark premium -->
     <meta name="theme-color" content="#0d0d18" />
+    <meta name="msapplication-TileColor" content="#0d0d18" />
+    <meta name="msapplication-TileImage" content="/icons/icon-192.png" />
+
+    <!-- Mobile web app -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="ZERØ COMMAND" />
 
     <!-- OG / Social -->
     <meta property="og:title" content="ZERØ COMMAND" />
     <meta property="og:description" content="ZERØ BUILD LAB — Personal Command Center" />
     <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icons/icon-512.png" />
 
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="ZERØ COMMAND" />
+    <meta name="twitter:description" content="ZERØ BUILD LAB — Personal Command Center" />
+
+    <!-- Splash screens iOS (optional tapi pro) -->
+    <link
+      rel="apple-touch-startup-image"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+      href="/icons/splash-iphone14.png"
+    />
   </head>
 
   <body>
