@@ -523,3 +523,4 @@ const btnStyle: React.CSSProperties = {
   fontWeight: 600,
   fontFamily: "var(--font-sans)",
 };
+ 
