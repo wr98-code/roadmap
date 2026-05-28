@@ -1,6 +1,6 @@
 // ─── ZERO COMMAND — api.ts ────────────────────────────────────────────────────
-// Menggunakan Gemini API (GRATIS) dari Google
-// Set VITE_GEMINI_KEY di Cloudflare Environment Variables
+// Menggunakan Groq API (GRATIS, limit jauh lebih besar dari Gemini)
+// Set VITE_GEMINI_KEY di Cloudflare Environment Variables (nama sama, isi Groq key)
 
 const API_KEY_STORAGE = 'zero-gemini-key';
 
@@ -36,24 +36,25 @@ export async function callClaude(
   const key = getApiKey();
   if (!key) throw new Error('NO_API_KEY');
 
-  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+  const messages: { role: string; content: string }[] = [];
+  if (systemPrompt) {
+    messages.push({ role: 'system', content: systemPrompt });
+  }
+  messages.push({ role: 'user', content: prompt });
 
-  const body = {
-    contents: [{ parts: [{ text: fullPrompt }] }],
-    generationConfig: {
-      maxOutputTokens: maxTokens,
-      temperature: 0.7,
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${key}`,
     },
-  };
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }
-  );
+    body: JSON.stringify({
+      model: 'llama-3.1-8b-instant',
+      messages,
+      max_tokens: maxTokens,
+      temperature: 0.7,
+    }),
+  });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -61,7 +62,7 @@ export async function callClaude(
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const text = data?.choices?.[0]?.message?.content || '';
 
   return text.trim() || 'No response received.';
 }
