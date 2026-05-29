@@ -1,5 +1,6 @@
 // ─── ZERØ COMMAND — MarketsPage.tsx ──────────────────────────────────────────
-// Live market data: CoinGecko (crypto) + Yahoo Finance (stocks) + Fear & Greed
+// Live market data: CoinGecko (crypto) + Yahoo Finance (stocks/macro) + Fear & Greed
+// No API keys needed. All free public APIs.
 import { useState, useEffect, useCallback } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, Activity, Wifi, WifiOff } from 'lucide-react';
 
@@ -20,7 +21,7 @@ interface MarketState {
   lastUpdate: string | null;
 }
 
-const STORAGE_KEY = 'zero-markets-live-v3';
+const STORAGE_KEY = 'zero-markets-live-v4';
 
 function loadCache(): MarketState {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || { items: {}, lastUpdate: null }; }
@@ -31,28 +32,20 @@ function saveCache(s: MarketState) {
 }
 
 // ─── FETCH HELPERS ────────────────────────────────────────────────────────────
-async function fetchWithTimeout(url: string, ms = 10000): Promise<Response> {
+async function fetchTimeout(url: string, ms = 10000): Promise<Response> {
   const ctrl = new AbortController();
   const id = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    return res;
-  } finally {
-    clearTimeout(id);
-  }
+  try { return await fetch(url, { signal: ctrl.signal }); }
+  finally { clearTimeout(id); }
 }
 
+// ─── COINGECKO ────────────────────────────────────────────────────────────────
 async function fetchCoinGecko(): Promise<Partial<Record<string, MarketItem>>> {
   const [priceRes, globalRes] = await Promise.all([
-    fetchWithTimeout(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_market_cap=true',
-      9000
-    ),
-    fetchWithTimeout('https://api.coingecko.com/api/v3/global', 9000),
+    fetchTimeout('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true&include_market_cap=true'),
+    fetchTimeout('https://api.coingecko.com/api/v3/global'),
   ]);
-
   const items: Partial<Record<string, MarketItem>> = {};
-
   if (priceRes.ok) {
     const cg = await priceRes.json();
     if (cg.bitcoin) items['BTC'] = {
@@ -66,7 +59,6 @@ async function fetchCoinGecko(): Promise<Partial<Record<string, MarketItem>>> {
       currency: 'USD', group: 'crypto', marketCap: cg.ethereum.usd_market_cap,
     };
   }
-
   if (globalRes.ok) {
     const gd = (await globalRes.json()).data;
     if (gd) {
@@ -83,13 +75,13 @@ async function fetchCoinGecko(): Promise<Partial<Record<string, MarketItem>>> {
       };
     }
   }
-
   return items;
 }
 
+// ─── FEAR & GREED ─────────────────────────────────────────────────────────────
 async function fetchFearGreed(): Promise<MarketItem | null> {
   try {
-    const res = await fetchWithTimeout('https://api.alternative.me/fng/?limit=1', 6000);
+    const res = await fetchTimeout('https://api.alternative.me/fng/?limit=1', 6000);
     if (!res.ok) return null;
     const data = await res.json();
     const d = data?.data?.[0];
@@ -97,36 +89,78 @@ async function fetchFearGreed(): Promise<MarketItem | null> {
     return {
       symbol: 'F&G', name: 'Fear & Greed',
       price: parseInt(d.value), change24h: 0,
-      currency: 'index', group: 'sentiment',
-      label: d.value_classification,
+      currency: 'index', group: 'sentiment', label: d.value_classification,
     };
   } catch { return null; }
 }
 
+// ─── YAHOO FINANCE via allorigins proxy ───────────────────────────────────────
+// Raw Yahoo symbols (NOT pre-encoded — URL encoding handled by encodeURIComponent)
 const YF_SYMBOLS = [
-  { key: 'SPX',  yahoo: '%5EGSPC',  name: 'S&P 500',    group: 'stocks'      as const },
-  { key: 'NDX',  yahoo: '%5EIXIC',  name: 'NASDAQ',      group: 'stocks'      as const },
-  { key: 'IHSG', yahoo: '%5EJKSE',  name: 'IHSG',        group: 'stocks'      as const },
-  { key: 'GOLD', yahoo: 'GC%3DF',   name: 'Gold XAU',    group: 'commodities' as const },
-  { key: 'WTI',  yahoo: 'CL%3DF',   name: 'WTI Crude',   group: 'commodities' as const },
-  { key: 'DXY',  yahoo: 'DX-Y.NYB', name: 'DXY',         group: 'macro'       as const },
+  { key: 'SPX',  yahoo: '^GSPC',    name: 'S&P 500',   group: 'stocks'      as const },
+  { key: 'NDX',  yahoo: '^IXIC',    name: 'NASDAQ',    group: 'stocks'      as const },
+  { key: 'IHSG', yahoo: '^JKSE',    name: 'IHSG',      group: 'stocks'      as const },
+  { key: 'GOLD', yahoo: 'GC=F',     name: 'Gold XAU',  group: 'commodities' as const },
+  { key: 'WTI',  yahoo: 'CL=F',     name: 'WTI Crude', group: 'commodities' as const },
+  { key: 'DXY',  yahoo: 'DX-Y.NYB', name: 'DXY',       group: 'macro'       as const },
 ];
+
+// Try multiple proxy strategies in order
+async function fetchYahooSymbol(yahoo: string): Promise<{ price: number; change: number; currency: string } | null> {
+  const cleanSymbol = yahoo;
+
+  // Strategy 1: allorigins wrapping Yahoo Finance v8
+  try {
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cleanSymbol)}?interval=1d&range=1d`;
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`;
+    const res = await fetchTimeout(proxyUrl, 9000);
+    if (res.ok) {
+      const outer = await res.json();
+      const inner = JSON.parse(outer.contents);
+      const meta = inner?.chart?.result?.[0]?.meta;
+      if (meta?.regularMarketPrice) {
+        const price = meta.regularMarketPrice;
+        const prev = meta.chartPreviousClose ?? meta.previousClose ?? price;
+        const change = prev ? ((price - prev) / prev) * 100 : 0;
+        return { price, change, currency: meta.currency || 'USD' };
+      }
+    }
+  } catch {}
+
+  // Strategy 2: corsproxy.io fallback
+  try {
+    const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cleanSymbol)}?interval=1d&range=1d`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(yahooUrl)}`;
+    const res = await fetchTimeout(proxyUrl, 9000);
+    if (res.ok) {
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      if (meta?.regularMarketPrice) {
+        const price = meta.regularMarketPrice;
+        const prev = meta.chartPreviousClose ?? meta.previousClose ?? price;
+        const change = prev ? ((price - prev) / prev) * 100 : 0;
+        return { price, change, currency: meta.currency || 'USD' };
+      }
+    }
+  } catch {}
+
+  return null;
+}
 
 async function fetchYahooFinance(): Promise<Partial<Record<string, MarketItem>>> {
   const items: Partial<Record<string, MarketItem>> = {};
   await Promise.allSettled(
     YF_SYMBOLS.map(async ({ key, yahoo, name, group }) => {
       try {
-        const url = `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=1d&range=1d`;
-        const res = await fetchWithTimeout(url, 10000);
-        if (!res.ok) return;
-        const data = await res.json();
-        const meta = data?.chart?.result?.[0]?.meta;
-        if (!meta?.regularMarketPrice) return;
-        const price = meta.regularMarketPrice;
-        const prev = meta.chartPreviousClose ?? meta.previousClose ?? price;
-        const change24h = prev ? ((price - prev) / prev) * 100 : 0;
-        items[key] = { symbol: key, name, price, change24h, currency: meta.currency || 'USD', group };
+        const result = await fetchYahooSymbol(yahoo);
+        if (result) {
+          items[key] = {
+            symbol: key, name, group,
+            price: result.price,
+            change24h: result.change,
+            currency: result.currency,
+          };
+        }
       } catch {}
     })
   );
@@ -135,35 +169,36 @@ async function fetchYahooFinance(): Promise<Partial<Record<string, MarketItem>>>
 
 // ─── QUICK LINKS ──────────────────────────────────────────────────────────────
 const QUICK_LINKS = [
-  { label: 'Coinglass',     url: 'https://coinglass.com',               desc: 'Liquidation + OI + Funding', group: 'crypto' },
-  { label: 'CryptoQuant',   url: 'https://cryptoquant.com',             desc: 'On-chain analytics',         group: 'crypto' },
-  { label: 'Glassnode',     url: 'https://glassnode.com',               desc: 'NUPL + on-chain',            group: 'crypto' },
-  { label: 'LookIntoBTC',   url: 'https://lookintobitcoin.com',         desc: 'Cycle indicators',           group: 'crypto' },
-  { label: 'TradingView',   url: 'https://tradingview.com',             desc: 'Charts + scripting',         group: 'chart'  },
-  { label: 'Bybit',         url: 'https://bybit.com',                   desc: 'Futures trading',            group: 'chart'  },
-  { label: 'Farside ETF',   url: 'https://farside.co.uk',               desc: 'BTC ETF flow',              group: 'macro'  },
-  { label: 'FRED',          url: 'https://fred.stlouisfed.org',         desc: 'Fed data',                  group: 'macro'  },
-  { label: 'ForexFactory',  url: 'https://forexfactory.com',            desc: 'Econ kalender',             group: 'macro'  },
-  { label: 'DeFi Llama',    url: 'https://defillama.com',               desc: 'TVL + DeFi stats',          group: 'research'},
-  { label: 'Dune',          url: 'https://dune.com',                    desc: 'On-chain SQL',               group: 'research'},
-  { label: 'Token Terminal',url: 'https://tokenterminal.com',           desc: 'Protocol fundamentals',     group: 'research'},
+  { label: 'Coinglass',      url: 'https://coinglass.com',             desc: 'Liquidation + OI + Funding', group: 'crypto'   },
+  { label: 'CryptoQuant',    url: 'https://cryptoquant.com',           desc: 'On-chain analytics',         group: 'crypto'   },
+  { label: 'Glassnode',      url: 'https://glassnode.com',             desc: 'NUPL + on-chain',            group: 'crypto'   },
+  { label: 'LookIntoBTC',    url: 'https://lookintobitcoin.com',       desc: 'Cycle indicators',           group: 'crypto'   },
+  { label: 'TradingView',    url: 'https://tradingview.com',           desc: 'Charts + scripting',         group: 'chart'    },
+  { label: 'Bybit',          url: 'https://bybit.com',                 desc: 'Futures trading',            group: 'chart'    },
+  { label: 'Farside ETF',    url: 'https://farside.co.uk',             desc: 'BTC ETF flow',               group: 'macro'    },
+  { label: 'FRED',           url: 'https://fred.stlouisfed.org',       desc: 'Fed data',                   group: 'macro'    },
+  { label: 'ForexFactory',   url: 'https://forexfactory.com',          desc: 'Economic calendar',          group: 'macro'    },
+  { label: 'DeFi Llama',     url: 'https://defillama.com',             desc: 'TVL + DeFi stats',           group: 'research' },
+  { label: 'Dune',           url: 'https://dune.com',                  desc: 'On-chain SQL',               group: 'research' },
+  { label: 'Token Terminal', url: 'https://tokenterminal.com',         desc: 'Protocol fundamentals',      group: 'research' },
 ];
+
 const GROUP_LABELS: Record<string, string> = {
   crypto: '₿ CRYPTO / FUTURES', chart: '📊 CHARTS & TRADING',
   macro: '🌍 MACRO', research: '🔬 RESEARCH',
 };
 
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
+// ─── FORMAT HELPERS ───────────────────────────────────────────────────────────
 function fmtPrice(price: number, currency: string, isMcap = false): string {
   if (currency === '%') return `${price.toFixed(2)}%`;
   if (currency === 'index') return price.toString();
   if (isMcap || price > 1_000_000_000) {
     if (price >= 1e12) return `$${(price / 1e12).toFixed(2)}T`;
-    if (price >= 1e9) return `$${(price / 1e9).toFixed(2)}B`;
+    if (price >= 1e9)  return `$${(price / 1e9).toFixed(2)}B`;
     return `$${(price / 1e6).toFixed(0)}M`;
   }
   if (price >= 10000) return `$${price.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
-  if (price >= 1) return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (price >= 1)     return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return `$${price.toFixed(4)}`;
 }
 
@@ -177,8 +212,8 @@ function fgColor(val: number): string {
 
 const GROUP_ORDER: MarketItem['group'][] = ['crypto', 'stocks', 'commodities', 'macro', 'sentiment'];
 const GROUP_TITLE: Record<string, string> = {
-  crypto: '₿ Crypto', stocks: '📈 Equities', commodities: '🥇 Commodities',
-  macro: '🌍 Macro', sentiment: '😱 Sentiment',
+  crypto: '₿ Crypto', stocks: '📈 Equities',
+  commodities: '🥇 Commodities', macro: '🌍 Macro', sentiment: '😱 Sentiment',
 };
 
 // ─── PRICE CARD ───────────────────────────────────────────────────────────────
@@ -191,16 +226,20 @@ function PriceCard({ item }: { item: MarketItem }) {
   return (
     <div style={{
       padding: '14px 16px', borderRadius: 12,
-      background: 'var(--color-card)', border: '1px solid var(--color-border)',
+      background: 'var(--color-card)',
+      border: isFG
+        ? `1px solid ${fgColor(fgVal)}40`
+        : '1px solid var(--color-border)',
       display: 'flex', flexDirection: 'column', gap: 6,
-      transition: 'border-color .15s',
+      transition: 'border-color .2s, transform .1s',
+      cursor: 'default',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--color-muted)', fontWeight: 700, letterSpacing: 1, margin: 0 }}>
             {item.symbol}
           </p>
-          <p style={{ fontSize: 12, color: 'var(--color-muted)', margin: 0, marginTop: 1 }}>{item.name}</p>
+          <p style={{ fontSize: 11, color: 'var(--color-muted)', margin: 0, marginTop: 1 }}>{item.name}</p>
         </div>
         {!isFG && item.change24h !== 0 && (
           <span style={{
@@ -219,10 +258,10 @@ function PriceCard({ item }: { item: MarketItem }) {
         )}
       </div>
       <p style={{
-        fontSize: isMcap ? 16 : 20, fontWeight: 700,
-        fontFamily: 'monospace', color: 'var(--color-text)',
+        fontSize: isMcap ? 15 : 19, fontWeight: 700,
+        fontFamily: 'monospace',
+        color: isFG ? fgColor(fgVal) : 'var(--color-text)',
         margin: 0,
-        ...(isFG ? { color: fgColor(fgVal) } : {}),
       }}>
         {fmtPrice(item.price, item.currency, isMcap)}
       </p>
@@ -234,7 +273,7 @@ function PriceCard({ item }: { item: MarketItem }) {
 export function MarketsPage() {
   const [state, setState] = useState<MarketState>(loadCache);
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [partialErrors, setPartialErrors] = useState<string[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -248,50 +287,43 @@ export function MarketsPage() {
   const refresh = useCallback(async () => {
     if (!online) return;
     setLoading(true);
-    setErrors([]);
+    setPartialErrors([]);
 
-    const newErrors: string[] = [];
+    const errors: string[] = [];
     const newItems: Record<string, MarketItem> = {};
 
-    // 1. CoinGecko
-    try {
-      const cgItems = await fetchCoinGecko();
-      Object.assign(newItems, cgItems);
-    } catch { newErrors.push('CoinGecko'); }
+    // Fetch all 3 sources in parallel
+    const [cgResult, fgResult, yfResult] = await Promise.allSettled([
+      fetchCoinGecko(),
+      fetchFearGreed(),
+      fetchYahooFinance(),
+    ]);
 
-    // 2. Fear & Greed
-    try {
-      const fg = await fetchFearGreed();
-      if (fg) newItems['FNG'] = fg;
-    } catch { newErrors.push('Fear&Greed'); }
+    if (cgResult.status === 'fulfilled') Object.assign(newItems, cgResult.value);
+    else errors.push('CoinGecko');
 
-    // 3. Yahoo Finance
-    try {
-      const yfItems = await fetchYahooFinance();
-      Object.assign(newItems, yfItems);
-    } catch { newErrors.push('Stocks'); }
+    if (fgResult.status === 'fulfilled' && fgResult.value) newItems['FNG'] = fgResult.value;
+    else errors.push('Fear & Greed');
 
-    if (Object.keys(newItems).length === 0 && state.items && Object.keys(state.items).length > 0) {
-      // All failed — keep cache, show error
-      newErrors.push('Semua sumber gagal, menampilkan cache terakhir.');
-    }
+    if (yfResult.status === 'fulfilled') Object.assign(newItems, yfResult.value);
+    else errors.push('Yahoo Finance');
 
+    const hasData = Object.keys(newItems).length > 0;
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+
     const next: MarketState = {
-      items: Object.keys(newItems).length > 0 ? newItems : state.items,
-      lastUpdate: now,
+      items: hasData ? newItems : state.items,
+      lastUpdate: hasData ? now : state.lastUpdate,
     };
     setState(next);
     saveCache(next);
-    if (newErrors.length) setErrors(newErrors);
+    if (errors.length) setPartialErrors(errors);
     setLoading(false);
-  }, [online, state.items]);
+  }, [online, state.items, state.lastUpdate]);
 
-  // Auto-fetch on mount if cache is empty or stale
+  // Auto-fetch on mount if no cache
   useEffect(() => {
-    if (!state.lastUpdate || Object.keys(state.items).length === 0) {
-      refresh();
-    }
+    if (Object.keys(state.items).length === 0) refresh();
   }, []); // eslint-disable-line
 
   const grouped = GROUP_ORDER.map(g => ({
@@ -305,17 +337,25 @@ export function MarketsPage() {
     return acc;
   }, {});
 
+  const hasData = Object.keys(state.items).length > 0;
+
   return (
     <div className="space-y-6">
+
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h2 className="font-heading text-lg" style={{ color: 'var(--color-text)' }}>Market Prices</h2>
           <p style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
             {online
-              ? <><Wifi size={11} color="#22c55e" /> Live data</>
-              : <><WifiOff size={11} color="#ef4444" /> Offline</>}
-            {state.lastUpdate && ` · Updated ${state.lastUpdate}`}
+              ? <><Wifi size={11} color="#22c55e" /> Live</>
+              : <><WifiOff size={11} color="#ef4444" /> Offline — showing cache</>}
+            {state.lastUpdate && ` · ${state.lastUpdate}`}
+            {!loading && hasData && (
+              <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.6 }}>
+                · CoinGecko · Yahoo Finance · Alternative.me
+              </span>
+            )}
           </p>
         </div>
         <button
@@ -328,6 +368,7 @@ export function MarketsPage() {
             fontSize: 13, fontWeight: 600,
             cursor: loading || !online ? 'not-allowed' : 'pointer',
             opacity: loading || !online ? 0.6 : 1,
+            transition: 'opacity .15s',
           }}
         >
           <RefreshCw size={13} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
@@ -335,33 +376,32 @@ export function MarketsPage() {
         </button>
       </div>
 
-      {/* Errors (non-blocking) */}
-      {errors.length > 0 && !loading && (
+      {/* Partial errors — non-blocking warning */}
+      {partialErrors.length > 0 && !loading && (
         <div style={{
           fontSize: 12, color: '#f59e0b',
-          background: '#f59e0b10', padding: '8px 12px',
+          background: '#f59e0b0d', padding: '8px 12px',
           borderRadius: 8, border: '1px solid #f59e0b20',
         }}>
-          ⚠️ Partial data: {errors.join(', ')} gagal. Data lain tetap ditampilkan.
+          ⚠️ {partialErrors.join(', ')} gagal fetch. Data lain tetap ditampilkan.
         </div>
       )}
 
       {/* Loading skeleton */}
-      {loading && Object.keys(state.items).length === 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
-          {[...Array(8)].map((_, i) => (
+      {loading && !hasData && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 10 }}>
+          {[...Array(10)].map((_, i) => (
             <div key={i} style={{
-              height: 90, borderRadius: 12,
+              height: 88, borderRadius: 12,
               background: 'var(--color-card)', border: '1px solid var(--color-border)',
               animation: 'pulse 1.5s ease-in-out infinite',
-              opacity: 0.6,
             }} />
           ))}
         </div>
       )}
 
       {/* Empty state */}
-      {!loading && Object.keys(state.items).length === 0 && (
+      {!loading && !hasData && (
         <div style={{
           textAlign: 'center', padding: '80px 20px',
           background: 'var(--color-card)', borderRadius: 12,
@@ -370,7 +410,7 @@ export function MarketsPage() {
           <Activity size={36} color="var(--color-muted)" style={{ display: 'block', margin: '0 auto 12px' }} />
           <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>Klik Refresh untuk load harga live</p>
           <p style={{ color: 'var(--color-muted)', fontSize: 12, marginTop: 4 }}>
-            Sumber: CoinGecko · Yahoo Finance · Alternative.me
+            CoinGecko · Yahoo Finance · Alternative.me — semua gratis
           </p>
         </div>
       )}
@@ -385,7 +425,7 @@ export function MarketsPage() {
           }}>
             {GROUP_TITLE[group]}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 10 }}>
             {items.map(item => <PriceCard key={item.symbol} item={item} />)}
           </div>
         </div>
@@ -403,7 +443,7 @@ export function MarketsPage() {
           }}>
             {GROUP_LABELS[group]}
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 8 }}>
             {links.map(link => (
               <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
                 style={{
@@ -413,6 +453,8 @@ export function MarketsPage() {
                   background: 'var(--color-surface)',
                   textDecoration: 'none', transition: 'border-color .15s',
                 }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
               >
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 4 }}>
                   {link.label} <ExternalLink size={9} color="var(--color-muted)" />
@@ -426,7 +468,7 @@ export function MarketsPage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.3; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.25; } }
       `}</style>
     </div>
   );
