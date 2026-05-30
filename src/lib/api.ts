@@ -1,6 +1,6 @@
-// ─── ZERO COMMAND — api.ts ────────────────────────────────────────────────────
-// Menggunakan Groq API (GRATIS, limit jauh lebih besar dari Gemini)
-// Set VITE_GEMINI_KEY di Cloudflare Environment Variables (nama sama, isi Groq key)
+// ─── ZERØ COMMAND — api.ts v2.0 ───────────────────────────────────────────────
+// Groq API · llama-3.3-70b-versatile (flagship free tier)
+// VITE_GEMINI_KEY = Groq key (nama var tetap sama biar ga perlu ubah Cloudflare)
 
 const API_KEY_STORAGE = 'zero-gemini-key';
 
@@ -42,29 +42,46 @@ export async function callClaude(
   }
   messages.push({ role: 'user', content: prompt });
 
-  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: 'llama-3.1-8b-instant',
-      messages,
-      max_tokens: maxTokens,
-      temperature: 0.7,
-    }),
-  });
+  // Primary: llama-3.3-70b-versatile (best quality on free tier)
+  // Fallback: llama-3.1-8b-instant (high rate limit if 70B quota hit)
+  const models = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'];
 
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error((err as any)?.error?.message || `HTTP ${res.status}`);
+  for (const model of models) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${key}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          max_tokens: maxTokens,
+          temperature: 0.7,
+        }),
+      });
+
+      if (res.status === 429 && model !== models[models.length - 1]) {
+        // Rate limited — try fallback model
+        continue;
+      }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any)?.error?.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || '';
+      return text.trim() || 'No response received.';
+    } catch (e) {
+      if (model === models[models.length - 1]) throw e;
+      // Try next model
+    }
   }
 
-  const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content || '';
-
-  return text.trim() || 'No response received.';
+  throw new Error('All models failed');
 }
 
 export function formatTimestamp(date = new Date()): string {
