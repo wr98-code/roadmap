@@ -131,16 +131,18 @@ const GROUP_LABELS: Record<string, string> = {
 };
 
 function StatusBadge({ status, label }: { status: Project["status"]; label: string }) {
-  const styles: Record<string, { bg: string; color: string }> = {
-    live:    { bg: "#f0fdf4", color: "#15803d" },
-    pending: { bg: "#fff7ed", color: "#c2410c" },
-    wip:     { bg: "#f5f3ff", color: "#6d28d9" },
+  const styles: Record<string, { color: string }> = {
+    live:    { color: "#22c55e" },
+    pending: { color: "#f97316" },
+    wip:     { color: "#8b5cf6" },
   };
   const s = styles[status];
   return (
     <span style={{
       fontSize: 11, fontWeight: 500, fontFamily: "var(--font-sans)",
-      background: s.bg, color: s.color,
+      background: s.color + "18",
+      border: `1px solid ${s.color}35`,
+      color: s.color,
       padding: "2px 10px", borderRadius: 20, whiteSpace: "nowrap",
     }}>
       {label}
@@ -232,7 +234,7 @@ function ProjectCard({ p }: { p: Project }) {
             display: "flex", alignItems: "center", gap: 5,
             fontSize: 11, fontFamily: "var(--font-sans)", fontWeight: 600,
             color: "#d97706",
-            background: "#fffbeb", border: "1px solid #fde68a",
+            background: "#d9770615", border: "1px solid #d9770630",
             padding: "3px 10px", borderRadius: 6,
           }}>
             <DollarSign size={10} />
