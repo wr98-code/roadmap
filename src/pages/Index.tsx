@@ -10,7 +10,6 @@ import {
   GraduationCap, FolderGit2, Lightbulb, Cloud, Loader2,
   Settings, LayoutDashboard, Wallet, LineChart, History, Rss,
 } from "lucide-react";
-import { ThemePicker } from "@/components/ThemePicker";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { PWAInstall } from "@/components/PWAInstall";
 import { DashboardPage } from "./DashboardPage";
@@ -219,7 +218,7 @@ function LiveIntelPanel({ active, onNavigate }: { active: string; onNavigate: (k
 // ── Main Component ──────────────────────────────────────────────────────────
 const Index = () => {
   const { data, update, saved, syncing } = useAppData();
-  const { vibe } = useTheme();
+  const { vibe, cycleVibe } = useTheme();
   const [active, setActive] = useState("dashboard");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [railTooltip, setRailTooltip] = useState<string | null>(null);
@@ -289,7 +288,7 @@ const Index = () => {
           boxShadow: "0 0 16px rgba(59,130,246,0.18)",
           cursor: "pointer",
         }} onClick={() => navigate("dashboard")}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "#60a5fa", letterSpacing: "-0.02em" }}>Z∅</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: "hsl(var(--primary))", letterSpacing: "-0.02em" }}>Z∅</span>
         </div>
 
         {/* Nav icons */}
@@ -327,9 +326,17 @@ const Index = () => {
           })}
         </div>
 
-        {/* Bottom: avatar + settings */}
+        {/* Bottom: vibe + avatar */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "0 8px", width: "100%" }}>
-          <ThemePicker />
+          <button onClick={cycleVibe} title={`Theme: ${vibeInfo.label}`} style={{
+            width: 36, height: 36, borderRadius: 9, background: "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.08)", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 16, transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.12)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"; }}
+          >{vibeInfo.emoji}</button>
           <div style={{
             width: 32, height: 32, borderRadius: "50%",
             background: "linear-gradient(135deg, #3b82f6, #6366f1)",
@@ -347,9 +354,9 @@ const Index = () => {
           position: "sticky", top: 12, zIndex: 30,
           margin: "12px 16px 0",
           height: 56, borderRadius: 14,
-          background: "rgba(10,10,24,0.85)", backdropFilter: "blur(24px)",
-          border: "1px solid rgba(255,255,255,0.07)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.05) inset",
+          background: "var(--glass-bg)", backdropFilter: "var(--glass-blur)",
+          border: "1px solid var(--glass-border)",
+          boxShadow: "var(--card-shadow), var(--card-inset)",
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "0 20px",
         }}>
@@ -358,13 +365,13 @@ const Index = () => {
             <button onClick={() => setMobileOpen(true)} style={{ display: "none", background: "transparent", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 4 }} className="mobile-menu-btn">
               <Menu size={16} />
             </button>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "rgba(255,255,255,0.2)", letterSpacing: "0.08em" }}>ZERØ</span>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted)", letterSpacing: "0.08em" }}>ZERØ</span>
             <span style={{ color: "rgba(255,255,255,0.15)", fontSize: 12 }}>/</span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.75)", letterSpacing: "-0.01em" }}>{TITLES[active]}</span>
+            <span style={{ fontFamily: "var(--font-sans)", fontSize: 13, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>{TITLES[active]}</span>
           </div>
 
           {/* Center: live clock */}
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.55)", letterSpacing: "0.05em" }}>
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, fontWeight: 600, color: "var(--color-muted)", letterSpacing: "0.05em" }}>
             {clockStr}
           </div>
 
@@ -384,8 +391,8 @@ const Index = () => {
               <button onClick={addNote} style={{
                 display: "flex", alignItems: "center", gap: 6, padding: "5px 14px",
                 borderRadius: 8, background: "rgba(59,130,246,0.15)",
-                border: "1px solid rgba(59,130,246,0.3)", cursor: "pointer",
-                fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 500, color: "#60a5fa",
+                border: "1px solid hsl(var(--primary) / 0.35)", cursor: "pointer",
+                fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 500, color: "hsl(var(--primary))",
                 transition: "all 0.15s",
               }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(59,130,246,0.25)"; }}
@@ -396,7 +403,7 @@ const Index = () => {
             )}
             {/* Windu avatar */}
             <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "rgba(255,255,255,0.4)" }}>Windu</span>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-muted)" }}>Windu</span>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg, #3b82f6, #6366f1)", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "#fff", border: "1px solid rgba(255,255,255,0.12)" }}>W</div>
             </div>
           </div>
