@@ -56,6 +56,8 @@
     --color-card: rgba(255,255,255,0.82);
     --color-primary: #c9820a;
     --color-sidebar-bg: #080c18;
+    --color-bg: #f7f4ef;
+    --color-surface: rgba(0,0,0,0.04);
     --bg-base: #f7f4ef;
     --card-shadow: 0 1px 1px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.05);
     --card-shadow-hover: 0 6px 28px rgba(0,0,0,0.09), 0 1px 4px rgba(0,0,0,0.04);
@@ -134,6 +136,8 @@
     --color-card: rgba(255,255,255,0.82);
     --color-primary: #1d5fd6;
     --color-sidebar-bg: #050818;
+    --color-bg: #f0f4f9;
+    --color-surface: rgba(0,0,0,0.03);
     --bg-base: #f0f4f9;
     --card-shadow: 0 1px 1px rgba(0,0,0,0.03), 0 2px 8px rgba(0,0,0,0.04);
     --card-shadow-hover: 0 6px 28px rgba(30,80,200,0.1), 0 1px 4px rgba(0,0,0,0.04);
@@ -214,6 +218,8 @@
     --color-card: rgba(8,12,32,0.7);
     --color-primary: #c9a84c;
     --color-sidebar-bg: #03050f;
+    --color-bg: #050818;
+    --color-surface: rgba(255,255,255,0.05);
     --bg-base: #050818;
     --card-shadow: 0 1px 1px rgba(0,0,0,0.35), 0 4px 20px rgba(0,0,0,0.28);
     --card-shadow-hover: 0 10px 48px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.3);
