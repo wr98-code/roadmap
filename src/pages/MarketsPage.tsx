@@ -1,7 +1,7 @@
 // ─── ZERØ COMMAND — MarketsPage.tsx ──────────────────────────────────────────
 // Live market data: CoinGecko (crypto) + Yahoo Finance (stocks/macro) + Fear & Greed
 // No API keys needed. All free public APIs.
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, Activity, Wifi, WifiOff } from 'lucide-react';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -270,11 +270,14 @@ function PriceCard({ item }: { item: MarketItem }) {
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
+const AUTO_REFRESH_SEC = 3 * 60; // 3 minutes
+
 export function MarketsPage() {
   const [state, setState] = useState<MarketState>(loadCache);
   const [loading, setLoading] = useState(false);
   const [partialErrors, setPartialErrors] = useState<string[]>([]);
   const [online, setOnline] = useState(navigator.onLine);
+  const [countdown, setCountdown] = useState(AUTO_REFRESH_SEC);
 
   useEffect(() => {
     const on = () => setOnline(true);
@@ -321,10 +324,29 @@ export function MarketsPage() {
     setLoading(false);
   }, [online, state.items, state.lastUpdate]);
 
-  // Auto-fetch on mount if no cache
+  const refreshRef = useRef(refresh);
+  useEffect(() => { refreshRef.current = refresh; }, [refresh]);
+
+  // Auto-refresh every 3 minutes
   useEffect(() => {
-    if (Object.keys(state.items).length === 0) refresh();
+    refreshRef.current(); // load on mount always
+    setCountdown(AUTO_REFRESH_SEC);
+    const intervalId = setInterval(() => {
+      refreshRef.current();
+      setCountdown(AUTO_REFRESH_SEC);
+    }, AUTO_REFRESH_SEC * 1000);
+    return () => clearInterval(intervalId);
   }, []); // eslint-disable-line
+
+  // Countdown ticker (1s)
+  useEffect(() => {
+    const tickId = setInterval(() => {
+      setCountdown(c => c <= 1 ? AUTO_REFRESH_SEC : c - 1);
+    }, 1000);
+    return () => clearInterval(tickId);
+  }, []);
+
+  // Auto-fetch on mount is handled by the auto-refresh interval above
 
   const grouped = GROUP_ORDER.map(g => ({
     group: g,
@@ -354,6 +376,7 @@ export function MarketsPage() {
             {!loading && hasData && (
               <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.6 }}>
                 · CoinGecko · Yahoo Finance · Alternative.me
+                · auto-refresh in {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
               </span>
             )}
           </p>
