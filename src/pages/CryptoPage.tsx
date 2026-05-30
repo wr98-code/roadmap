@@ -1,6 +1,6 @@
 // ─── ZERØ COMMAND — CryptoPage.tsx ───────────────────────────────────────────
 // On-chain metrics, live portfolio tracker (CoinGecko), NUPL reference, F&G
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppData } from "@/lib/store";
 import { SectionCard } from "@/components/SectionCard";
 import { EditableText } from "@/components/EditableText";
@@ -118,22 +118,38 @@ export function CryptoPage({ data, update }: Props) {
   const [fg, setFg] = useState<FGData | null>(null);
   const [fgLoading, setFgLoading] = useState(false);
 
-  // Fetch top prices on mount for ticker
+  // ── Auto-refresh refs (stale-closure safe)
+  const topRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fgRefreshRef  = useRef<ReturnType<typeof setInterval> | null>(null);
+  const TOP_INTERVAL_MS = 5 * 60 * 1000;  // 5 minutes
+  const FG_INTERVAL_MS  = 5 * 60 * 1000;  // 5 minutes
+
+  // Fetch top prices — on mount + every 5 min
   useEffect(() => {
-    setTopLoading(true);
-    fetchCGPrices(TOP_IDS.split(","))
-      .then(p => setTopPrices(p))
-      .catch(() => {})
-      .finally(() => setTopLoading(false));
+    const doFetch = () => {
+      setTopLoading(true);
+      fetchCGPrices(TOP_IDS.split(","))
+        .then(p => setTopPrices(p))
+        .catch(() => {})
+        .finally(() => setTopLoading(false));
+    };
+    doFetch();
+    topRefreshRef.current = setInterval(doFetch, TOP_INTERVAL_MS);
+    return () => { if (topRefreshRef.current) clearInterval(topRefreshRef.current); };
   }, []);
 
-  // Fetch Fear & Greed on mount
+  // Fetch Fear & Greed — on mount + every 5 min
   useEffect(() => {
-    setFgLoading(true);
-    fetchFearGreed()
-      .then(d => setFg(d))
-      .catch(() => {})
-      .finally(() => setFgLoading(false));
+    const doFetch = () => {
+      setFgLoading(true);
+      fetchFearGreed()
+        .then(d => setFg(d))
+        .catch(() => {})
+        .finally(() => setFgLoading(false));
+    };
+    doFetch();
+    fgRefreshRef.current = setInterval(doFetch, FG_INTERVAL_MS);
+    return () => { if (fgRefreshRef.current) clearInterval(fgRefreshRef.current); };
   }, []);
 
   const updatePortfolio = (p: Holding[]) => { setPortfolio(p); savePort(p); };
