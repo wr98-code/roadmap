@@ -40,33 +40,33 @@ function EntryCard({
 
   return (
     <div style={{
-      background: 'white', borderRadius: 10, border: '1px solid #e5e7eb',
+      background: 'var(--color-card)', borderRadius: 10, border: '1px solid var(--color-border)',
       overflow: 'hidden',
     }}>
       <div style={{
-        padding: '10px 16px', borderBottom: '1px solid #f3f4f6',
+        padding: '10px 16px', borderBottom: '1px solid var(--color-border)',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <span style={{ fontSize: 16 }}>{entry.mood}</span>
         <span style={{
-          fontSize: 11, background: '#f3f4f6', color: '#6b7280',
-          padding: '2px 8px', borderRadius: 4,
+          fontSize: 11, background: 'var(--color-surface)', color: 'var(--color-muted)',
+          padding: '2px 8px', borderRadius: 4, border: '1px solid var(--color-border)',
         }}>
           {entry.tag}
         </span>
-        <span style={{ fontSize: 11, fontFamily: 'monospace', color: '#9ca3af', marginLeft: 'auto' }}>
+        <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--color-muted)', marginLeft: 'auto' }}>
           {entry.date} · {entry.time}
         </span>
         <button
           onClick={() => onDelete(entry.id)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d1d5db', padding: 2 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted)', padding: 2, opacity: 0.5 }}
         >
           <Trash2 size={12} />
         </button>
       </div>
       <div style={{ padding: '14px 16px' }}>
         <div style={{
-          fontSize: 14, color: '#1f2937', lineHeight: 1.85,
+          fontSize: 14, color: 'var(--color-text)', lineHeight: 1.85,
           whiteSpace: 'pre-wrap',
         }}>
           {expanded ? entry.content : preview}
@@ -77,7 +77,7 @@ function EntryCard({
             onClick={() => setExpanded(!expanded)}
             style={{
               marginTop: 8, background: 'none', border: 'none',
-              cursor: 'pointer', fontSize: 12, color: '#2563eb',
+              cursor: 'pointer', fontSize: 12, color: 'var(--color-primary)',
               fontWeight: 600, padding: 0,
             }}
           >
@@ -166,9 +166,9 @@ export function JournalPage() {
             onClick={downloadAll}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
-              border: '1px solid #e5e7eb', background: 'white',
+              border: '1px solid var(--color-border)', background: 'var(--color-card)',
               borderRadius: 7, padding: '7px 14px', fontSize: 12,
-              color: '#374151', cursor: 'pointer',
+              color: 'var(--color-text)', cursor: 'pointer',
             }}
           >
             <Download size={12} /> Download All ({entries.length})
@@ -178,23 +178,23 @@ export function JournalPage() {
 
       {/* Write box */}
       <div style={{
-        background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
+        background: 'var(--color-card)', borderRadius: 12, border: '1px solid var(--color-border)',
         overflow: 'hidden',
       }}>
         {/* Mood + Tag selector */}
         <div style={{
-          padding: '12px 16px', borderBottom: '1px solid #f3f4f6',
+          padding: '12px 16px', borderBottom: '1px solid var(--color-border)',
           display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
         }}>
-          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600 }}>MOOD:</span>
+          <span style={{ fontSize: 11, color: 'var(--color-muted)', fontWeight: 600 }}>MOOD:</span>
           {MOODS.map(m => (
             <button
               key={m.emoji}
               onClick={() => setMood(m.emoji)}
               title={m.label}
               style={{
-                background: mood === m.emoji ? '#f0fdf4' : 'transparent',
-                border: mood === m.emoji ? '1.5px solid #86efac' : '1.5px solid transparent',
+                background: mood === m.emoji ? 'rgba(134,239,172,0.15)' : 'transparent',
+                border: mood === m.emoji ? '1.5px solid #86efac' : '1.5px solid var(--color-border)',
                 borderRadius: 6, padding: '3px 8px', fontSize: 16,
                 cursor: 'pointer', transition: 'all .1s',
               }}
@@ -202,13 +202,13 @@ export function JournalPage() {
               {m.emoji}
             </button>
           ))}
-          <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 600, marginLeft: 8 }}>TAG:</span>
+          <span style={{ fontSize: 11, color: 'var(--color-muted)', fontWeight: 600, marginLeft: 8 }}>TAG:</span>
           <select
             value={tag}
             onChange={e => setTag(e.target.value)}
             style={{
-              border: '1px solid #e5e7eb', borderRadius: 6, padding: '4px 8px',
-              fontSize: 12, color: '#374151', background: 'white', outline: 'none',
+              border: '1px solid var(--color-border)', borderRadius: 6, padding: '4px 8px',
+              fontSize: 12, color: 'var(--color-text)', background: 'var(--color-card)', outline: 'none',
             }}
           >
             {TAGS.map(t => <option key={t}>{t}</option>)}
@@ -226,7 +226,7 @@ export function JournalPage() {
           }}
           style={{
             width: '100%', minHeight: 120, border: 'none', outline: 'none',
-            resize: 'vertical', fontSize: 14, color: '#1f2937', lineHeight: 1.8,
+            resize: 'vertical', fontSize: 14, color: 'var(--color-text)', lineHeight: 1.8,
             padding: '14px 16px', fontFamily: "'DM Sans', sans-serif",
             background: 'transparent',
           }}
@@ -234,10 +234,10 @@ export function JournalPage() {
 
         {/* Footer */}
         <div style={{
-          padding: '10px 16px', borderTop: '1px solid #f3f4f6',
+          padding: '10px 16px', borderTop: '1px solid var(--color-border)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         }}>
-          <span style={{ fontSize: 11, color: '#9ca3af' }}>
+          <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>
             Ctrl+Enter to save · {text.length} chars
           </span>
           <button
@@ -245,8 +245,8 @@ export function JournalPage() {
             disabled={!text.trim()}
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
-              background: text.trim() ? '#2563eb' : '#e5e7eb',
-              color: text.trim() ? 'white' : '#9ca3af',
+              background: text.trim() ? '#2563eb' : 'var(--color-surface)',
+              color: text.trim() ? 'white' : 'var(--color-muted)',
               border: 'none', borderRadius: 7, padding: '7px 16px',
               fontSize: 13, fontWeight: 600, cursor: text.trim() ? 'pointer' : 'not-allowed',
               transition: 'all .15s',
@@ -261,11 +261,11 @@ export function JournalPage() {
       {entries.length === 0 ? (
         <div style={{
           textAlign: 'center', padding: '60px 20px',
-          background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
+          background: 'var(--color-card)', borderRadius: 12, border: '1px solid var(--color-border)',
         }}>
-          <BookOpen size={36} color="#d1d5db" style={{ display: 'block', margin: '0 auto 12px' }} />
-          <p style={{ color: '#9ca3af', fontSize: 14 }}>Journal masih kosong</p>
-          <p style={{ color: '#d1d5db', fontSize: 12, marginTop: 4 }}>Tulis sesuatu di atas!</p>
+          <BookOpen size={36} color="var(--color-muted)" style={{ display: 'block', margin: '0 auto 12px' }} />
+          <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>Journal masih kosong</p>
+          <p style={{ color: 'var(--color-muted)', fontSize: 12, marginTop: 4, opacity: 0.6 }}>Tulis sesuatu di atas!</p>
         </div>
       ) : (
         Object.entries(grouped).map(([dateKey, dayEntries]) => {
@@ -273,13 +273,13 @@ export function JournalPage() {
           return (
             <div key={dateKey}>
               <div style={{
-                fontSize: 11, fontWeight: 700, color: '#9ca3af', fontFamily: 'monospace',
+                fontSize: 11, fontWeight: 700, color: 'var(--color-muted)', fontFamily: 'monospace',
                 letterSpacing: 1, marginBottom: 8, textTransform: 'uppercase',
                 display: 'flex', alignItems: 'center', gap: 8,
               }}>
-                <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
                 {firstEntry.date}
-                <div style={{ flex: 1, height: 1, background: '#e5e7eb' }} />
+                <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {dayEntries.map(entry => (
