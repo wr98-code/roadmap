@@ -65,6 +65,36 @@
     --glass-blur: blur(20px) saturate(190%);
     --dot-color: rgba(15,17,23,0.042);
     --dot-size: 24px;
+    /* ── Rail & Panel theme vars ── */
+    --rail-bg: rgba(16,10,3,0.96);
+    --rail-border: rgba(201,130,10,0.14);
+    --rail-icon: rgba(201,155,65,0.42);
+    --rail-icon-active: #d4920c;
+    --rail-active-bg: rgba(201,130,10,0.14);
+    --rail-active-border: rgba(201,130,10,0.30);
+    --rail-btn-bg: rgba(255,255,255,0.03);
+    --rail-btn-border: rgba(201,130,10,0.12);
+    --rail-btn-hover: rgba(201,130,10,0.10);
+    --panel-bg: rgba(16,10,3,0.94);
+    --panel-border: rgba(201,130,10,0.10);
+    --panel-divider: rgba(201,130,10,0.08);
+    --panel-text: #f5e8c4;
+    --panel-muted: rgba(225,190,110,0.70);
+    --panel-dim: rgba(200,165,80,0.38);
+    --panel-icon: rgba(200,155,65,0.38);
+    --panel-track: rgba(201,130,10,0.12);
+    --tooltip-bg: rgba(18,12,4,0.97);
+    --tooltip-border: rgba(201,130,10,0.22);
+    --tooltip-text: rgba(248,225,160,0.92);
+    --header-btn-bg: rgba(0,0,0,0.05);
+    --header-btn-border: rgba(0,0,0,0.09);
+    --header-icon: rgba(15,17,23,0.28);
+    --header-separator: rgba(15,17,23,0.14);
+    --logo-bg: rgba(201,130,10,0.18);
+    --logo-border: rgba(201,130,10,0.28);
+    --logo-glow: 0 0 18px rgba(201,130,10,0.22);
+    --logo-glow-hover: 0 0 28px rgba(201,130,10,0.40);
+    --logo-text: #d4920c;
   }
 
   /* ══════════════════════════════════════════
@@ -113,6 +143,36 @@
     --glass-blur: blur(20px) saturate(190%);
     --dot-color: rgba(11,19,34,0.038);
     --dot-size: 24px;
+    /* ── Rail & Panel theme vars ── */
+    --rail-bg: rgba(4,8,22,0.96);
+    --rail-border: rgba(59,130,246,0.12);
+    --rail-icon: rgba(100,148,230,0.40);
+    --rail-icon-active: #60a5fa;
+    --rail-active-bg: rgba(59,130,246,0.14);
+    --rail-active-border: rgba(59,130,246,0.30);
+    --rail-btn-bg: rgba(255,255,255,0.03);
+    --rail-btn-border: rgba(59,130,246,0.10);
+    --rail-btn-hover: rgba(59,130,246,0.10);
+    --panel-bg: rgba(4,8,22,0.94);
+    --panel-border: rgba(59,130,246,0.08);
+    --panel-divider: rgba(59,130,246,0.07);
+    --panel-text: #e8f0ff;
+    --panel-muted: rgba(140,175,240,0.72);
+    --panel-dim: rgba(120,155,225,0.38);
+    --panel-icon: rgba(110,148,225,0.38);
+    --panel-track: rgba(59,130,246,0.10);
+    --tooltip-bg: rgba(5,8,24,0.97);
+    --tooltip-border: rgba(59,130,246,0.20);
+    --tooltip-text: rgba(210,225,255,0.92);
+    --header-btn-bg: rgba(0,0,0,0.04);
+    --header-btn-border: rgba(0,0,0,0.08);
+    --header-icon: rgba(11,19,34,0.28);
+    --header-separator: rgba(11,19,34,0.12);
+    --logo-bg: rgba(59,130,246,0.18);
+    --logo-border: rgba(59,130,246,0.28);
+    --logo-glow: 0 0 18px rgba(59,130,246,0.22);
+    --logo-glow-hover: 0 0 28px rgba(59,130,246,0.42);
+    --logo-text: #60a5fa;
   }
 
   /* ══════════════════════════════════════════
@@ -163,6 +223,36 @@
     --glass-blur: blur(28px) saturate(150%);
     --dot-color: rgba(200,207,224,0.032);
     --dot-size: 26px;
+    /* ── Rail & Panel theme vars ── */
+    --rail-bg: rgba(5,5,16,0.96);
+    --rail-border: rgba(255,255,255,0.04);
+    --rail-icon: rgba(255,255,255,0.28);
+    --rail-icon-active: #60a5fa;
+    --rail-active-bg: rgba(59,130,246,0.16);
+    --rail-active-border: rgba(59,130,246,0.30);
+    --rail-btn-bg: rgba(255,255,255,0.04);
+    --rail-btn-border: rgba(255,255,255,0.07);
+    --rail-btn-hover: rgba(59,130,246,0.12);
+    --panel-bg: rgba(7,7,20,0.93);
+    --panel-border: rgba(255,255,255,0.045);
+    --panel-divider: rgba(255,255,255,0.05);
+    --panel-text: #f1f5f9;
+    --panel-muted: rgba(255,255,255,0.50);
+    --panel-dim: rgba(255,255,255,0.20);
+    --panel-icon: rgba(255,255,255,0.28);
+    --panel-track: rgba(255,255,255,0.07);
+    --tooltip-bg: rgba(8,8,22,0.97);
+    --tooltip-border: rgba(255,255,255,0.10);
+    --tooltip-text: rgba(255,255,255,0.82);
+    --header-btn-bg: rgba(255,255,255,0.04);
+    --header-btn-border: rgba(255,255,255,0.07);
+    --header-icon: rgba(255,255,255,0.25);
+    --header-separator: rgba(255,255,255,0.15);
+    --logo-bg: rgba(59,130,246,0.28);
+    --logo-border: rgba(59,130,246,0.32);
+    --logo-glow: 0 0 18px rgba(59,130,246,0.20);
+    --logo-glow-hover: 0 0 28px rgba(59,130,246,0.40);
+    --logo-text: #60a5fa;
   }
 
   .light-mode {}
