@@ -171,23 +171,29 @@ function BtcCard({ onNavigate }: { onNavigate: (k: string) => void }) {
   const displayPrice = useCountUp(price ?? 0, 1500);
 
   useEffect(() => {
-    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true")
-      .then(r => r.json()).then(d => {
-        setPrice(d?.bitcoin?.usd ?? 0);
-        setChange(d?.bitcoin?.usd_24h_change ?? 0);
-      }).catch(() => {});
+    const loadBtc = () => {
+      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true")
+        .then(r => r.json()).then(d => {
+          setPrice(d?.bitcoin?.usd ?? 0);
+          setChange(d?.bitcoin?.usd_24h_change ?? 0);
+        }).catch(() => {});
 
-    fetch("https://api.alternative.me/fng/?limit=1")
-      .then(r => r.json()).then(d => {
-        setFg({ value: parseInt(d?.data?.[0]?.value || "50"), label: d?.data?.[0]?.value_classification || "Neutral" });
-      }).catch(() => {});
+      fetch("https://api.alternative.me/fng/?limit=1")
+        .then(r => r.json()).then(d => {
+          setFg({ value: parseInt(d?.data?.[0]?.value || "50"), label: d?.data?.[0]?.value_classification || "Neutral" });
+        }).catch(() => {});
 
-    // 7-day BTC sparkline
-    fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily")
-      .then(r => r.json()).then(d => {
-        const pts = (d?.prices ?? []).map((p: number[]) => p[1]);
-        if (pts.length) setHistory(pts);
-      }).catch(() => {});
+      // 7-day BTC sparkline
+      fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily")
+        .then(r => r.json()).then(d => {
+          const pts = (d?.prices ?? []).map((p: number[]) => p[1]);
+          if (pts.length) setHistory(pts);
+        }).catch(() => {});
+    };
+
+    loadBtc();
+    const id = setInterval(loadBtc, 5 * 60 * 1000); // auto-refresh every 5 min
+    return () => clearInterval(id);
   }, []);
 
   const up = change >= 0;
@@ -388,20 +394,26 @@ function SignalCard() {
   const [signal, setSignal] = useState<{ text: string; color: string; sub: string; icon: string } | null>(null);
 
   useEffect(() => {
-    Promise.all([
-      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true").then(r => r.json()),
-      fetch("https://api.alternative.me/fng/?limit=1").then(r => r.json()),
-    ]).then(([btcD, fgD]) => {
-      const c = btcD?.bitcoin?.usd_24h_change ?? 0;
-      const fgVal = parseInt(fgD?.data?.[0]?.value || "50");
-      let text = "HOLD"; let color = "#94a3b8"; let sub = "Market neutral"; let icon = "⚖️";
-      if (c > 4 && fgVal > 65)       { text = "ACCUMULATE"; color = "#10b981"; sub = "Strong bullish + greed signal";  icon = "🟢"; }
-      else if (c > 2 && fgVal > 50)  { text = "WATCH";      color = "#3b82f6"; sub = "Uptrend — monitor for entry";    icon = "👁"; }
-      else if (c < -4 && fgVal < 30) { text = "BUY DIP";    color = "#f59e0b"; sub = "Fear + dip = opportunity";       icon = "💡"; }
-      else if (c < -6)               { text = "DEFENSIVE";  color = "#ef4444"; sub = "High volatility — reduce risk";  icon = "🛡"; }
-      else if (fgVal > 80)           { text = "TAKE PROFIT"; color = "#a78bfa"; sub = "Extreme greed — consider exit"; icon = "💰"; }
-      setSignal({ text, color, sub, icon });
-    }).catch(() => setSignal({ text: "WATCH", color: "#3b82f6", sub: "Data loading", icon: "👁" }));
+    const loadSignal = () => {
+      Promise.all([
+        fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true").then(r => r.json()),
+        fetch("https://api.alternative.me/fng/?limit=1").then(r => r.json()),
+      ]).then(([btcD, fgD]) => {
+        const c = btcD?.bitcoin?.usd_24h_change ?? 0;
+        const fgVal = parseInt(fgD?.data?.[0]?.value || "50");
+        let text = "HOLD"; let color = "#94a3b8"; let sub = "Market neutral"; let icon = "⚖️";
+        if (c > 4 && fgVal > 65)       { text = "ACCUMULATE"; color = "#10b981"; sub = "Strong bullish + greed signal";  icon = "🟢"; }
+        else if (c > 2 && fgVal > 50)  { text = "WATCH";      color = "#3b82f6"; sub = "Uptrend — monitor for entry";    icon = "👁"; }
+        else if (c < -4 && fgVal < 30) { text = "BUY DIP";    color = "#f59e0b"; sub = "Fear + dip = opportunity";       icon = "💡"; }
+        else if (c < -6)               { text = "DEFENSIVE";  color = "#ef4444"; sub = "High volatility — reduce risk";  icon = "🛡"; }
+        else if (fgVal > 80)           { text = "TAKE PROFIT"; color = "#a78bfa"; sub = "Extreme greed — consider exit"; icon = "💰"; }
+        setSignal({ text, color, sub, icon });
+      }).catch(() => setSignal({ text: "WATCH", color: "#3b82f6", sub: "Data loading", icon: "👁" }));
+    };
+
+    loadSignal();
+    const id = setInterval(loadSignal, 5 * 60 * 1000); // auto-refresh every 5 min
+    return () => clearInterval(id);
   }, []);
 
   return (
