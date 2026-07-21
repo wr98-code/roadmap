@@ -4,7 +4,7 @@
 // atau kurs API gratis. Tidak ada angka karangan: field yang datanya belum
 // cukup menampilkan empty state jujur. Tooltip edukasi di tiap istilah.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AppData, AssetEntry, LiabilityEntry } from "@/lib/store";
 import { InfoTip } from "@/components/InfoTip";
 import { NotesList } from "@/components/NotesList";
@@ -49,7 +49,8 @@ function money(n: number | null, hidden: boolean) {
 export function KekayaanPage({ data, update }: Props) {
   const usdIdr = useUsdIdr();
   const [hidden, setHidden] = useState(false);
-  const w = data.wealth ?? { assets: [], liabilities: [], notes: [] };
+  const w = data.wealth ?? { assets: [], liabilities: [], history: [], notes: [] };
+  const history = w.history ?? [];
 
   // ── Compute (all in IDR via live rate; null if a USD entry can't be converted yet) ──
   const calc = useMemo(() => {
@@ -86,7 +87,28 @@ export function KekayaanPage({ data, update }: Props) {
 
   // ── Mutations ──
   const setW = (fn: (prev: typeof w) => typeof w) =>
-    update(d => ({ ...d, wealth: fn(d.wealth ?? { assets: [], liabilities: [], notes: [] }) }));
+    update(d => ({ ...d, wealth: fn(d.wealth ?? { assets: [], liabilities: [], history: [], notes: [] }) }));
+
+  // Auto-snapshot net worth sekali per hari (nilai asli, bukan karangan).
+  // Menunggu sampai FX siap kalau ada entri USD, supaya nilai akurat.
+  const snapped = useRef(false);
+  useEffect(() => {
+    if (snapped.current || !hasAny) return;
+    if (calc.missing && needsRate) return; // tunggu kurs
+    snapped.current = true;
+    const today = new Date().toDateString();
+    const val = Math.round(calc.net);
+    setW(p => {
+      const hist = p.history ?? [];
+      const last = hist[hist.length - 1];
+      if (last && last.date === today) {
+        if (Math.round(last.netWorthIDR) === val) return p;
+        return { ...p, history: [...hist.slice(0, -1), { date: today, netWorthIDR: val }] };
+      }
+      return { ...p, history: [...hist, { date: today, netWorthIDR: val }].slice(-365) };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAny, calc.missing, calc.net, needsRate]);
   const addAsset = () => setW(p => ({ ...p, assets: [...p.assets, { id: uid(), label: "Aset baru", kategori: "Kas", jumlah: "", mataUang: "IDR", likuid: true }] }));
   const updAsset = (id: string, patch: Partial<AssetEntry>) => setW(p => ({ ...p, assets: p.assets.map(a => a.id === id ? { ...a, ...patch } : a) }));
   const delAsset = (id: string) => setW(p => ({ ...p, assets: p.assets.filter(a => a.id !== id) }));
@@ -166,6 +188,32 @@ export function KekayaanPage({ data, update }: Props) {
           tip={<InfoTip term="Runway">Berapa bulan kamu bisa bertahan tanpa income baru = aset likuid ÷ pengeluaran bulanan. Makin panjang makin aman.</InfoTip>}
         />
       </div>
+
+      {/* Net worth trend (muncul setelah >=2 snapshot harian) */}
+      {history.length >= 2 && (() => {
+        const first = history[0].netWorthIDR, last = history[history.length - 1].netWorthIDR;
+        const delta = last - first;
+        const pct = first !== 0 ? (delta / Math.abs(first)) * 100 : 0;
+        const up = delta >= 0;
+        return (
+          <div style={card}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <span style={label}>Tren Net Worth</span>
+                <InfoTip term="Pertumbuhan Kekayaan">Arah net worth dari waktu ke waktu. Yang penting bukan angka satu hari, tapi garisnya naik konsisten. Snapshot direkam otomatis tiap hari kamu buka halaman ini.</InfoTip>
+              </div>
+              <span style={{ ...num, fontSize: 12, fontWeight: 700, color: up ? "var(--gain)" : "var(--loss)", background: up ? "var(--gain-soft)" : "var(--loss-soft)", padding: "3px 9px", borderRadius: 6 }}>
+                {up ? "▲" : "▼"} {hidden ? "••" : `${up ? "+" : "−"}${formatIDR(Math.abs(delta)).replace("Rp ", "Rp ")}`} · {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
+              </span>
+            </div>
+            <AreaChart values={history.map(h => h.netWorthIDR)} up={up} hidden={hidden} />
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8 }}>
+              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10.5, color: "var(--color-muted)" }}>{history.length} snapshot · sejak {history[0].date}</span>
+              <span style={{ ...num, fontSize: 10.5, color: "var(--color-muted)" }}>terkini {money(last, hidden)}</span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Balance sheet + right column */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
@@ -337,5 +385,28 @@ function Empty({ text }: { text: string }) {
     <div style={{ padding: "20px 12px", textAlign: "center", border: "1px dashed var(--color-border)", borderRadius: 10 }}>
       <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-muted)", margin: 0, lineHeight: 1.5 }}>{text}</p>
     </div>
+  );
+}
+
+function AreaChart({ values, up, hidden }: { values: number[]; up: boolean; hidden: boolean }) {
+  if (values.length < 2) return null;
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = max - min || 1;
+  const W = 100, H = 34;
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * W, H - ((v - min) / range) * (H - 4) - 2] as const);
+  const line = pts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+  const area = `0,${H} ${line} ${W},${H}`;
+  const col = up ? "var(--gain)" : "var(--loss)";
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 72, display: "block", filter: hidden ? "blur(6px)" : "none" }}>
+      <defs>
+        <linearGradient id="nw-grad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={col} stopOpacity="0.18" />
+          <stop offset="100%" stopColor={col} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={area} fill="url(#nw-grad)" />
+      <polyline points={line} fill="none" stroke={col} strokeWidth="1.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
   );
 }

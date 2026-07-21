@@ -54,6 +54,13 @@ export interface LiabilityEntry {
   mataUang: string;
 }
 
+// Snapshot net worth harian (dalam IDR) — untuk chart tren. Direkam otomatis
+// dari nilai asli, bukan dikarang.
+export interface NetWorthSnapshot {
+  date: string;        // Date.toDateString()
+  netWorthIDR: number;
+}
+
 export interface AppData {
   dashboard: {
     todayFocus: string;
@@ -103,6 +110,7 @@ export interface AppData {
   wealth: {
     assets: AssetEntry[];
     liabilities: LiabilityEntry[];
+    history: NetWorthSnapshot[];
     notes: Note[];
   };
 }
@@ -223,6 +231,7 @@ export const defaultData: AppData = {
   wealth: {
     assets: [],
     liabilities: [],
+    history: [],
     notes: [],
   },
 };
