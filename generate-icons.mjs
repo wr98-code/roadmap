@@ -3,7 +3,7 @@
 // Usage: node generate-icons.mjs
 // Requires: npm install sharp (sementara, bisa uninstall setelah generate)
 
-import { readFileSync, mkdirSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -40,6 +40,27 @@ for (const size of SIZES) {
     .toFile(outputPath);
   console.log(`✅ Generated icon-${size}.png`);
 }
+
+// ── favicon.ico (dirujuk index.html sebagai "alternate icon") ──────────────────
+// sharp tidak bisa nulis .ico langsung; format ICO boleh membungkus PNG, jadi
+// kita rakit header ICO minimal (1 entri 32x32) + payload PNG dari sharp.
+const icoPng = await sharp(svgBuffer).resize(32, 32).png().toBuffer();
+const header = Buffer.alloc(6);
+header.writeUInt16LE(0, 0);   // reserved
+header.writeUInt16LE(1, 2);   // type: 1 = icon
+header.writeUInt16LE(1, 4);   // jumlah gambar
+const dir = Buffer.alloc(16);
+dir.writeUInt8(32, 0);                 // width (32)
+dir.writeUInt8(32, 1);                 // height (32)
+dir.writeUInt8(0, 2);                  // color palette
+dir.writeUInt8(0, 3);                  // reserved
+dir.writeUInt16LE(1, 4);               // color planes
+dir.writeUInt16LE(32, 6);              // bits per pixel
+dir.writeUInt32LE(icoPng.length, 8);   // ukuran data PNG
+dir.writeUInt32LE(6 + 16, 12);         // offset ke data PNG
+const icoPath = join(__dirname, "public", "favicon.ico");
+writeFileSync(icoPath, Buffer.concat([header, dir, icoPng]));
+console.log("✅ Generated favicon.ico");
 
 // Main ones needed for manifest
 console.log("");
