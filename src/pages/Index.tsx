@@ -11,12 +11,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAppData } from "@/lib/store";
 import { useTheme, VIBES } from "@/lib/theme";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Zap, TrendingUp, Globe, Calendar, DollarSign, User,
   Plus, Newspaper, BarChart2, BookOpen, CheckSquare,
   GraduationCap, FolderGit2, Lightbulb, Cloud, Loader2,
   LayoutDashboard, Rss, Search, Languages,
-  TrendingDown, Minus, Radio, RefreshCw, Wallet,
+  TrendingDown, Minus, Radio, RefreshCw, Wallet, Menu,
 } from "lucide-react";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { PWAInstall } from "@/components/PWAInstall";
@@ -461,6 +462,7 @@ function LiveIntelPanel({ active, onNavigate }: { active: string; onNavigate: (k
 const Index = () => {
   const { data, update, saved, syncing } = useAppData();
   const { vibe, cycleVibe }              = useTheme();
+  const isMobile                         = useIsMobile();
   const [active,      setActive]         = useState("dashboard");
   const [mobileOpen,  setMobileOpen]     = useState(false);
   const [railTooltip, setRailTooltip]    = useState<string | null>(null);
@@ -521,10 +523,13 @@ const Index = () => {
 
       {/* ── ICON RAIL ── */}
       <nav style={{
-        width:72, minWidth:72, height:"100vh", position:"fixed", left:0, top:0, zIndex:50,
+        width:72, minWidth:72, height:"100vh", position:"fixed", left:0, top:0, zIndex: isMobile ? 70 : 50,
         background:"var(--rail-bg)", backdropFilter:"blur(24px)",
         borderRight:"1px solid var(--rail-border)",
         display:"flex", flexDirection:"column", alignItems:"center", padding:"16px 0",
+        transform: isMobile ? (mobileOpen ? "translateX(0)" : "translateX(-100%)") : "none",
+        transition: "transform 0.28s var(--ease-out)",
+        boxShadow: isMobile && mobileOpen ? "0 0 48px rgba(0,0,0,0.6)" : "none",
       }}>
         <div style={{ width:38, height:38, borderRadius:10, marginBottom:20, background:"var(--logo-bg)", border:"1px solid var(--logo-border)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"var(--logo-glow)", cursor:"pointer", transition:"all 0.2s" }}
           onClick={() => navigate("dashboard")}
@@ -581,7 +586,7 @@ const Index = () => {
       </nav>
 
       {/* ── CENTER ── */}
-      <div style={{ marginLeft:72, marginRight:272, flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
+      <div style={{ marginLeft: isMobile ? 0 : 72, marginRight: isMobile ? 0 : 272, flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
         <header style={{
           position:"sticky", top:12, zIndex:30, margin:"12px 16px 0", height:52, borderRadius:13,
           background:"var(--glass-bg)", backdropFilter:"var(--glass-blur)",
@@ -589,6 +594,11 @@ const Index = () => {
           display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 18px",
         }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            {isMobile && (
+              <button onClick={() => setMobileOpen(true)} title="Menu" style={{ display:"flex", alignItems:"center", justifyContent:"center", width:30, height:30, borderRadius:8, background:"var(--header-btn-bg)", border:"1px solid var(--header-btn-border)", cursor:"pointer", marginRight:2 }}>
+                <Menu size={15} color="var(--color-text)" />
+              </button>
+            )}
             <span style={{ fontFamily:"var(--font-mono)", fontSize:10, color:"var(--color-muted)", letterSpacing:"0.08em" }}>ZERØ</span>
             <span style={{ color:"var(--header-separator)", fontSize:12 }}>/</span>
             <span style={{ fontFamily:"var(--font-sans)", fontSize:13, fontWeight:600, color:"var(--color-text)", letterSpacing:"-0.01em" }}>{TITLES[active]}</span>
@@ -597,7 +607,7 @@ const Index = () => {
               <kbd style={{ fontFamily:"var(--font-mono)", fontSize:9, color:"var(--header-icon)" }}>⌘K</kbd>
             </button>
           </div>
-          <div style={{ fontFamily:"var(--font-mono)", fontSize:13, fontWeight:600, color:"var(--color-muted)", letterSpacing:"0.05em" }}>{clockStr}</div>
+          {!isMobile && <div style={{ fontFamily:"var(--font-mono)", fontSize:13, fontWeight:600, color:"var(--color-muted)", letterSpacing:"0.05em" }}>{clockStr}</div>}
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
             {syncing && <span style={{ display:"flex", alignItems:"center", gap:5, fontFamily:"var(--font-mono)", fontSize:10, color:"var(--color-muted)" }}><Loader2 size={11} style={{ animation:"zspin 1s linear infinite" }} /> Syncing</span>}
             {saved && !syncing && <span style={{ display:"flex", alignItems:"center", gap:5, fontFamily:"var(--font-mono)", fontSize:10, color:"#10b981" }}><Cloud size={11} /> Synced</span>}
@@ -609,18 +619,18 @@ const Index = () => {
               </button>
             )}
             <div style={{ display:"flex", alignItems:"center", gap:7 }}>
-              <span style={{ fontFamily:"var(--font-sans)", fontSize:12, color:"var(--color-muted)" }}>Windu</span>
+              {!isMobile && <span style={{ fontFamily:"var(--font-sans)", fontSize:12, color:"var(--color-muted)" }}>Windu</span>}
               <div style={{ width:27, height:27, borderRadius:"50%", background:"linear-gradient(135deg, #3b82f6, #6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono)", fontSize:11, fontWeight:700, color:"#fff", border:"1px solid var(--rail-btn-border)" }}>W</div>
             </div>
           </div>
         </header>
-        <main style={{ flex:1, padding:"28px 24px 48px", maxWidth:960, width:"100%", margin:"0 auto" }}>
+        <main style={{ flex:1, padding: isMobile ? "18px 14px 44px" : "28px 24px 48px", maxWidth:960, width:"100%", margin:"0 auto" }}>
           {renderPage()}
         </main>
       </div>
 
-      {/* ── RIGHT INTEL PANEL ── */}
-      <LiveIntelPanel active={active} onNavigate={navigate} />
+      {/* ── RIGHT INTEL PANEL (desktop only) ── */}
+      {!isMobile && <LiveIntelPanel active={active} onNavigate={navigate} />}
 
       <style>{`
         @keyframes zspin { to { transform: rotate(360deg); } }
