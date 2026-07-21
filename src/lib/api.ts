@@ -1,22 +1,36 @@
-// ─── ZERØ COMMAND — api.ts v2.0 ───────────────────────────────────────────────
+// ─── ZERØ COMMAND — api.ts v2.1 ───────────────────────────────────────────────
 // Groq API · llama-3.3-70b-versatile (flagship free tier)
-// VITE_GEMINI_KEY = Groq key (nama var tetap sama biar ga perlu ubah Cloudflare)
+//
+// KEAMANAN: API key HANYA dari localStorage (input manual user via UI).
+// JANGAN pernah baca dari import.meta.env.VITE_* — variabel VITE_* di-inline ke
+// bundle JS saat build, jadi kalau di-set di environment build key akan BOCOR
+// publik di "view source" situs live. Isi key lewat tombol Settings (setApiKey).
 
 const API_KEY_STORAGE = 'zero-gemini-key';
 
 export function isEnvKey(): boolean {
-  return !!import.meta.env.VITE_GEMINI_KEY;
+  // Selalu false: key tidak pernah lagi diambil dari environment/build.
+  return false;
 }
 
 export function getApiKey(): string {
-  if (import.meta.env.VITE_GEMINI_KEY) {
-    return import.meta.env.VITE_GEMINI_KEY as string;
+  try {
+    return localStorage.getItem(API_KEY_STORAGE) || '';
+  } catch {
+    return '';
   }
-  return localStorage.getItem(API_KEY_STORAGE) || '';
 }
 
 export function setApiKey(key: string): void {
-  localStorage.setItem(API_KEY_STORAGE, key.trim());
+  try {
+    localStorage.setItem(API_KEY_STORAGE, key.trim());
+  } catch { /* localStorage unavailable */ }
+}
+
+export function clearApiKey(): void {
+  try {
+    localStorage.removeItem(API_KEY_STORAGE);
+  } catch { /* localStorage unavailable */ }
 }
 
 export function hasApiKey(): boolean {

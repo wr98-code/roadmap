@@ -7,21 +7,56 @@ const DEBOUNCE_MS = 1500;
 
 const debounceTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
+// ─── SYNC TOKEN ──────────────────────────────────────────────────────────────
+// Endpoint /api/data* sekarang diproteksi (fail-closed) — request wajib bawa
+// header X-Sync-Token yang cocok dengan env SYNC_TOKEN di Cloudflare Pages.
+// Token user disimpan HANYA di localStorage (di-input manual via Settings),
+// tidak pernah di-hardcode/di-bundle. Tanpa token, app tetap jalan penuh
+// secara lokal (localStorage) — cuma cloud sync yang non-aktif.
+
+const SYNC_TOKEN_STORAGE = 'zero-sync-token';
+
+export function getSyncToken(): string {
+  try { return localStorage.getItem(SYNC_TOKEN_STORAGE) || ''; } catch { return ''; }
+}
+
+export function setSyncToken(token: string): void {
+  try { localStorage.setItem(SYNC_TOKEN_STORAGE, token.trim()); } catch {}
+}
+
+export function clearSyncToken(): void {
+  try { localStorage.removeItem(SYNC_TOKEN_STORAGE); } catch {}
+}
+
+export function hasSyncToken(): boolean {
+  return !!getSyncToken();
+}
+
+export function syncHeaders(): Record<string, string> {
+  const t = getSyncToken();
+  return t ? { 'X-Sync-Token': t } : {};
+}
+
 // ─── CORE: get/set dengan cloud sync ─────────────────────────────────────────
 
 export async function cloudGet<T>(key: string, fallback: T): Promise<T> {
-  // 1. Coba ambil dari cloud dulu
-  try {
-    const res = await fetch(`${CLOUD_API}?key=${encodeURIComponent(key)}`, { cache: 'no-store' });
-    if (res.ok) {
-      const json = await res.json();
-      if (json?.value !== undefined) {
-        // Sync ke localStorage buat offline access
-        try { localStorage.setItem(key, JSON.stringify(json.value)); } catch {}
-        return json.value as T;
+  // 1. Coba ambil dari cloud dulu (hanya kalau sync token terpasang)
+  if (hasSyncToken()) {
+    try {
+      const res = await fetch(`${CLOUD_API}?key=${encodeURIComponent(key)}`, {
+        cache: 'no-store',
+        headers: syncHeaders(),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.value !== undefined) {
+          // Sync ke localStorage buat offline access
+          try { localStorage.setItem(key, JSON.stringify(json.value)); } catch {}
+          return json.value as T;
+        }
       }
-    }
-  } catch {}
+    } catch {}
+  }
 
   // 2. Fallback ke localStorage
   try {
@@ -36,13 +71,14 @@ export function cloudSet<T>(key: string, value: T): void {
   // Tulis localStorage seketika (tidak pernah hilang)
   try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
 
-  // Debounce cloud write
+  // Debounce cloud write (hanya kalau sync token terpasang)
+  if (!hasSyncToken()) return;
   if (debounceTimers[key]) clearTimeout(debounceTimers[key]);
   debounceTimers[key] = setTimeout(async () => {
     try {
       await fetch(CLOUD_API, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...syncHeaders() },
         body: JSON.stringify({ key, value }),
       });
     } catch {}

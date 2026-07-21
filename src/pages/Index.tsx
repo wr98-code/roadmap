@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { PWAInstall } from "@/components/PWAInstall";
+import { ApiKeySettings } from "@/components/ApiKeySettings";
 import { DashboardPage }  from "./DashboardPage";
 import { BuildLabPage }   from "./BuildLabPage";
 import { TradingPage }    from "./TradingPage";
@@ -119,8 +120,7 @@ const PANEL_REFRESH_MS = 5 * 60 * 1000; // 5 menit
 const PANEL_COLORS = ["#ef4444", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
 
 function getGroqKey(): string {
-  if (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_GEMINI_KEY)
-    return (import.meta as any).env.VITE_GEMINI_KEY;
+  // localStorage-only (lihat catatan keamanan di src/lib/api.ts) — jangan baca env.
   try { return localStorage.getItem("zero-gemini-key") || ""; } catch { return ""; }
 }
 
@@ -567,6 +567,7 @@ const Index = () => {
         </div>
 
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, padding:"0 8px", width:"100%" }}>
+          <ApiKeySettings />
           <button onClick={cycleVibe} title={`Theme: ${vibeInfo.label}`} style={{ width:36, height:36, borderRadius:9, background:"var(--rail-btn-bg)", border:"1px solid var(--rail-btn-border)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, transition:"all 0.15s" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--rail-btn-hover)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--rail-btn-bg)"; }}>
