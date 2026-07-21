@@ -86,19 +86,20 @@ const SLIDES = [
 ];
 
 // ── Module cards config ─────────────────────────────────────────────────────
+// Muted, cohesive accents — desaturated for a "serious money" read (not neon).
 const MODULES = [
-  { key: "build-lab", label: "Build Lab",  sub: "Projects & sprints",   Icon: Zap,        color: "#f59e0b", glow: "rgba(245,158,11,0.15)" },
-  { key: "trading",   label: "Trading",    sub: "Signals & game plan",   Icon: TrendingUp, color: "#3b82f6", glow: "rgba(59,130,246,0.15)" },
-  { key: "crypto",    label: "Crypto",     sub: "Portfolio & on-chain",  Icon: Globe,      color: "#f97316", glow: "rgba(249,115,22,0.15)" },
-  { key: "roadmap",   label: "Roadmap",    sub: "Milestones & goals",    Icon: Calendar,   color: "#8b5cf6", glow: "rgba(139,92,246,0.15)" },
-  { key: "keuangan",  label: "Keuangan",   sub: "Cash flow & tracker",   Icon: DollarSign, color: "#10b981", glow: "rgba(16,185,129,0.15)" },
-  { key: "personal",  label: "Personal",   sub: "Mindset & habits",      Icon: User,       color: "#ec4899", glow: "rgba(236,72,153,0.15)" },
+  { key: "build-lab", label: "Build Lab",  sub: "Projects & sprints",   Icon: Zap,        color: "#c9a96a", glow: "rgba(201,169,106,0.12)" },
+  { key: "trading",   label: "Trading",    sub: "Signals & game plan",   Icon: TrendingUp, color: "#5b8def", glow: "rgba(91,141,239,0.12)" },
+  { key: "crypto",    label: "Crypto",     sub: "Portfolio & on-chain",  Icon: Globe,      color: "#d99a4e", glow: "rgba(217,154,78,0.12)" },
+  { key: "roadmap",   label: "Roadmap",    sub: "Milestones & goals",    Icon: Calendar,   color: "#9a86d4", glow: "rgba(154,134,212,0.12)" },
+  { key: "keuangan",  label: "Keuangan",   sub: "Cash flow & tracker",   Icon: DollarSign, color: "#45c07f", glow: "rgba(69,192,127,0.12)" },
+  { key: "personal",  label: "Personal",   sub: "Mindset & habits",      Icon: User,       color: "#cf7ba6", glow: "rgba(207,123,166,0.12)" },
 ];
 
 function statusStyle(s: string) {
   if (s.includes("AKTIF"))    return { dot: "#22c55e", bg: "rgba(34,197,94,0.1)",   text: "#4ade80" };
   if (s.includes("✅"))       return { dot: "#3b82f6", bg: "rgba(59,130,246,0.1)",  text: "#60a5fa" };
-  if (s.includes("CRITICAL")) return { dot: "#ef4444", bg: "rgba(239,68,68,0.1)",   text: "#f87171" };
+  if (s.includes("CRITICAL")) return { dot: "var(--loss)", bg: "rgba(239,68,68,0.1)",   text: "#f87171" };
   return                             { dot: "#9ca3af", bg: "rgba(156,163,175,0.08)", text: "#94a3b8" };
 }
 
@@ -143,7 +144,7 @@ function LiveTicker() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "8px 16px", borderRadius: 10, background: "var(--glass-bg)", backdropFilter: "var(--glass-blur)", border: "1px solid var(--glass-border)", marginBottom: 16, boxShadow: "var(--card-shadow)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 6px #10b981", animation: "zpulse 2s infinite" }} />
+        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--gain)", boxShadow: "0 0 6px var(--gain)", animation: "zpulse 2s infinite" }} />
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.12em" }}>LIVE</span>
       </div>
       {prices ? coins.map((c, i) => (
@@ -151,7 +152,7 @@ function LiveTicker() {
           {i > 0 && <div style={{ width: 1, height: 12, background: "var(--color-border)", marginRight: 6 }} />}
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: c.color, letterSpacing: "0.1em" }}>{c.sym}</span>
           <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--color-text)" }}>${c.price}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.up ? "#10b981" : "#ef4444" }}>{c.up ? "↑" : "↓"}{c.change}%</span>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.up ? "var(--gain)" : "var(--loss)" }}>{c.up ? "↑" : "↓"}{c.change}%</span>
         </div>
       )) : (
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted)" }}>Fetching prices…</span>
@@ -174,8 +175,12 @@ function BtcCard({ onNavigate }: { onNavigate: (k: string) => void }) {
     const loadBtc = () => {
       fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true")
         .then(r => r.json()).then(d => {
-          setPrice(d?.bitcoin?.usd ?? 0);
-          setChange(d?.bitcoin?.usd_24h_change ?? 0);
+          // Only accept a real price; on rate-limit/error responses leave the
+          // last value (never render a fake $0).
+          if (typeof d?.bitcoin?.usd === "number") {
+            setPrice(d.bitcoin.usd);
+            setChange(d.bitcoin.usd_24h_change ?? 0);
+          }
         }).catch(() => {});
 
       fetch("https://api.alternative.me/fng/?limit=1")
@@ -197,30 +202,26 @@ function BtcCard({ onNavigate }: { onNavigate: (k: string) => void }) {
   }, []);
 
   const up = change >= 0;
-  const fgColor = !fg ? "#94a3b8" : fg.value <= 25 ? "#ef4444" : fg.value <= 45 ? "#f59e0b" : fg.value <= 55 ? "#94a3b8" : fg.value <= 75 ? "#10b981" : "#22d3ee";
+  const fgColor = !fg ? "#94a3b8" : fg.value <= 25 ? "var(--loss)" : fg.value <= 45 ? "#f59e0b" : fg.value <= 55 ? "#94a3b8" : fg.value <= 75 ? "var(--gain)" : "#22d3ee";
 
   return (
     <div
       onClick={() => onNavigate("markets")}
+      className="z-card-hover"
       style={{
-        borderRadius: 20, padding: "22px 24px", cursor: "pointer",
-        background: "linear-gradient(135deg, rgba(249,115,22,0.09) 0%, rgba(8,8,20,0.85) 70%)",
-        border: "1px solid rgba(249,115,22,0.22)",
-        boxShadow: "0 0 48px rgba(249,115,22,0.09), var(--card-shadow)",
+        borderRadius: 12, padding: "22px 24px", cursor: "pointer",
+        background: "var(--glass-bg)",
+        border: "1px solid var(--glass-border)",
+        boxShadow: "var(--card-shadow), var(--card-inset)",
         backdropFilter: "var(--glass-blur)",
         display: "flex", flexDirection: "column", gap: 14,
         position: "relative", overflow: "hidden",
-        transition: "all 0.25s ease",
+        transition: "all var(--dur-med) var(--ease-out)",
       }}
-      onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = "0 0 64px rgba(249,115,22,0.2), var(--card-shadow-hover)"; el.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.boxShadow = "0 0 48px rgba(249,115,22,0.09), var(--card-shadow)"; el.style.transform = "translateY(0)"; }}
     >
-      {/* Ambient orb */}
-      <div style={{ position: "absolute", top: -40, right: -40, width: 160, height: 160, borderRadius: "50%", background: "radial-gradient(circle, rgba(249,115,22,0.18) 0%, transparent 70%)", pointerEvents: "none" }} />
-
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "#f97316", marginBottom: 6 }}>BTC / USD  ·  7D</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.14em", color: "var(--color-muted)", marginBottom: 6 }}>BTC / USD  ·  7D</p>
           {price != null ? (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: 30, fontWeight: 700, color: "var(--color-text)", letterSpacing: "-0.04em", lineHeight: 1 }}>
               ${displayPrice.toLocaleString()}
@@ -233,11 +234,11 @@ function BtcCard({ onNavigate }: { onNavigate: (k: string) => void }) {
           )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, background: up ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)", border: `1px solid ${up ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}` }}>
-            {up ? <ArrowUpRight size={13} color="#10b981" /> : <ArrowDownRight size={13} color="#ef4444" />}
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: up ? "#10b981" : "#ef4444" }}>{Math.abs(change).toFixed(2)}%</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 8, background: up ? "var(--gain-soft)" : "var(--loss-soft)", border: `1px solid ${up ? "var(--gain-soft)" : "var(--loss-soft)"}` }}>
+            {up ? <ArrowUpRight size={13} color="var(--gain)" /> : <ArrowDownRight size={13} color="var(--loss)" />}
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: up ? "var(--gain)" : "var(--loss)" }}>{Math.abs(change).toFixed(2)}%</span>
           </div>
-          {history.length > 0 && <Sparkline values={history} color={up ? "#10b981" : "#ef4444"} width={80} height={28} />}
+          {history.length > 0 && <Sparkline values={history} color={up ? "var(--gain)" : "var(--loss)"} width={80} height={28} />}
         </div>
       </div>
 
@@ -248,13 +249,13 @@ function BtcCard({ onNavigate }: { onNavigate: (k: string) => void }) {
             <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: fgColor }}>{fg.label.toUpperCase()} · {fg.value}</span>
           </div>
           <div style={{ height: 4, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${fg.value}%`, background: `linear-gradient(90deg, #ef4444 0%, #f59e0b 40%, ${fgColor} 100%)`, borderRadius: 2, transition: "width 1.4s ease" }} />
+            <div style={{ height: "100%", width: `${fg.value}%`, background: `linear-gradient(90deg, var(--loss) 0%, #f59e0b 40%, ${fgColor} 100%)`, borderRadius: 2, transition: "width 1.4s ease" }} />
           </div>
         </div>
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981", boxShadow: "0 0 5px #10b981" }} />
+        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--gain)", boxShadow: "0 0 5px var(--gain)" }} />
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "rgba(255,255,255,0.25)" }}>LIVE · CoinGecko</span>
         <ArrowUpRight size={10} color="rgba(255,255,255,0.2)" style={{ marginLeft: "auto" }} />
       </div>
@@ -326,12 +327,12 @@ function IntentionsCard() {
   const [done, setDone] = useState([false, false, false]);
   const progress = done.filter(Boolean).length;
   const pct = (progress / 3) * 100;
-  const ringColor = pct === 100 ? "#10b981" : pct > 33 ? "#3b82f6" : "#f59e0b";
+  const ringColor = pct === 100 ? "var(--gain)" : pct > 33 ? "#3b82f6" : "#f59e0b";
 
   return (
-    <div style={{ borderRadius: 20, padding: "20px 22px", height: "100%", background: "linear-gradient(135deg, rgba(59,130,246,0.07) 0%, var(--glass-bg) 100%)", border: "1px solid rgba(59,130,246,0.15)", boxShadow: "0 0 32px rgba(59,130,246,0.06), var(--card-shadow)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ borderRadius: 12, padding: "20px 22px", height: "100%", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", boxShadow: "var(--card-shadow), var(--card-inset)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#3b82f6" }}>DAILY INTENTIONS</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "var(--color-muted)" }}>DAILY INTENTIONS</span>
         {/* Circular progress mini */}
         <svg width={28} height={28} style={{ transform: "rotate(-90deg)" }}>
           <circle cx="14" cy="14" r="10" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="2.5" />
@@ -348,8 +349,8 @@ function IntentionsCard() {
           <button key={i} onClick={() => setDone(p => { const n = [...p]; n[i] = !n[i]; return n; })} style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", cursor: "pointer", padding: "6px 8px", borderRadius: 8, textAlign: "left", transition: "background 0.15s" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.04)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
-            <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", background: done[i] ? "rgba(16,185,129,0.15)" : "transparent", border: `1.5px solid ${done[i] ? "#10b981" : "rgba(255,255,255,0.18)"}` }}>
-              {done[i] && <span style={{ fontSize: 10, color: "#10b981" }}>✓</span>}
+            <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s", background: done[i] ? "rgba(16,185,129,0.15)" : "transparent", border: `1.5px solid ${done[i] ? "var(--gain)" : "rgba(255,255,255,0.18)"}` }}>
+              {done[i] && <span style={{ fontSize: 10, color: "var(--gain)" }}>✓</span>}
             </div>
             <span style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, color: done[i] ? "var(--color-muted)" : "var(--color-text)", textDecoration: done[i] ? "line-through" : "none", transition: "all 0.2s", lineHeight: 1.35 }}>{text}</span>
           </button>
@@ -368,10 +369,10 @@ function StatusCard({ data }: { data: AppData }) {
   const active = statuses.filter(s => s.status.includes("AKTIF")).length;
 
   return (
-    <div style={{ borderRadius: 20, padding: "20px 22px", background: "linear-gradient(135deg, rgba(16,185,129,0.07) 0%, var(--glass-bg) 100%)", border: "1px solid rgba(16,185,129,0.15)", boxShadow: "0 0 32px rgba(16,185,129,0.06), var(--card-shadow)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ borderRadius: 12, padding: "20px 22px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", boxShadow: "var(--card-shadow), var(--card-inset)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#10b981" }}>STATUS BOARD</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "#10b981", background: "rgba(16,185,129,0.1)", padding: "2px 8px", borderRadius: 6 }}>{active} AKTIF</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "var(--color-muted)" }}>STATUS BOARD</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gain)", background: "var(--gain-soft)", padding: "2px 8px", borderRadius: 6 }}>{active} AKTIF</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 0, borderRadius: 12, overflow: "hidden", border: "1px solid var(--color-border)" }}>
         {statuses.slice(0, 4).map((s, i) => {
@@ -402,10 +403,10 @@ function SignalCard() {
         const c = btcD?.bitcoin?.usd_24h_change ?? 0;
         const fgVal = parseInt(fgD?.data?.[0]?.value || "50");
         let text = "HOLD"; let color = "#94a3b8"; let sub = "Market neutral"; let icon = "⚖️";
-        if (c > 4 && fgVal > 65)       { text = "ACCUMULATE"; color = "#10b981"; sub = "Strong bullish + greed signal";  icon = "🟢"; }
+        if (c > 4 && fgVal > 65)       { text = "ACCUMULATE"; color = "var(--gain)"; sub = "Strong bullish + greed signal";  icon = "🟢"; }
         else if (c > 2 && fgVal > 50)  { text = "WATCH";      color = "#3b82f6"; sub = "Uptrend — monitor for entry";    icon = "👁"; }
         else if (c < -4 && fgVal < 30) { text = "BUY DIP";    color = "#f59e0b"; sub = "Fear + dip = opportunity";       icon = "💡"; }
-        else if (c < -6)               { text = "DEFENSIVE";  color = "#ef4444"; sub = "High volatility — reduce risk";  icon = "🛡"; }
+        else if (c < -6)               { text = "DEFENSIVE";  color = "var(--loss)"; sub = "High volatility — reduce risk";  icon = "🛡"; }
         else if (fgVal > 80)           { text = "TAKE PROFIT"; color = "#a78bfa"; sub = "Extreme greed — consider exit"; icon = "💰"; }
         setSignal({ text, color, sub, icon });
       }).catch(() => setSignal({ text: "WATCH", color: "#3b82f6", sub: "Data loading", icon: "👁" }));
@@ -417,14 +418,14 @@ function SignalCard() {
   }, []);
 
   return (
-    <div style={{ borderRadius: 20, padding: "20px 22px", background: signal ? `linear-gradient(135deg, ${signal.color}12 0%, var(--glass-bg) 100%)` : "var(--glass-bg)", border: signal ? `1px solid ${signal.color}32` : "1px solid var(--glass-border)", boxShadow: signal ? `0 0 36px ${signal.color}12, var(--card-shadow)` : "var(--card-shadow)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 10, transition: "all 0.5s ease" }}>
+    <div style={{ borderRadius: 12, padding: "20px 22px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", boxShadow: "var(--card-shadow), var(--card-inset)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", justifyContent: "space-between", gap: 10, transition: "all var(--dur-med) var(--ease-out)" }}>
       <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: signal?.color ?? "var(--color-muted)" }}>TODAY SIGNAL</span>
       <div>
         {signal ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 18 }}>{signal.icon}</span>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: signal.color, letterSpacing: "0.04em", lineHeight: 1, textShadow: `0 0 24px ${signal.color}70` }}>{signal.text}</p>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: signal.color, letterSpacing: "0.04em", lineHeight: 1 }}>{signal.text}</p>
             </div>
             <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--color-muted)", lineHeight: 1.4 }}>{signal.sub}</p>
           </>
@@ -446,8 +447,8 @@ function SignalCard() {
 // ── COMPONENT: Today's Focus (editable) ─────────────────────────────────────
 function FocusCard({ data, update }: { data: AppData; update: (fn: (p: AppData) => AppData) => void }) {
   return (
-    <div style={{ borderRadius: 20, padding: "20px 22px", background: "linear-gradient(135deg, rgba(139,92,246,0.07) 0%, var(--glass-bg) 100%)", border: "1px solid rgba(139,92,246,0.15)", boxShadow: "0 0 32px rgba(139,92,246,0.06), var(--card-shadow)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 10 }}>
-      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#8b5cf6" }}>TODAY'S FOCUS</span>
+    <div style={{ borderRadius: 12, padding: "20px 22px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", boxShadow: "var(--card-shadow), var(--card-inset)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 10 }}>
+      <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "var(--color-muted)" }}>TODAY'S FOCUS</span>
       <EditableText
         value={data.dashboard.todayFocus}
         onChange={val => update(d => ({ ...d, dashboard: { ...d.dashboard, todayFocus: val } }))}
@@ -467,15 +468,15 @@ function NetWorthCard({ data }: { data: AppData }) {
   const displayVal = useCountUp(show ? Math.round(totalIncome) : 0, 1200);
 
   return (
-    <div style={{ borderRadius: 20, padding: "20px 22px", background: "linear-gradient(135deg, rgba(16,185,129,0.07) 0%, var(--glass-bg) 100%)", border: "1px solid rgba(16,185,129,0.15)", boxShadow: "0 0 32px rgba(16,185,129,0.06), var(--card-shadow)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ borderRadius: 12, padding: "20px 22px", background: "var(--glass-bg)", border: "1px solid var(--glass-border)", boxShadow: "var(--card-shadow), var(--card-inset)", backdropFilter: "var(--glass-blur)", display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "#10b981" }}>NET INCOME LOG</span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "var(--color-muted)" }}>NET INCOME LOG</span>
         <button onClick={() => setShow(v => !v)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4 }}>
           <span style={{ fontSize: 13 }}>{show ? "🙈" : "👁"}</span>
         </button>
       </div>
       <div>
-        <p style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "#10b981", letterSpacing: "-0.04em", filter: show ? "none" : "blur(8px)", transition: "filter 0.3s ease", userSelect: show ? "auto" : "none" }}>
+        <p style={{ fontFamily: "var(--font-mono)", fontSize: 26, fontWeight: 700, color: "var(--gain)", letterSpacing: "-0.04em", filter: show ? "none" : "blur(8px)", transition: "filter 0.3s ease", userSelect: show ? "auto" : "none" }}>
           {show ? `Rp ${displayVal.toLocaleString("id-ID")}` : "Rp ••••••••"}
         </p>
         <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>
@@ -483,7 +484,7 @@ function NetWorthCard({ data }: { data: AppData }) {
         </p>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#10b981" }} />
+        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--gain)" }} />
         <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)" }}>From Keuangan log</span>
       </div>
     </div>
@@ -500,7 +501,7 @@ function ModuleCard({ mod, onNavigate, size = "normal" }: { mod: typeof MODULES[
       onMouseLeave={() => setHov(false)}
       style={{
         display: "flex", flexDirection: "column", padding: size === "large" ? "22px 24px" : "16px 18px",
-        cursor: "pointer", borderRadius: 18, width: "100%",
+        cursor: "pointer", borderRadius: 12, width: "100%",
         border: hov ? `1px solid ${mod.color}48` : "1px solid var(--glass-border)",
         background: hov ? mod.glow : "var(--glass-bg)",
         backdropFilter: "var(--glass-blur)",
@@ -568,7 +569,7 @@ export function DashboardPage({ data, update, onNavigate }: Props) {
       </div>
 
       <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", textAlign: "right", letterSpacing: "0.06em", marginTop: 4 }}>
-        ZERØ v3.2 · {new Date(data.dashboard.lastUpdated).toLocaleString("id-ID")}
+        ZERØ v6.0 · {new Date(data.dashboard.lastUpdated).toLocaleString("id-ID")}
       </p>
 
       <style>{`
