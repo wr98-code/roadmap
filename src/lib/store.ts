@@ -36,6 +36,24 @@ export interface StatusItem {
   prioritas: string;
 }
 
+// Balance-sheet entries (Wealth page). Amounts are strings (user input);
+// mataUang is "IDR" | "USD". likuid = cepat dicairkan (kas/stablecoin) untuk runway.
+export interface AssetEntry {
+  id: string;
+  label: string;
+  kategori: string;   // Kas, Kripto, Saham, Properti, Bisnis, Piutang, Lainnya
+  jumlah: string;
+  mataUang: string;
+  likuid: boolean;
+}
+
+export interface LiabilityEntry {
+  id: string;
+  label: string;
+  jumlah: string;
+  mataUang: string;
+}
+
 export interface AppData {
   dashboard: {
     todayFocus: string;
@@ -80,6 +98,11 @@ export interface AppData {
     dailyDiscipline: CheckItem[];
     mindset: string;
     checklistRebuild: CheckItem[];
+    notes: Note[];
+  };
+  wealth: {
+    assets: AssetEntry[];
+    liabilities: LiabilityEntry[];
     notes: Note[];
   };
 }
@@ -193,6 +216,13 @@ export const defaultData: AppData = {
       { id: uid(), text: "Mulai trading kembali — konservatif", checked: false },
       { id: uid(), text: "Zero Build Lab jalan sebagai brand serius", checked: false },
     ],
+    notes: [],
+  },
+  // Wealth: kosong secara default — angka net worth HARUS dari input user asli,
+  // bukan karangan. Empty state ditampilkan sampai user isi neraca.
+  wealth: {
+    assets: [],
+    liabilities: [],
     notes: [],
   },
 };

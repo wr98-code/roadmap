@@ -16,7 +16,7 @@ import {
   Plus, Newspaper, BarChart2, BookOpen, CheckSquare,
   GraduationCap, FolderGit2, Lightbulb, Cloud, Loader2,
   LayoutDashboard, Rss, Search, Languages,
-  TrendingDown, Minus, Radio, RefreshCw,
+  TrendingDown, Minus, Radio, RefreshCw, Wallet,
 } from "lucide-react";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { PWAInstall } from "@/components/PWAInstall";
@@ -35,6 +35,7 @@ import { MyDayPage }      from "./MyDayPage";
 import { LearnPage }      from "./LearnPage";
 import { ProjectsPage }   from "./ProjectsPage";
 import { MasterBizPage }  from "./MasterBizPage";
+import { KekayaanPage }   from "./KekayaanPage";
 
 // ── Nav config ───────────────────────────────────────────────────────────────
 const RAIL_SECTIONS = [
@@ -46,6 +47,7 @@ const RAIL_SECTIONS = [
   { key: "learn",      Icon: GraduationCap,    title: "Learn Hub",  group: "FOCUS"    },
   { key: "master-biz", Icon: Lightbulb,        title: "Master Biz", group: "FOCUS"    },
   { key: "build-lab",  Icon: Zap,              title: "Build Lab",  group: "BUILD"    },
+  { key: "wealth",     Icon: Wallet,           title: "Wealth",     group: "BUILD"    },
   { key: "keuangan",   Icon: DollarSign,       title: "Keuangan",   group: "BUILD"    },
   { key: "roadmap",    Icon: Calendar,         title: "Roadmap",    group: "BUILD"    },
   { key: "trading",    Icon: TrendingUp,       title: "Trading",    group: "ASSETS"   },
@@ -495,6 +497,7 @@ const Index = () => {
       case "learn":      return <LearnPage />;
       case "master-biz": return <MasterBizPage />;
       case "build-lab":  return <BuildLabPage data={data} update={update} />;
+      case "wealth":     return <KekayaanPage data={data} update={update} />;
       case "trading":    return <TradingPage />;
       case "crypto":     return <CryptoPage data={data} update={update} />;
       case "roadmap":    return <RoadmapPage data={data} update={update} />;
