@@ -31,11 +31,14 @@ const ThemeContext = createContext<Ctx>({ vibe: "morning", isAuto: true, setVibe
 const KEY = "zero-vibe";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  // Default identity = premium dark ("night"). The clock-based auto-vibe is
+  // still available via resetToAuto(); we just don't force a light theme by
+  // day. Any saved preference wins.
   const [vibe, setVibeState] = useState<Vibe>(() => {
     const s = localStorage.getItem(KEY) as Vibe | null;
-    return s && ORDER.includes(s) ? s : autoVibe();
+    return s && ORDER.includes(s) ? s : "night";
   });
-  const [isAuto, setIsAuto] = useState(() => !localStorage.getItem(KEY));
+  const [isAuto, setIsAuto] = useState(false);
 
   useEffect(() => {
     if (!isAuto) return;
