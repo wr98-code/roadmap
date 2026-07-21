@@ -52,7 +52,7 @@ export function NotesList({ notes, onChange }: Props) {
       {notes.map((note) => (
         <div key={note.id} className="border border-border rounded-md bg-muted/20">
           <div
-            className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+            className="group flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/30 transition-colors"
             onClick={() => setExpandedId(expandedId === note.id ? null : note.id)}
           >
             {expandedId === note.id ? (

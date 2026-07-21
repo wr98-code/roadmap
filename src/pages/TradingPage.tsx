@@ -228,10 +228,10 @@ function RiskCalculator() {
 
   const riskUsd = (modal * riskPct) / 100;
   const slDistance = Math.abs(entry - sl);
-  const slPct = slDistance / entry * 100;
+  const slPct = entry > 0 ? slDistance / entry * 100 : 0;
   const contracts = slDistance > 0 ? riskUsd / slDistance : 0;
   const nominal = contracts * entry;
-  const margin = nominal / leverage;
+  const margin = leverage > 0 ? nominal / leverage : 0;
   const tp1 = entry > sl ? entry + slDistance * 2 : entry - slDistance * 2;
   const tp2 = entry > sl ? entry + slDistance * 3 : entry - slDistance * 3;
   const isLong = entry > sl;

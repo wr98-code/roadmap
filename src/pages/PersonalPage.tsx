@@ -1,6 +1,6 @@
 // ─── ZERØ COMMAND — PersonalPage.tsx ─────────────────────────────────────────
 // Survival rules, daily discipline, mindset, habit streak tracker, rebuild plan
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { AppData } from "@/lib/store";
 import { SectionCard } from "@/components/SectionCard";
 import { CheckList } from "@/components/CheckList";
@@ -36,7 +36,12 @@ function saveHabits(log: HabitLog) {
 }
 
 function getDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  // Local date (bukan UTC) supaya check-in dini hari untuk owner UTC+7 tidak
+  // tercatat ke hari sebelumnya. Konsisten dengan getLast7Days (Date lokal).
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 function getLast7Days() {
@@ -265,8 +270,8 @@ export function PersonalPage({ data, update }: Props) {
 
                 {/* Habit rows */}
                 {HABIT_DEFINITIONS.map((habit) => (
-                  <>
-                    <div key={`label-${habit.id}`} style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", paddingRight: 8, whiteSpace: "nowrap" }}>
+                  <Fragment key={habit.id}>
+                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", paddingRight: 8, whiteSpace: "nowrap" }}>
                       {habit.icon}
                     </div>
                     {last7.map((d) => {
@@ -284,7 +289,7 @@ export function PersonalPage({ data, update }: Props) {
                         />
                       );
                     })}
-                  </>
+                  </Fragment>
                 ))}
               </div>
             </div>
