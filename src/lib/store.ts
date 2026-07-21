@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { hasSyncToken, syncHeaders } from "@/lib/cloudStorage";
 
 export interface CheckItem {
   id: string;
@@ -213,10 +214,30 @@ function saveLocal(data: AppData) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
+// ─── SAFE MERGE ────────────────────────────────────────────────────────────────
+// Blob dari cloud/localStorage bisa rusak / versi lama (section hilang). Isi
+// section yang hilang dari defaultData supaya akses data.<section>.<x> tidak
+// pernah melempar (anti white-screen). Data user yang ada tetap dipertahankan.
+function mergeWithDefaults(partial: unknown): AppData {
+  const base = structuredClone(defaultData) as unknown as Record<string, Record<string, unknown>>;
+  if (!partial || typeof partial !== "object") return base as unknown as AppData;
+  const src = partial as Record<string, unknown>;
+  for (const section of Object.keys(base)) {
+    const val = src[section];
+    if (val && typeof val === "object" && !Array.isArray(val)) {
+      base[section] = { ...base[section], ...(val as Record<string, unknown>) };
+    }
+  }
+  return base as unknown as AppData;
+}
+
 // ─── CLOUD READ / WRITE ────────────────────────────────────────────────────────
+// Endpoint diproteksi X-Sync-Token (lihat functions/api/data.ts). Tanpa token,
+// skip network — app jalan lokal penuh, tidak ada spam 401.
 async function loadCloud(): Promise<AppData | null> {
+  if (!hasSyncToken()) return null;
   try {
-    const res = await fetch(CLOUD_API, { cache: "no-store" });
+    const res = await fetch(CLOUD_API, { cache: "no-store", headers: syncHeaders() });
     if (!res.ok) return null;
     const json = await res.json();
     return json as AppData;
@@ -224,10 +245,11 @@ async function loadCloud(): Promise<AppData | null> {
 }
 
 async function saveCloud(data: AppData): Promise<boolean> {
+  if (!hasSyncToken()) return false;
   try {
     const res = await fetch(CLOUD_API, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...syncHeaders() },
       body: JSON.stringify(data),
     });
     return res.ok;
@@ -236,7 +258,10 @@ async function saveCloud(data: AppData): Promise<boolean> {
 
 // ─── HOOK ──────────────────────────────────────────────────────────────────────
 export function useAppData() {
-  const [data, setData]       = useState<AppData>(() => loadLocal() ?? structuredClone(defaultData));
+  const [data, setData]       = useState<AppData>(() => {
+    const local = loadLocal();
+    return local ? mergeWithDefaults(local) : structuredClone(defaultData);
+  });
   const [saved, setSaved]     = useState(false);
   const [syncing, setSyncing] = useState(false);
   const timerRef              = useRef<ReturnType<typeof setTimeout>>();
@@ -251,12 +276,16 @@ export function useAppData() {
     loadCloud().then((cloud) => {
       if (cloud) {
         const local = loadLocal();
-        const cloudTs = new Date(cloud.dashboard.lastUpdated).getTime();
-        const localTs = local ? new Date(local.dashboard.lastUpdated).getTime() : 0;
-        // Cloud wins if it's newer
+        // Isi section yang hilang dari default dulu — jaga akses tidak melempar.
+        const merged = mergeWithDefaults(cloud);
+        const cloudTs = new Date(merged.dashboard.lastUpdated).getTime() || 0;
+        const localTs = local?.dashboard?.lastUpdated
+          ? (new Date(local.dashboard.lastUpdated).getTime() || 0)
+          : 0;
+        // Cloud wins if it's newer (atau local kosong)
         if (cloudTs >= localTs) {
-          setData(cloud);
-          saveLocal(cloud);
+          setData(merged);
+          saveLocal(merged);
         }
       }
       setSyncing(false);
