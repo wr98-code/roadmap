@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Secrets — JANGAN pernah commit API key. VITE_* ter-inline ke bundle publik.
+.env
+.env.*
+!.env.example
+
+# Repo pakai bun (bun.lock) — abaikan lockfile package manager lain
+package-lock.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
