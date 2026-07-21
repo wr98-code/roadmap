@@ -1,22 +1,35 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════
-   ZERØ COMMAND — BILLIONAIRE DESIGN SYSTEM v5.0
-   Quiet luxury · Deep navy · Gold accent · Real depth
-   Inspired by: Private Wealth UXDA · Bugatti UI · Linear
+   ZERØ COMMAND — PRIVATE OFFICE DESIGN SYSTEM v6.0
+   "Serious money": near-black, hairline borders, one restrained
+   accent, gold used almost never, monospaced tabular numerals.
+   Refs (2026): Linear · Vercel Geist · Bloomberg · private-bank UX.
 ═══════════════════════════════════════════════════ */
 
 @layer base {
   :root {
-    --radius: 0.5rem;
+    --radius: 0.625rem;
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    --font-mono: 'Space Mono', monospace;
+    --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
     --font-serif: 'Playfair Display', Georgia, serif;
-    --transition-theme: background 0.6s ease, color 0.3s ease, border-color 0.3s ease;
+    --transition-theme: background 0.5s ease, color 0.25s ease, border-color 0.25s ease;
+    /* Motion language — calm & instant (never bouncy) */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 160ms;
+    --dur-med: 260ms;
+    /* Semantic (gain/loss) — muted, never neon; pair with sign/arrow */
+    --gain: #34c77b;
+    --gain-soft: rgba(52,199,123,0.12);
+    --loss: #e5565b;
+    --loss-soft: rgba(229,86,91,0.12);
+    --warning: #e0a231;
+    /* Prestige metal — use ONLY on tiny marks, never fills */
+    --gold: #c9a96a;
   }
 
   /* ══════════════════════════════════════════
@@ -186,79 +199,80 @@
      4 radial glow = ada "ruangan" di belakang glass
   ══════════════════════════════════════════ */
   .theme-night, .dark-mode {
-    --background: 228 40% 6%;
-    --foreground: 220 15% 82%;
-    --card: 228 30% 10%;
-    --card-foreground: 220 15% 82%;
-    --popover: 228 35% 8%;
-    --popover-foreground: 220 15% 82%;
-    --primary: 43 72% 54%;
-    --primary-foreground: 228 40% 6%;
-    --secondary: 228 30% 13%;
-    --secondary-foreground: 220 10% 58%;
-    --muted: 228 28% 14%;
-    --muted-foreground: 220 8% 44%;
-    --accent: 43 72% 54%;
-    --accent-foreground: 228 40% 6%;
-    --destructive: 0 62% 50%;
-    --destructive-foreground: 0 0% 95%;
-    --border: 228 28% 16%;
-    --input: 228 28% 16%;
-    --ring: 43 72% 54%;
-    --sidebar-background: 228 45% 4%;
-    --sidebar-foreground: 220 10% 46%;
-    --sidebar-primary: 43 78% 58%;
-    --sidebar-primary-foreground: 228 45% 4%;
-    --sidebar-accent: 228 45% 8%;
-    --sidebar-accent-foreground: 220 15% 82%;
-    --sidebar-border: 228 45% 9%;
-    --color-text: #c8cfe0;
-    --color-muted: #5a6380;
-    --color-border: rgba(255,255,255,0.06);
-    --color-card: rgba(8,12,32,0.7);
-    --color-primary: #c9a84c;
-    --color-sidebar-bg: #03050f;
-    --color-bg: #050818;
-    --color-surface: rgba(255,255,255,0.05);
-    --bg-base: #050818;
-    --card-shadow: 0 1px 1px rgba(0,0,0,0.35), 0 4px 20px rgba(0,0,0,0.28);
-    --card-shadow-hover: 0 10px 48px rgba(0,0,0,0.45), 0 2px 10px rgba(0,0,0,0.3);
-    --card-inset: inset 0 1px 0 rgba(255,255,255,0.07);
-    --glass-bg: rgba(6,10,28,0.68);
-    --glass-border: rgba(255,255,255,0.07);
-    --glass-blur: blur(28px) saturate(150%);
-    --dot-color: rgba(200,207,224,0.032);
-    --dot-size: 26px;
+    --background: 220 13% 5%;
+    --foreground: 210 8% 96%;
+    --card: 220 10% 8%;
+    --card-foreground: 210 8% 96%;
+    --popover: 222 11% 11%;
+    --popover-foreground: 210 8% 96%;
+    --primary: 219 91% 63%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 9% 12%;
+    --secondary-foreground: 215 9% 65%;
+    --muted: 220 9% 12%;
+    --muted-foreground: 215 8% 52%;
+    --accent: 219 91% 63%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 358 74% 61%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 218 12% 14%;
+    --input: 218 12% 16%;
+    --ring: 219 91% 63%;
+    --sidebar-background: 220 14% 4%;
+    --sidebar-foreground: 215 8% 55%;
+    --sidebar-primary: 219 91% 63%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 10% 9%;
+    --sidebar-accent-foreground: 210 8% 96%;
+    --sidebar-border: 218 12% 13%;
+    --color-text: #f4f5f6;
+    --color-muted: #7e858e;
+    --color-border: rgba(255,255,255,0.07);
+    --color-card: rgba(17,19,22,0.72);
+    --color-primary: #4c82f7;
+    --color-sidebar-bg: #070809;
+    --color-bg: #0a0b0d;
+    --color-surface: rgba(255,255,255,0.04);
+    --bg-base: #0a0b0d;
+    /* Hairlines over shadows — shadows only on truly floating layers */
+    --card-shadow: 0 0 0 1px rgba(255,255,255,0.008);
+    --card-shadow-hover: 0 8px 30px rgba(0,0,0,0.5);
+    --card-inset: inset 0 1px 0 rgba(255,255,255,0.04);
+    --glass-bg: rgba(20,22,26,0.66);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-blur: blur(20px) saturate(130%);
+    --dot-color: rgba(255,255,255,0.02);
+    --dot-size: 28px;
     /* ── Rail & Panel theme vars ── */
-    --rail-bg: rgba(5,5,16,0.96);
-    --rail-border: rgba(255,255,255,0.04);
-    --rail-icon: rgba(255,255,255,0.28);
-    --rail-icon-active: #60a5fa;
-    --rail-active-bg: rgba(59,130,246,0.16);
-    --rail-active-border: rgba(59,130,246,0.30);
-    --rail-btn-bg: rgba(255,255,255,0.04);
+    --rail-bg: rgba(9,10,12,0.94);
+    --rail-border: rgba(255,255,255,0.06);
+    --rail-icon: rgba(255,255,255,0.34);
+    --rail-icon-active: #6e9bff;
+    --rail-active-bg: rgba(76,130,247,0.14);
+    --rail-active-border: rgba(76,130,247,0.32);
+    --rail-btn-bg: rgba(255,255,255,0.035);
     --rail-btn-border: rgba(255,255,255,0.07);
-    --rail-btn-hover: rgba(59,130,246,0.12);
-    --panel-bg: rgba(7,7,20,0.93);
-    --panel-border: rgba(255,255,255,0.045);
-    --panel-divider: rgba(255,255,255,0.05);
-    --panel-text: #f1f5f9;
-    --panel-muted: rgba(255,255,255,0.50);
-    --panel-dim: rgba(255,255,255,0.20);
-    --panel-icon: rgba(255,255,255,0.28);
-    --panel-track: rgba(255,255,255,0.07);
-    --tooltip-bg: rgba(8,8,22,0.97);
-    --tooltip-border: rgba(255,255,255,0.10);
-    --tooltip-text: rgba(255,255,255,0.82);
+    --rail-btn-hover: rgba(76,130,247,0.12);
+    --panel-bg: rgba(12,13,16,0.92);
+    --panel-border: rgba(255,255,255,0.06);
+    --panel-divider: rgba(255,255,255,0.055);
+    --panel-text: #f4f5f6;
+    --panel-muted: rgba(255,255,255,0.62);
+    --panel-dim: rgba(255,255,255,0.30);
+    --panel-icon: rgba(255,255,255,0.34);
+    --panel-track: rgba(255,255,255,0.08);
+    --tooltip-bg: rgba(28,31,36,0.98);
+    --tooltip-border: rgba(255,255,255,0.12);
+    --tooltip-text: rgba(255,255,255,0.90);
     --header-btn-bg: rgba(255,255,255,0.04);
-    --header-btn-border: rgba(255,255,255,0.07);
-    --header-icon: rgba(255,255,255,0.25);
-    --header-separator: rgba(255,255,255,0.15);
-    --logo-bg: rgba(59,130,246,0.28);
-    --logo-border: rgba(59,130,246,0.32);
-    --logo-glow: 0 0 18px rgba(59,130,246,0.20);
-    --logo-glow-hover: 0 0 28px rgba(59,130,246,0.40);
-    --logo-text: #60a5fa;
+    --header-btn-border: rgba(255,255,255,0.08);
+    --header-icon: rgba(255,255,255,0.30);
+    --header-separator: rgba(255,255,255,0.14);
+    --logo-bg: rgba(76,130,247,0.16);
+    --logo-border: rgba(76,130,247,0.30);
+    --logo-glow: 0 0 16px rgba(76,130,247,0.18);
+    --logo-glow-hover: 0 0 26px rgba(76,130,247,0.38);
+    --logo-text: #6e9bff;
   }
 
   .light-mode {}
@@ -300,15 +314,14 @@
     background-size: 100% 100%, 100% 100%, 100% 100%, var(--dot-size) var(--dot-size);
   }
 
-  /* Night background — 4 glows = real depth */
+  /* Night background — near-black with two very subtle cool glows.
+     Restraint over drama: the canvas should read almost flat black. */
   .theme-night body, .dark-mode body {
     background-image:
-      radial-gradient(ellipse 75% 50% at 80% -2%,  rgba(201,168,76,0.16) 0%, transparent 58%),
-      radial-gradient(ellipse 70% 55% at -5% 92%,  rgba(50,70,200,0.20) 0%, transparent 58%),
-      radial-gradient(ellipse 55% 40% at 50% 108%, rgba(90,50,180,0.13) 0%, transparent 52%),
-      radial-gradient(ellipse 45% 35% at 5%  5%,   rgba(30,80,180,0.11) 0%, transparent 48%),
+      radial-gradient(ellipse 80% 50% at 82% -8%,  rgba(76,130,247,0.06) 0%, transparent 56%),
+      radial-gradient(ellipse 70% 55% at -8% 104%, rgba(76,130,247,0.05) 0%, transparent 58%),
       radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, var(--dot-size) var(--dot-size);
+    background-size: 100% 100%, 100% 100%, var(--dot-size) var(--dot-size);
   }
 
   /* Grain texture — subtle expensive feel */
@@ -318,7 +331,7 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    opacity: 0.02;
+    opacity: 0.015;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     background-size: 200px 200px;
   }
@@ -327,8 +340,15 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
-    font-weight: 500;
+    font-weight: 600;
     letter-spacing: -0.02em;
+  }
+
+  /* ── NUMERIC TREATMENT — the cheapest highest-impact premium tell ──
+     All money/%/dates use mono + tabular figures so columns align. */
+  .num, .font-mono {
+    font-feature-settings: "tnum" 1, "zero" 1;
+    font-variant-numeric: tabular-nums;
   }
 }
 
@@ -377,14 +397,14 @@
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border-radius: 14px;
+  border-radius: 12px;
   border: 1px solid var(--glass-border);
   box-shadow: var(--card-shadow), var(--card-inset);
   position: relative;
   overflow: hidden;
 }
 
-/* Top highlight gradient — luxury signature detail */
+/* Top highlight gradient — kept whisper-quiet (premium = restraint) */
 .z-card::after {
   content: '';
   position: absolute;
@@ -393,21 +413,22 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255,255,255,0.18) 30%,
-    rgba(255,255,255,0.35) 50%,
-    rgba(255,255,255,0.18) 70%,
+    rgba(255,255,255,0.08) 40%,
+    rgba(255,255,255,0.14) 50%,
+    rgba(255,255,255,0.08) 60%,
     transparent 100%
   );
   pointer-events: none;
 }
 
 .z-card-hover {
-  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+  transition: box-shadow var(--dur-med) var(--ease-out), transform var(--dur-med) var(--ease-out), border-color var(--dur-med) var(--ease-out);
   cursor: pointer;
 }
 .z-card-hover:hover {
   box-shadow: var(--card-shadow-hover), var(--card-inset);
-  transform: translateY(-2px);
+  border-color: var(--rail-active-border);
+  transform: translateY(-1px);
 }
 
 /* ───────────────────────────────────────
@@ -480,8 +501,24 @@
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.animate-fade-up { animation: fadeUp 0.35s cubic-bezier(0.4,0,0.2,1) both; }
-.animate-fade-in { animation: fadeIn 0.25s ease both; }
+.animate-fade-up { animation: fadeUp var(--dur-med) var(--ease-out) both; }
+.animate-fade-in { animation: fadeIn var(--dur-fast) ease both; }
+
+/* ── SEMANTIC NUMBER HELPERS (gain/loss) ── */
+.val-gain { color: var(--gain); }
+.val-loss { color: var(--loss); }
+.pill-gain { color: var(--gain); background: var(--gain-soft); }
+.pill-loss { color: var(--loss); background: var(--loss-soft); }
+.hairline { border: 1px solid var(--color-border); }
+
+/* Respect reduced-motion — disable non-essential animation */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
 
 /* ───────────────────────────────────────
    VIBE BADGE
