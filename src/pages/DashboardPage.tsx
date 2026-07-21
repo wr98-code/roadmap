@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AppData } from "@/lib/store";
 import { EditableText } from "@/components/EditableText";
+import { getSimplePrice } from "@/lib/prices";
 import {
   Zap, TrendingUp, Globe, Calendar, DollarSign, User,
   ArrowUpRight, ArrowDownRight, RefreshCw, CloudRain,
@@ -119,16 +120,16 @@ function LiveTicker() {
 
   useEffect(() => {
     const load = () => {
-      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd&include_24hr_change=true")
-        .then(r => r.json()).then(d => {
-          const fmt = (n: number) => n >= 1000 ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : n.toFixed(2);
-          setPrices({
-            btc: fmt(d.bitcoin?.usd ?? 0), btcUp: (d.bitcoin?.usd_24h_change ?? 0) >= 0, btcC: Math.abs(d.bitcoin?.usd_24h_change ?? 0).toFixed(2),
-            eth: fmt(d.ethereum?.usd ?? 0), ethUp: (d.ethereum?.usd_24h_change ?? 0) >= 0, ethC: Math.abs(d.ethereum?.usd_24h_change ?? 0).toFixed(2),
-            sol: fmt(d.solana?.usd ?? 0),   solUp: (d.solana?.usd_24h_change ?? 0) >= 0,  solC: Math.abs(d.solana?.usd_24h_change ?? 0).toFixed(2),
-          });
-          setTs(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }));
-        }).catch(() => {});
+      getSimplePrice(["bitcoin", "ethereum", "solana"]).then(d => {
+        if (!d.bitcoin && !d.ethereum && !d.solana) return; // semua sumber gagal → pertahankan nilai lama
+        const fmt = (n: number) => n >= 1000 ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : n.toFixed(2);
+        setPrices(prev => ({
+          btc: d.bitcoin ? fmt(d.bitcoin.usd) : prev?.btc ?? "—", btcUp: (d.bitcoin?.usd_24h_change ?? 0) >= 0, btcC: Math.abs(d.bitcoin?.usd_24h_change ?? 0).toFixed(2),
+          eth: d.ethereum ? fmt(d.ethereum.usd) : prev?.eth ?? "—", ethUp: (d.ethereum?.usd_24h_change ?? 0) >= 0, ethC: Math.abs(d.ethereum?.usd_24h_change ?? 0).toFixed(2),
+          sol: d.solana ? fmt(d.solana.usd) : prev?.sol ?? "—", solUp: (d.solana?.usd_24h_change ?? 0) >= 0, solC: Math.abs(d.solana?.usd_24h_change ?? 0).toFixed(2),
+        }));
+        setTs(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }));
+      });
     };
     load();
     const id = setInterval(load, 60000);
@@ -173,15 +174,14 @@ function BtcCard({ onNavigate }: { onNavigate: (k: string) => void }) {
 
   useEffect(() => {
     const loadBtc = () => {
-      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true")
-        .then(r => r.json()).then(d => {
-          // Only accept a real price; on rate-limit/error responses leave the
-          // last value (never render a fake $0).
-          if (typeof d?.bitcoin?.usd === "number") {
-            setPrice(d.bitcoin.usd);
-            setChange(d.bitcoin.usd_24h_change ?? 0);
-          }
-        }).catch(() => {});
+      getSimplePrice(["bitcoin"]).then(d => {
+        // Only accept a real price; on total failure leave the last value
+        // (never render a fake $0). Resilient across CoinGecko/Paprika/Binance.
+        if (typeof d?.bitcoin?.usd === "number") {
+          setPrice(d.bitcoin.usd);
+          setChange(d.bitcoin.usd_24h_change ?? 0);
+        }
+      });
 
       fetch("https://api.alternative.me/fng/?limit=1")
         .then(r => r.json()).then(d => {
@@ -397,7 +397,7 @@ function SignalCard() {
   useEffect(() => {
     const loadSignal = () => {
       Promise.all([
-        fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true").then(r => r.json()),
+        getSimplePrice(["bitcoin"]),
         fetch("https://api.alternative.me/fng/?limit=1").then(r => r.json()),
       ]).then(([btcD, fgD]) => {
         const c = btcD?.bitcoin?.usd_24h_change ?? 0;

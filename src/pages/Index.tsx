@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAppData } from "@/lib/store";
 import { useTheme, VIBES } from "@/lib/theme";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getSimplePrice } from "@/lib/prices";
 import {
   Zap, TrendingUp, Globe, Calendar, DollarSign, User,
   Plus, Newspaper, BarChart2, BookOpen, CheckSquare,
@@ -91,11 +92,10 @@ function useLiveBtcFg() {
   const [fg,  setFg]  = useState<FgInfo  | null>(null);
   useEffect(() => {
     const load = () => {
-      fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true")
-        .then(r => r.json()).then(d => {
-          const p = d?.bitcoin?.usd; const c = d?.bitcoin?.usd_24h_change;
-          if (p) setBtc({ price: p.toLocaleString("en-US", { maximumFractionDigits: 0 }), change: Math.abs(c).toFixed(2), up: c >= 0 });
-        }).catch(() => {});
+      getSimplePrice(["bitcoin"]).then(d => {
+        const p = d?.bitcoin?.usd; const c = d?.bitcoin?.usd_24h_change ?? 0;
+        if (p) setBtc({ price: p.toLocaleString("en-US", { maximumFractionDigits: 0 }), change: Math.abs(c).toFixed(2), up: c >= 0 });
+      });
       fetch("https://api.alternative.me/fng/?limit=1")
         .then(r => r.json()).then(d => {
           setFg({ value: parseInt(d?.data?.[0]?.value || "50"), label: d?.data?.[0]?.value_classification || "Neutral" });
