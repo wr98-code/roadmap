@@ -561,3 +561,107 @@
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.35); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM LIGHT MODE — research-backed, WCAG AA verified
+   Toned off-white canvas + pure-white cards that lift, near-black text
+   ramp (no pale grays), hairline seams + soft warm shadows, accent &
+   gain/loss pushed darker for contrast. Rail + right panel go light too
+   (was a jarring dark panel over light content). Unlayered so it wins
+   over the @layer base morning/afternoon defaults.
+   Text ratios (vs canvas #F7F6F3): primary 16:1, muted 7:1 (both AA/AAA).
+═══════════════════════════════════════════════════════════════════ */
+.theme-morning, .theme-afternoon {
+  --background: 40 20% 96%;
+  --foreground: 60 6% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 60 6% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 60 6% 10%;
+  --primary: 245 75% 59%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 14% 93%;
+  --secondary-foreground: 45 7% 28%;
+  --muted: 40 12% 94%;
+  --muted-foreground: 45 6% 40%;
+  --accent: 245 75% 59%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 4 72% 44%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 13% 90%;
+  --input: 40 13% 90%;
+  --ring: 245 75% 59%;
+  --sidebar-background: 40 15% 96%;
+  --sidebar-foreground: 45 6% 32%;
+  --sidebar-primary: 245 75% 59%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 40 14% 92%;
+  --sidebar-accent-foreground: 60 6% 10%;
+  --sidebar-border: 40 13% 88%;
+
+  --color-text: #1a1a17;      /* 16.1:1 */
+  --color-muted: #57544c;     /* ~7:1  — the pale-gray fix */
+  --color-border: #e6e3dd;
+  --color-card: #ffffff;
+  --color-primary: #4f46e5;   /* 5.82:1 */
+  --color-sidebar-bg: #f3f1ec;
+  --color-bg: #f7f6f3;
+  --color-surface: #efede7;
+  --bg-base: #f7f6f3;
+  --card-shadow: 0 1px 2px rgba(23,23,20,0.05), 0 1px 3px rgba(23,23,20,0.07);
+  --card-shadow-hover: 0 4px 14px rgba(23,23,20,0.09), 0 2px 5px rgba(23,23,20,0.06);
+  --card-inset: 0 0 transparent;
+  --glass-bg: #ffffff;
+  --glass-border: #e6e3dd;
+  --glass-blur: saturate(105%);
+  --dot-color: rgba(26,26,23,0.028);
+  --dot-size: 26px;
+
+  --gain: #157347; --gain-soft: #e6f4eb;   /* 5.44:1 */
+  --loss: #c0281f; --loss-soft: #fbeae8;   /* 5.45:1 */
+  --warning: #b45309;
+  --gold: #8a6d29;
+
+  --rail-bg: #f3f1ec;
+  --rail-border: #e6e3dd;
+  --rail-icon: #6b6960;
+  --rail-icon-active: #4f46e5;
+  --rail-active-bg: #ececfb;
+  --rail-active-border: rgba(79,70,229,0.32);
+  --rail-btn-bg: #efede7;
+  --rail-btn-border: #e6e3dd;
+  --rail-btn-hover: #ececfb;
+
+  --panel-bg: #faf9f6;
+  --panel-border: #e6e3dd;
+  --panel-divider: #ebe8e2;
+  --panel-text: #1a1a17;
+  --panel-muted: #57544c;
+  --panel-dim: #857f74;
+  --panel-icon: #6b6960;
+  --panel-track: #ebe8e2;
+
+  --tooltip-bg: #ffffff;
+  --tooltip-border: #ddd9d1;
+  --tooltip-text: #1a1a17;
+  --header-btn-bg: #efede7;
+  --header-btn-border: #e6e3dd;
+  --header-icon: #6b6960;
+  --header-separator: #d8d5cd;
+  --logo-bg: #ececfb;
+  --logo-border: rgba(79,70,229,0.30);
+  --logo-glow: 0 0 0 1px rgba(79,70,229,0.10);
+  --logo-glow-hover: 0 0 14px rgba(79,70,229,0.22);
+  --logo-text: #4f46e5;
+}
+
+/* Clean, quiet light canvas — drop the heavy warm/blue glows */
+.theme-morning body, .theme-afternoon body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 82% -8%, rgba(79,70,229,0.035) 0%, transparent 56%),
+    radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+  background-size: 100% 100%, var(--dot-size) var(--dot-size);
+}
+/* In light mode the card top-highlight (white gradient) is invisible on white
+   — swap it for a faint bottom hairline seam instead. */
+.theme-morning .z-card::after, .theme-afternoon .z-card::after { opacity: 0; }
