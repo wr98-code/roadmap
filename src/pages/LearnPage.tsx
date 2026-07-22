@@ -1,12 +1,15 @@
 // ─── ZERO COMMAND — LearnPage.tsx ────────────────────────────────────────────
 // AI Tutor Finance/Crypto/Investing — semua topik dari Obsidian Windu
+// Terminal restructure: flat hairline-seam panels (Slab), theme-aware CSS-var
+// color hygiene (light + dark). All logic, callClaude usage & topic data preserved.
 import { useState } from 'react';
 import {
-  GraduationCap, Zap, RefreshCw, ChevronRight, BookOpen,
+  GraduationCap, Zap, RefreshCw,
   TrendingUp, Globe, Cpu, Shield, DollarSign, BarChart2, Lock,
 } from 'lucide-react';
 import { callClaude, hasApiKey } from '@/lib/api';
 import { cloudSet } from '@/lib/cloudStorage';
+import { Slab, Panel, SeamGrid, PanelHead, Divider, Badge, tLabelStyle } from '@/components/terminal';
 
 // ─── TOPIC CATALOG ────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -150,7 +153,8 @@ function loadLessons(): Record<string, Lesson> {
 }
 function saveLessons(l: Record<string, Lesson>) { localStorage.setItem(LESSONS_KEY, JSON.stringify(l)); cloudSet(LESSONS_KEY, l); }
 
-// ─── TOPIC CARD ───────────────────────────────────────────────────────────────
+// ─── TOPIC ROW ──────────────────────────────────────────────────────────────
+// Flat panel, hairline-separated inside the topic library Slab.
 function TopicCard({
   topic, lesson, onLearn, loading,
 }: {
@@ -160,34 +164,36 @@ function TopicCard({
   loading: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const Icon = topic.icon;
 
   return (
-    <div style={{
-      background: 'var(--color-card)', borderRadius: 12,
-      border: `1px solid ${lesson ? topic.color + '40' : 'var(--color-border)'}`,
-      overflow: 'hidden', transition: 'border-color .2s',
-    }}>
-      {/* Card Header */}
-      <div style={{ padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+    <div style={{ background: 'var(--glass-bg)' }}>
+      {/* Row header */}
+      <div style={{ padding: '13px 16px', display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        {/* Emoji chip (neutral) */}
         <div style={{
-          width: 40, height: 40, borderRadius: 8, flexShrink: 0,
-          background: `${topic.color}15`, border: `1px solid ${topic.color}30`,
+          width: 34, height: 34, borderRadius: 7, flexShrink: 0,
+          background: 'var(--color-surface)', border: '1px solid var(--color-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 20,
+          fontSize: 17,
         }}>
           {topic.emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', marginBottom: 3 }}>
-            {topic.title}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
+            {/* Small decorative category hue dot */}
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: topic.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 13.5, fontWeight: 600, color: 'var(--color-text)', letterSpacing: '-0.01em' }}>
+              {topic.title}
+            </span>
           </div>
           <div style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.5 }}>
             {topic.desc}
           </div>
           {lesson && (
-            <div style={{ fontSize: 10, color: topic.color, marginTop: 4, fontFamily: 'monospace' }}>
-              ✓ Learned at {lesson.timestamp}
+            <div style={{ marginTop: 6 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--gain)', background: 'var(--gain-soft)', padding: '2px 7px', borderRadius: 4, fontVariantNumeric: 'tabular-nums' }}>
+                ✓ LEARNED · {lesson.timestamp}
+              </span>
             </div>
           )}
         </div>
@@ -196,10 +202,10 @@ function TopicCard({
             <button
               onClick={() => setExpanded(!expanded)}
               style={{
-                padding: '6px 10px', borderRadius: 6,
-                border: `1px solid ${topic.color}40`,
-                background: `${topic.color}10`,
-                color: topic.color, fontSize: 12, fontWeight: 600,
+                padding: '6px 12px', borderRadius: 7,
+                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)', fontSize: 12, fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex', alignItems: 'center', gap: 4,
               }}
@@ -211,16 +217,16 @@ function TopicCard({
             onClick={() => onLearn(topic)}
             disabled={loading}
             style={{
-              padding: '6px 14px', borderRadius: 6,
-              background: loading ? 'var(--color-border)' : topic.color,
-              color: loading ? 'var(--color-muted)' : 'white',
+              padding: '6px 14px', borderRadius: 7,
+              background: loading ? 'var(--color-surface)' : 'var(--color-primary)',
+              color: loading ? 'var(--color-muted)' : '#fff',
               border: 'none', fontSize: 12, fontWeight: 600,
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
             {loading
-              ? <><RefreshCw size={11} style={{ animation: 'spin 1s linear infinite' }} /> Learning...</>
+              ? <><RefreshCw size={11} style={{ animation: 'spin 1s linear infinite' }} /> Learning…</>
               : lesson
                 ? <><RefreshCw size={11} /> Refresh</>
                 : <><Zap size={11} /> Learn</>}
@@ -228,7 +234,7 @@ function TopicCard({
         </div>
       </div>
 
-      {/* Lesson Content */}
+      {/* Lesson content (inset) */}
       {lesson && expanded && (
         <div style={{
           borderTop: '1px solid var(--color-border)',
@@ -294,44 +300,51 @@ export function LearnPage() {
     : TOPICS.filter(t => t.category === activeCategory);
 
   const learnedCount = Object.keys(lessons).length;
+  const pct = TOPICS.length ? (learnedCount / TOPICS.length) * 100 : 0;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div style={{
-        padding: '18px 20px', borderRadius: 12,
-        background: 'var(--color-card)',
-        border: '1px solid var(--color-border)',
-        display: 'flex', alignItems: 'center', gap: 14,
-      }}>
-        <div style={{
-          width: 44, height: 44, borderRadius: 10,
-          background: '#7c3aed20', border: '1px solid #7c3aed40',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <GraduationCap size={22} color="#7c3aed" />
-        </div>
-        <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--color-text)', margin: 0 }}>
-            ZERØ LEARN HUB
-          </h2>
-          <p style={{ fontSize: 12, color: 'var(--color-muted)', margin: '3px 0 0' }}>
-            AI tutor — semua topik dari Obsidian lo. Belajar dari Naval, Dalio, sampai Coinglass expert.
-          </p>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#7c3aed' }}>{learnedCount}/{TOPICS.length}</div>
-          <div style={{ fontSize: 10, color: 'var(--color-muted)', fontFamily: 'monospace' }}>topics learned</div>
-        </div>
-      </div>
+      {/* Header — paneled slab with progress readout */}
+      <Slab>
+        <SeamGrid cols="1.7fr 1fr">
+          <Panel style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 8, flexShrink: 0,
+              background: 'var(--rail-active-bg)', border: '1px solid var(--rail-active-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <GraduationCap size={22} color="var(--color-primary)" />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--color-text)', letterSpacing: '-0.01em', margin: 0 }}>
+                ZERØ LEARN HUB
+              </h2>
+              <p style={{ fontSize: 12, color: 'var(--color-muted)', margin: '3px 0 0', lineHeight: 1.45 }}>
+                AI tutor — semua topik dari Obsidian lo. Belajar dari Naval, Dalio, sampai Coinglass expert.
+              </p>
+            </div>
+          </Panel>
+          <Panel style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+              <span style={tLabelStyle}>Topics Learned</span>
+              <span className="num" style={{ fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 22, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: '-0.02em', lineHeight: 1 }}>
+                {learnedCount}/{TOPICS.length}
+              </span>
+            </div>
+            <div style={{ height: 4, background: 'var(--color-surface)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${pct}%`, background: 'var(--color-primary)', borderRadius: 2, transition: 'width 0.6s ease' }} />
+            </div>
+          </Panel>
+        </SeamGrid>
+      </Slab>
 
       {error && (
-        <div style={{ fontSize: 13, color: '#dc2626', background: '#fee2e210', padding: '8px 12px', borderRadius: 8, border: '1px solid #fee2e230' }}>
+        <div style={{ fontSize: 13, color: 'var(--loss)', background: 'var(--loss-soft)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--loss-soft)' }}>
           {error}
         </div>
       )}
 
-      {/* Category Filter */}
+      {/* Category Filter — terminal tabs */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {CATEGORIES.map(cat => {
           const count = cat.key === 'all' ? TOPICS.length : TOPICS.filter(t => t.category === cat.key).length;
@@ -341,20 +354,20 @@ export function LearnPage() {
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
               style={{
-                padding: '6px 14px', borderRadius: 20, fontSize: 13,
-                border: isActive ? 'none' : '1px solid var(--color-border)',
-                background: isActive ? '#7c3aed' : 'var(--color-card)',
-                color: isActive ? 'white' : 'var(--color-muted)',
+                padding: '7px 14px', borderRadius: 7, fontSize: 13,
+                border: `1px solid ${isActive ? 'var(--rail-active-border)' : 'var(--color-border)'}`,
+                background: isActive ? 'var(--rail-active-bg)' : 'var(--color-surface)',
+                color: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
                 fontWeight: isActive ? 600 : 400, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5,
+                display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s',
               }}
             >
               {cat.emoji} {cat.label}
-              <span style={{
-                fontSize: 10, fontWeight: 700,
-                background: isActive ? 'rgba(255,255,255,.25)' : 'var(--color-surface)',
-                color: isActive ? 'white' : 'var(--color-muted)',
-                borderRadius: 10, padding: '0 5px',
+              <span className="num" style={{
+                fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
+                background: isActive ? 'var(--rail-active-border)' : 'var(--color-border)',
+                color: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
+                borderRadius: 4, padding: '0 5px',
               }}>
                 {count}
               </span>
@@ -363,71 +376,82 @@ export function LearnPage() {
         })}
       </div>
 
-      {/* Topic Grid */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {filteredTopics.map(topic => (
-          <TopicCard
-            key={topic.id}
-            topic={topic}
-            lesson={lessons[topic.id]}
-            onLearn={learn}
-            loading={loadingId === topic.id}
-          />
+      {/* Topic Library — one Slab, flat rows, hairline seams */}
+      <Slab>
+        <PanelHead
+          title="TOPIC LIBRARY"
+          right={<Badge tone="muted">{filteredTopics.length} TOPICS</Badge>}
+        />
+        {filteredTopics.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--glass-bg)' }}>
+            <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>Belum ada topik di kategori ini.</p>
+          </div>
+        ) : filteredTopics.map((topic, i) => (
+          <div key={topic.id}>
+            <TopicCard
+              topic={topic}
+              lesson={lessons[topic.id]}
+              onLearn={learn}
+              loading={loadingId === topic.id}
+            />
+            {i < filteredTopics.length - 1 && <Divider />}
+          </div>
         ))}
-      </div>
+      </Slab>
 
       {/* Custom Question / AI Tutor */}
-      <div style={{
-        background: 'var(--color-card)', borderRadius: 12,
-        border: '1px solid var(--color-border)', padding: 18,
-      }}>
-        <p style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: 'var(--color-muted)', letterSpacing: 1.5, marginBottom: 12 }}>
-          🧠 TANYA AI TUTOR — FREE QUESTION
-        </p>
-        <div style={{ display: 'flex', gap: 8, marginBottom: customAnswer ? 14 : 0 }}>
-          <input
-            type="text"
-            placeholder="Tanya apapun soal finance, crypto, trading, investing..."
-            value={customQuestion}
-            onChange={e => setCustomQuestion(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && askCustom()}
-            style={{
-              flex: 1, padding: '10px 14px',
-              border: '1px solid var(--color-border)', borderRadius: 8,
-              background: 'var(--color-surface)', color: 'var(--color-text)',
-              fontSize: 14, outline: 'none',
-            }}
-          />
-          <button
-            onClick={askCustom}
-            disabled={customLoading || !customQuestion.trim()}
-            style={{
-              padding: '10px 18px', borderRadius: 8,
-              background: customLoading ? 'var(--color-border)' : '#7c3aed',
-              color: customLoading ? 'var(--color-muted)' : 'white',
-              border: 'none', fontSize: 13, fontWeight: 600,
-              cursor: customLoading ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              flexShrink: 0,
-            }}
-          >
-            {customLoading
-              ? <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Thinking...</>
-              : <><Zap size={13} /> Ask</>}
-          </button>
-        </div>
-
-        {customAnswer && (
-          <div style={{
-            padding: '14px 16px', borderRadius: 8,
-            background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-          }}>
-            <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
-              {customAnswer}
-            </div>
+      <Slab>
+        <PanelHead
+          title="TANYA AI TUTOR · FREE QUESTION"
+          right={<Badge tone="accent">AI</Badge>}
+        />
+        <div style={{ padding: 16 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              placeholder="Tanya apapun soal finance, crypto, trading, investing..."
+              value={customQuestion}
+              onChange={e => setCustomQuestion(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && askCustom()}
+              style={{
+                flex: 1, padding: '10px 14px',
+                border: '1px solid var(--color-border)', borderRadius: 7,
+                background: 'var(--color-surface)', color: 'var(--color-text)',
+                fontSize: 14, outline: 'none',
+              }}
+            />
+            <button
+              onClick={askCustom}
+              disabled={customLoading || !customQuestion.trim()}
+              style={{
+                padding: '10px 18px', borderRadius: 7,
+                background: customLoading ? 'var(--color-surface)' : 'var(--color-primary)',
+                color: customLoading ? 'var(--color-muted)' : '#fff',
+                border: 'none', fontSize: 13, fontWeight: 600,
+                cursor: customLoading || !customQuestion.trim() ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6,
+                flexShrink: 0,
+              }}
+            >
+              {customLoading
+                ? <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Thinking…</>
+                : <><Zap size={13} /> Ask</>}
+            </button>
           </div>
-        )}
-      </div>
+
+          {customAnswer && (
+            <div style={{
+              marginTop: 14,
+              padding: '14px 16px', borderRadius: 8,
+              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+            }}>
+              <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
+                {customAnswer}
+              </div>
+            </div>
+          )}
+        </div>
+      </Slab>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>

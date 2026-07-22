@@ -1,7 +1,12 @@
-// ─── ZERØ COMMAND — ProjectsPage.tsx ─────────────────────────────────────────
-// Project Registry · All repos, domains, and live URLs in one place
+// ─── ZERØ COMMAND — ProjectsPage.tsx v2.0 "Terminal Registry" ────────────────
+// Structural redesign: from floating left-border cards to an institutional
+// terminal registry — flat panels joined by 1px hairline seams inside paneled
+// slabs, dense project rows, mono uppercase micro-labels, tabular readouts.
+// All PROJECTS data, links, handlers & content preserved. All colors are CSS
+// vars so light AND dark themes work.
 
-import { ExternalLink, Github, Globe, DollarSign, Package } from "lucide-react";
+import { Github, Globe, DollarSign, Package } from "lucide-react";
+import { Slab, Panel, SeamGrid, PanelHead, Badge, PageTitle, SEAM, tLabelStyle } from "@/components/terminal";
 
 interface Project {
   name: string;
@@ -130,100 +135,83 @@ const GROUP_LABELS: Record<string, string> = {
   meta:   "🌐 Meta / Brand",
 };
 
-function StatusBadge({ status, label }: { status: Project["status"]; label: string }) {
-  const styles: Record<string, { color: string }> = {
-    live:    { color: "#22c55e" },
-    pending: { color: "#f97316" },
-    wip:     { color: "#8b5cf6" },
-  };
-  const s = styles[status];
-  return (
-    <span style={{
-      fontSize: 11, fontWeight: 500, fontFamily: "var(--font-sans)",
-      background: s.color + "18",
-      border: `1px solid ${s.color}35`,
-      color: s.color,
-      padding: "2px 10px", borderRadius: 20, whiteSpace: "nowrap",
-    }}>
-      {label}
-    </span>
-  );
+// ── Status chip (theme-aware tones) ──────────────────────────────────────────
+function statusTone(status: Project["status"]): "gain" | "warning" | "accent" {
+  if (status === "live") return "gain";
+  if (status === "pending") return "warning";
+  return "accent";
 }
 
-function ProjectCard({ p }: { p: Project }) {
+// ── Reusable link/meta chip (flat, hairline, mono) ───────────────────────────
+const chipBase: React.CSSProperties = {
+  display: "inline-flex", alignItems: "center", gap: 5,
+  fontSize: 11, fontFamily: "var(--font-mono)",
+  padding: "3px 9px", borderRadius: 6, textDecoration: "none",
+  whiteSpace: "nowrap", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis",
+};
+
+// ── ZONE 2: Dense project row (flat panel in a seam-grid list) ───────────────
+function ProjectRow({ p }: { p: Project }) {
   return (
-    <div className="z-card" style={{
-      padding: "16px 20px",
-      borderLeft: `3px solid ${p.color}`,
-      display: "flex", flexDirection: "column", gap: 10,
-    }}>
-      {/* Top row */}
+    <Panel style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+      {/* Header line: category dot · name · status */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-        <div>
-          <p style={{
-            fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700,
-            color: "var(--color-text)", letterSpacing: "0.04em",
-          }}>
-            {p.name}
-          </p>
-          <p style={{
-            fontFamily: "var(--font-sans)", fontSize: 12,
-            color: "var(--color-muted)", marginTop: 3,
-          }}>
-            {p.tagline}
-          </p>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, minWidth: 0 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: p.color, marginTop: 5, flexShrink: 0 }} />
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--color-text)", letterSpacing: "0.04em" }}>
+              {p.name}
+            </p>
+            <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-muted)", marginTop: 3, lineHeight: 1.4 }}>
+              {p.tagline}
+            </p>
+          </div>
         </div>
-        <StatusBadge status={p.status} label={p.statusLabel} />
+        <Badge tone={statusTone(p.status)}>{p.statusLabel}</Badge>
       </div>
 
-      {/* Links row */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+      {/* Meta line: live URL · repo · price */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 7, paddingLeft: 15, minWidth: 0 }}>
         {/* Live URL */}
         {p.live ? (
           <a href={p.live} target="_blank" rel="noopener noreferrer" style={{
-            display: "flex", alignItems: "center", gap: 5,
-            fontSize: 11, fontFamily: "var(--font-mono)",
-            color: p.color, textDecoration: "none",
-            background: p.color + "12", border: `1px solid ${p.color}30`,
-            padding: "3px 10px", borderRadius: 6,
+            ...chipBase,
+            color: "var(--color-primary)",
+            background: "var(--rail-active-bg)", border: "1px solid var(--rail-active-border)",
           }}>
-            <Globe size={10} />
-            {p.liveLabel}
+            <Globe size={10} style={{ flexShrink: 0 }} />
+            <span className="num" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{p.liveLabel}</span>
           </a>
         ) : (
           <span style={{
-            display: "flex", alignItems: "center", gap: 5,
-            fontSize: 11, fontFamily: "var(--font-mono)",
+            ...chipBase,
             color: "var(--color-muted)",
-            background: "var(--color-surface)", border: "1px solid var(--color-border)",
-            padding: "3px 10px", borderRadius: 6,
+            background: "var(--color-surface)", border: `1px solid ${SEAM}`,
           }}>
-            <Globe size={10} />
-            {p.liveLabel || "—"}
+            <Globe size={10} style={{ flexShrink: 0 }} />
+            <span className="num">{p.liveLabel || "—"}</span>
           </span>
         )}
 
         {/* GitHub */}
         {p.github ? (
           <a href={p.github} target="_blank" rel="noopener noreferrer" style={{
-            display: "flex", alignItems: "center", gap: 5,
-            fontSize: 11, fontFamily: "var(--font-mono)",
-            color: "var(--color-muted)", textDecoration: "none",
-            background: "var(--color-surface)", border: "1px solid var(--color-border)",
-            padding: "3px 10px", borderRadius: 6,
+            ...chipBase,
+            color: "var(--color-muted)",
+            background: "var(--color-surface)", border: `1px solid ${SEAM}`,
           }}>
-            <Github size={10} />
-            {p.githubUser}/{p.name.toLowerCase().replace(/[øÃ\s]/g, (c) => c === " " ? "-" : "").replace("zerø", "zero").replace("ø", "o")}
+            <Github size={10} style={{ flexShrink: 0 }} />
+            <span className="num" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+              {p.githubUser}/{p.name.toLowerCase().replace(/[øÃ\s]/g, (c) => c === " " ? "-" : "").replace("zerø", "zero").replace("ø", "o")}
+            </span>
           </a>
         ) : (
           <span style={{
-            display: "flex", alignItems: "center", gap: 5,
-            fontSize: 11, fontFamily: "var(--font-mono)",
-            color: "var(--color-muted)",
-            background: "var(--color-surface)", border: "1px solid var(--color-border)",
-            padding: "3px 10px", borderRadius: 6, opacity: 0.5,
+            ...chipBase,
+            color: "var(--color-muted)", opacity: 0.5,
+            background: "var(--color-surface)", border: `1px solid ${SEAM}`,
           }}>
-            <Github size={10} />
+            <Github size={10} style={{ flexShrink: 0 }} />
             repo —
           </span>
         )}
@@ -231,18 +219,17 @@ function ProjectCard({ p }: { p: Project }) {
         {/* Price */}
         {p.price && p.price !== "—" && p.price !== "Internal" && (
           <span style={{
-            display: "flex", alignItems: "center", gap: 5,
-            fontSize: 11, fontFamily: "var(--font-sans)", fontWeight: 600,
-            color: "#d97706",
-            background: "#d9770615", border: "1px solid #d9770630",
-            padding: "3px 10px", borderRadius: 6,
+            ...chipBase,
+            fontFamily: "var(--font-mono)", fontWeight: 600,
+            color: "var(--gold)",
+            background: "var(--color-surface)", border: `1px solid ${SEAM}`,
           }}>
-            <DollarSign size={10} />
-            {p.price}
+            <DollarSign size={10} style={{ flexShrink: 0 }} />
+            <span className="num">{p.price}</span>
           </span>
         )}
       </div>
-    </div>
+    </Panel>
   );
 }
 
@@ -256,51 +243,66 @@ export function ProjectsPage() {
   const total = PROJECTS.length;
   const live = PROJECTS.filter(p => p.status === "live").length;
 
+  const stats: { label: string; value: number; Icon: typeof Package; tint: string; valueColor: string }[] = [
+    { label: "Total Projects", value: total, Icon: Package, tint: "var(--color-primary)", valueColor: "var(--color-text)" },
+    { label: "Live",           value: live,  Icon: Globe,   tint: "var(--gain)",          valueColor: "var(--gain)" },
+    { label: "GitHub Accounts", value: 2,    Icon: Github,  tint: "var(--color-muted)",   valueColor: "var(--color-text)" },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
 
-      {/* Header stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-        {[
-          { label: "Total Projects", value: total, icon: Package, color: "#6366f1" },
-          { label: "Live", value: live, icon: Globe, color: "#22c55e" },
-          { label: "GitHub Accounts", value: 2, icon: Github, color: "#64748b" },
-        ].map(s => (
-          <div key={s.label} className="z-card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{
-              width: 34, height: 34, borderRadius: 9,
-              background: s.color + "18",
-              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-            }}>
-              <s.icon size={15} color={s.color} />
-            </div>
-            <div>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: 20, fontWeight: 700, color: "var(--color-text)", lineHeight: 1 }}>{s.value}</p>
-              <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--color-muted)", marginTop: 2 }}>{s.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+      <PageTitle
+        title="Project Registry"
+        subtitle="All repos · domains · live URLs · one place"
+        right={<Badge tone="accent">{total} PROJECTS · {live} LIVE</Badge>}
+      />
 
-      {/* Project groups */}
-      {Object.entries(grouped).map(([gk, projects]) => (
-        <div key={gk}>
-          <span className="z-label" style={{ display: "block", marginBottom: 10 }}>
-            {GROUP_LABELS[gk] || gk}
-          </span>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {projects.map(p => <ProjectCard key={p.name} p={p} />)}
-          </div>
+      {/* Header stat triad — flat tiles joined by hairline seams */}
+      <Slab>
+        <SeamGrid cols="1fr 1fr 1fr">
+          {stats.map(s => (
+            <Panel key={s.label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{
+                width: 34, height: 34, borderRadius: 8,
+                background: "var(--color-surface)", border: `1px solid ${SEAM}`,
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}>
+                <s.Icon size={15} color={s.tint} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 22, fontWeight: 700, color: s.valueColor, lineHeight: 1, letterSpacing: "-0.02em" }}>{s.value}</p>
+                <p style={{ ...tLabelStyle, marginTop: 5 }}>{s.label}</p>
+              </div>
+            </Panel>
+          ))}
+        </SeamGrid>
+      </Slab>
+
+      {/* Project groups — each a paneled slab, rows split by hairline seams */}
+      {Object.entries(grouped).map(([gk, projects]) => {
+        const liveCount = projects.filter(p => p.status === "live").length;
+        return (
+          <Slab key={gk}>
+            <PanelHead
+              title={GROUP_LABELS[gk] || gk}
+              right={<span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 9, letterSpacing: "0.1em", color: "var(--color-muted)" }}>{projects.length} · {liveCount} LIVE</span>}
+            />
+            <SeamGrid cols="1fr">
+              {projects.map(p => <ProjectRow key={p.name} p={p} />)}
+            </SeamGrid>
+          </Slab>
+        );
+      })}
+
+      {/* Footer status line */}
+      <Slab>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 16px", gap: 12, flexWrap: "wrap", background: "var(--glass-bg)" }}>
+          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>ZERØ BUILD LAB · REGISTRY v1</span>
+          <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.08em" }}>{new Date().toLocaleDateString("id-ID")}</span>
         </div>
-      ))}
+      </Slab>
 
-      {/* Footer note */}
-      <p style={{
-        fontFamily: "var(--font-mono)", fontSize: 10,
-        color: "var(--color-muted)", textAlign: "right", letterSpacing: "0.04em",
-      }}>
-        ZERØ BUILD LAB · registry v1 · {new Date().toLocaleDateString("id-ID")}
-      </p>
     </div>
   );
 }

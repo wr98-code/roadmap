@@ -1,11 +1,15 @@
-// ─── ZERØ COMMAND — RoadmapPage.tsx ──────────────────────────────────────────
-// 90-day sprint roadmap + 5-year vision with visual progress tracker
+// ─── ZERØ COMMAND — RoadmapPage.tsx v9.0 "Terminal Slab" ─────────────────────
+// Institutional restructure: from floating rounded cards → flat paneled slabs
+// joined by 1px hairline seams (no radius/shadow/glow/tints/gaps). Dense rows,
+// mono uppercase micro-labels, right-aligned tabular numerals. All colors are
+// CSS variables so light AND dark themes work. Progress math, all 3 tabs,
+// accordions, CheckList/EditableText/NotesList wiring & update() preserved.
 import { useState, useMemo } from "react";
 import { AppData } from "@/lib/store";
-import { SectionCard } from "@/components/SectionCard";
 import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
+import { Slab, Panel, SeamGrid, PanelHead, Badge, tLabelStyle, SEAM } from "@/components/terminal";
 import { Target, Calendar, TrendingUp, Flag, Clock } from "lucide-react";
 
 interface Props {
@@ -14,22 +18,23 @@ interface Props {
 }
 
 // ─── SPRINT PHASES ─────────────────────────────────────────────────────────────
+// `color` = decorative category accent (semantically distinct per phase).
 const PHASES = [
-  { key: "minggu12", label: "Minggu 1–2", subtitle: "Cari Klien Aktif", icon: "🎯", color: "#3b82f6", colorBg: "#3b82f615", duration: "2 minggu" },
-  { key: "minggu34", label: "Minggu 3–4", subtitle: "Monetisasi", icon: "💰", color: "#22c55e", colorBg: "#22c55e15", duration: "2 minggu" },
-  { key: "bulan2",   label: "Bulan 2",    subtitle: "Scale",      icon: "🚀", color: "#8b5cf6", colorBg: "#8b5cf615", duration: "1 bulan" },
-  { key: "bulan3",   label: "Bulan 3",    subtitle: "Stabilisasi",icon: "🛡️", color: "#f59e0b", colorBg: "#f59e0b15", duration: "1 bulan" },
+  { key: "minggu12", label: "Minggu 1–2", subtitle: "Cari Klien Aktif", icon: "🎯", color: "#5b8def",        duration: "2 minggu" },
+  { key: "minggu34", label: "Minggu 3–4", subtitle: "Monetisasi",       icon: "💰", color: "var(--gain)",     duration: "2 minggu" },
+  { key: "bulan2",   label: "Bulan 2",    subtitle: "Scale",            icon: "🚀", color: "#9a86d4",         duration: "1 bulan" },
+  { key: "bulan3",   label: "Bulan 3",    subtitle: "Stabilisasi",      icon: "🛡️", color: "var(--warning)",  duration: "1 bulan" },
 ] as const;
 
 type PhaseKey = (typeof PHASES)[number]["key"];
 
 // ─── 5 YEAR MILESTONES ────────────────────────────────────────────────────────
 const YEAR_MILESTONES = [
-  { year: 1, label: "Stabilisasi Income",  target: "$2K/bulan",  icon: "🌱", color: "#22c55e" },
-  { year: 2, label: "Scale Zero Build Lab", target: "$5K/bulan", icon: "⚡", color: "#3b82f6" },
-  { year: 3, label: "Tim Kecil",            target: "$10K/bulan", icon: "👥", color: "#8b5cf6" },
-  { year: 4, label: "Product-Led Growth",   target: "SaaS",      icon: "📦", color: "#f59e0b" },
-  { year: 5, label: "Financial Freedom",    target: "Bebas",     icon: "🏆", color: "#ef4444" },
+  { year: 1, label: "Stabilisasi Income",  target: "$2K/bulan",  icon: "🌱", color: "var(--gain)" },
+  { year: 2, label: "Scale Zero Build Lab", target: "$5K/bulan", icon: "⚡", color: "#5b8def" },
+  { year: 3, label: "Tim Kecil",            target: "$10K/bulan", icon: "👥", color: "#9a86d4" },
+  { year: 4, label: "Product-Led Growth",   target: "SaaS",      icon: "📦", color: "var(--warning)" },
+  { year: 5, label: "Financial Freedom",    target: "Bebas",     icon: "🏆", color: "var(--gold)" },
 ];
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
@@ -71,23 +76,37 @@ export function RoadmapPage({ data, update }: Props) {
     update((d) => ({ ...d, roadmap: { ...d.roadmap, [key]: items } }));
   };
 
-  const tabStyle = (t: string) => ({
-    padding: "6px 14px",
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 500,
-    fontFamily: "var(--font-sans)",
-    border: "none",
-    cursor: "pointer",
-    background: activeTab === t ? "hsl(var(--primary))" : "hsl(var(--muted) / 0.5)",
-    color: activeTab === t ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
-    transition: "all 0.15s",
-  } as React.CSSProperties);
+  // ── Terminal tab styling (active = primary on rail-active; inactive = muted on surface)
+  const tabStyle = (t: string): React.CSSProperties => {
+    const on = activeTab === t;
+    return {
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 7,
+      padding: "7px 13px",
+      borderRadius: 7,
+      fontSize: 10,
+      fontWeight: 700,
+      fontFamily: "var(--font-mono)",
+      letterSpacing: "0.08em",
+      textTransform: "uppercase",
+      border: `1px solid ${on ? "var(--rail-active-border)" : "var(--color-border)"}`,
+      cursor: "pointer",
+      background: on ? "var(--rail-active-bg)" : "var(--color-surface)",
+      color: on ? "var(--color-primary)" : "var(--color-muted)",
+      transition: "all 0.15s var(--ease-out)",
+    };
+  };
+
+  const monoNum = (size: number, weight: number, color: string): React.CSSProperties => ({
+    fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums",
+    fontSize: size, fontWeight: weight, color,
+  });
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-      {/* Tab Navigation */}
+      {/* ── Tab function bar ── */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         <button style={tabStyle("sprint")} onClick={() => setActiveTab("sprint")}>🎯 90 Hari Sprint</button>
         <button style={tabStyle("milestones")} onClick={() => setActiveTab("milestones")}>🗓️ Milestones</button>
@@ -97,129 +116,109 @@ export function RoadmapPage({ data, update }: Props) {
       {/* ── SPRINT TAB ── */}
       {activeTab === "sprint" && (
         <>
-          {/* Overall Progress */}
-          <div
-            style={{
-              padding: "18px 20px",
-              borderRadius: 14,
-              background: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-              <div>
-                <p style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))", margin: 0 }}>90 Hari Sprint Progress</p>
-                <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "3px 0 0" }}>
-                  {doneCount} dari {totalCount} tasks selesai
-                </p>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ fontSize: 32, fontWeight: 800, fontFamily: "var(--font-mono)", color: "hsl(var(--primary))", margin: 0, lineHeight: 1 }}>
+          {/* Overall Progress slab */}
+          <Slab>
+            <PanelHead
+              title={<span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><Target size={11} color="var(--color-muted)" /> 90-Day Sprint Progress</span>}
+              right={<Badge tone="accent">{doneCount}/{totalCount} DONE</Badge>}
+            />
+            {/* Headline completion */}
+            <Panel style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
+                <div style={{ minWidth: 0 }}>
+                  <span style={tLabelStyle}>Overall Completion</span>
+                  <p style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-muted)", margin: "6px 0 0" }}>
+                    {doneCount} dari {totalCount} tasks selesai
+                  </p>
+                </div>
+                <span className="num" style={{ ...monoNum(34, 700, "var(--color-primary)"), lineHeight: 1, letterSpacing: "-0.02em", flexShrink: 0 }}>
                   {progressPct}%
-                </p>
+                </span>
               </div>
-            </div>
-            {/* Progress bar */}
-            <div style={{ height: 8, background: "hsl(var(--muted) / 0.5)", borderRadius: 4, overflow: "hidden" }}>
-              <div
-                style={{
-                  height: "100%",
-                  width: `${progressPct}%`,
-                  background: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--primary) / 0.6))",
-                  borderRadius: 4,
-                  transition: "width 0.5s ease",
-                }}
-              />
-            </div>
+              <div style={{ height: 8, background: "var(--color-surface)", borderRadius: 4, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${progressPct}%`, background: "var(--color-primary)", borderRadius: 4, transition: "width 0.5s var(--ease-out)" }} />
+              </div>
+            </Panel>
 
-            {/* Phase mini bars */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginTop: 12 }}>
+            {/* Phase mini readouts — hairline-seamed grid */}
+            <SeamGrid cols="1fr 1fr 1fr 1fr" style={{ borderTop: `1px solid ${SEAM}` }}>
               {PHASES.map((phase) => {
                 const pct = getPhaseProgress(phase.key);
                 return (
-                  <div key={phase.key} style={{ textAlign: "center" }}>
-                    <p style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", fontFamily: "var(--font-mono)", margin: "0 0 3px" }}>
-                      {phase.label.toUpperCase()}
-                    </p>
-                    <div style={{ height: 4, background: "hsl(var(--muted) / 0.5)", borderRadius: 2, overflow: "hidden" }}>
-                      <div
-                        style={{
-                          height: "100%",
-                          width: `${pct}%`,
-                          background: phase.color,
-                          borderRadius: 2,
-                          transition: "width 0.5s ease",
-                        }}
-                      />
+                  <Panel key={phase.key} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 6 }}>
+                      <span style={tLabelStyle}>{phase.label}</span>
+                      <span className="num" style={{ ...monoNum(12, 700, phase.color), flexShrink: 0 }}>{pct}%</span>
                     </div>
-                    <p style={{ fontSize: 10, color: phase.color, fontWeight: 700, margin: "3px 0 0" }}>{pct}%</p>
-                  </div>
+                    <div style={{ height: 4, background: "var(--color-surface)", borderRadius: 2, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: phase.color, borderRadius: 2, transition: "width 0.5s var(--ease-out)" }} />
+                    </div>
+                    <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--color-muted)" }}>{phase.subtitle}</span>
+                  </Panel>
                 );
               })}
-            </div>
-          </div>
+            </SeamGrid>
+          </Slab>
 
-          {/* Phase Cards — Accordion */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {PHASES.map((phase) => {
+          {/* Phase accordion — one slab, hairline-seamed rows */}
+          <Slab>
+            <PanelHead
+              title={<span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><Flag size={11} color="var(--color-muted)" /> Execution Phases</span>}
+              right={<Badge tone="muted">{progressPct}% COMPLETE</Badge>}
+            />
+            {PHASES.map((phase, idx) => {
               const isOpen = expandedPhase === phase.key;
               const pct = getPhaseProgress(phase.key);
               const items = getPhaseItems(phase.key);
               const done = items.filter((i) => i.checked).length;
 
               return (
-                <div
-                  key={phase.key}
-                  style={{
-                    borderRadius: 12,
-                    border: `1px solid ${isOpen ? phase.color + "50" : "hsl(var(--border) / 0.5)"}`,
-                    background: isOpen ? phase.colorBg : "hsl(var(--card))",
-                    overflow: "hidden",
-                    transition: "all 0.2s",
-                  }}
-                >
-                  {/* Phase Header */}
+                <div key={phase.key}>
+                  {/* Phase header row */}
                   <button
                     onClick={() => setExpandedPhase(isOpen ? null : phase.key)}
                     style={{
                       width: "100%",
                       display: "flex",
                       alignItems: "center",
-                      gap: 10,
-                      padding: "14px 16px",
-                      background: "transparent",
+                      gap: 12,
+                      padding: "13px 16px",
+                      background: isOpen ? "var(--color-surface)" : "var(--glass-bg)",
                       border: "none",
+                      borderTop: idx > 0 ? `1px solid ${SEAM}` : "none",
+                      borderLeft: `2px solid ${isOpen ? phase.color : "transparent"}`,
                       cursor: "pointer",
                       textAlign: "left",
+                      transition: "background 0.15s var(--ease-out)",
                     }}
                   >
-                    <span style={{ fontSize: 20, flexShrink: 0 }}>{phase.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "hsl(var(--foreground))", margin: 0 }}>
+                    <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1 }}>{phase.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 600, color: "var(--color-text)", margin: 0, letterSpacing: "-0.01em" }}>
                         {phase.label} — {phase.subtitle}
                       </p>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                        <div style={{ flex: 1, height: 3, background: "hsl(var(--muted) / 0.4)", borderRadius: 2, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${pct}%`, background: phase.color, borderRadius: 2 }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+                        <div style={{ flex: 1, height: 3, background: "var(--color-surface)", borderRadius: 2, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: phase.color, borderRadius: 2, transition: "width 0.4s var(--ease-out)" }} />
                         </div>
-                        <span style={{ fontSize: 11, fontFamily: "var(--font-mono)", color: phase.color, fontWeight: 700, flexShrink: 0 }}>
+                        <span className="num" style={{ ...monoNum(10.5, 700, phase.color), flexShrink: 0 }}>
                           {done}/{items.length}
                         </span>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                      <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", fontFamily: "var(--font-mono)" }}>
-                        {phase.duration}
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                        <Clock size={10} color="var(--color-muted)" /> {phase.duration}
                       </span>
-                      <span style={{ fontSize: 14, color: "hsl(var(--muted-foreground))", transition: "transform 0.2s", display: "inline-block", transform: isOpen ? "rotate(180deg)" : "none" }}>
+                      <span style={{ fontSize: 12, color: "var(--color-muted)", transition: "transform 0.2s var(--ease-out)", display: "inline-block", transform: isOpen ? "rotate(180deg)" : "none" }}>
                         ▾
                       </span>
                     </div>
                   </button>
 
-                  {/* Phase Content */}
+                  {/* Phase content */}
                   {isOpen && (
-                    <div style={{ padding: "0 16px 16px" }}>
+                    <div style={{ padding: "12px 16px 16px", borderTop: `1px solid ${SEAM}`, borderLeft: `2px solid ${phase.color}`, background: "var(--color-surface)" }}>
                       <CheckList
                         items={items}
                         onChange={(updated) => updatePhaseItems(phase.key, updated)}
@@ -229,142 +228,146 @@ export function RoadmapPage({ data, update }: Props) {
                 </div>
               );
             })}
-          </div>
+          </Slab>
         </>
       )}
 
       {/* ── MILESTONES TAB ── */}
       {activeTab === "milestones" && (
-        <SectionCard title="Key Milestones — Timeline">
-          <div style={{ position: "relative", paddingLeft: 24 }}>
-            {/* Vertical line */}
-            <div style={{
-              position: "absolute",
-              left: 7,
-              top: 8,
-              bottom: 8,
-              width: 2,
-              background: "hsl(var(--border))",
-              borderRadius: 1,
-            }} />
+        <Slab>
+          <PanelHead title={<span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><Calendar size={11} color="var(--color-muted)" /> Key Milestones · Timeline</span>} />
+          <Panel>
+            <div style={{ position: "relative", paddingLeft: 24 }}>
+              {/* Vertical line */}
+              <div style={{
+                position: "absolute",
+                left: 7,
+                top: 8,
+                bottom: 8,
+                width: 2,
+                background: "var(--color-border)",
+                borderRadius: 1,
+              }} />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              {[
-                { phase: "Minggu 1-2", label: "Apply 5-10 jobs/hari", icon: "📨", color: "#3b82f6", done: r.minggu12.some(i => i.checked) },
-                { phase: "Minggu 1-2", label: "1-2 bounty pertama dari Dework", icon: "🏆", color: "#3b82f6", done: r.minggu12.filter(i => i.checked).length >= 4 },
-                { phase: "Minggu 3-4", label: "Setup payment link (Gumroad/LemonSqueezy)", icon: "💳", color: "#22c55e", done: r.minggu34.some(i => i.checked) },
-                { phase: "Minggu 3-4", label: "Soft launch ke komunitas trader", icon: "🚀", color: "#22c55e", done: r.minggu34.filter(i => i.checked).length >= 2 },
-                { phase: "Bulan 2", label: "1 klien aktif ATAU 20 subscriber PRO", icon: "👤", color: "#8b5cf6", done: r.bulan2.some(i => i.checked) },
-                { phase: "Bulan 2", label: "Stripe payment fiat live", icon: "💰", color: "#8b5cf6", done: r.bulan2.filter(i => i.checked).length >= 2 },
-                { phase: "Bulan 3", label: "Emergency savings 1 bulan", icon: "🛡️", color: "#f59e0b", done: r.bulan3.some(i => i.checked) },
-                { phase: "Bulan 3", label: "Zero Build Lab sebagai brand serius", icon: "🌐", color: "#f59e0b", done: r.bulan3.filter(i => i.checked).length >= 2 },
-              ].map((m, idx) => (
-                <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 12, position: "relative" }}>
-                  {/* Dot */}
-                  <div style={{
-                    position: "absolute",
-                    left: -24,
-                    top: 2,
-                    width: 14,
-                    height: 14,
-                    borderRadius: "50%",
-                    background: m.done ? m.color : "hsl(var(--background))",
-                    border: `2px solid ${m.color}`,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 7,
-                    flexShrink: 0,
-                  }}>
-                    {m.done && <span style={{ color: "#fff" }}>✓</span>}
-                  </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                {[
+                  { phase: "Minggu 1-2", label: "Apply 5-10 jobs/hari", icon: "📨", color: "#5b8def", done: r.minggu12.some(i => i.checked) },
+                  { phase: "Minggu 1-2", label: "1-2 bounty pertama dari Dework", icon: "🏆", color: "#5b8def", done: r.minggu12.filter(i => i.checked).length >= 4 },
+                  { phase: "Minggu 3-4", label: "Setup payment link (Gumroad/LemonSqueezy)", icon: "💳", color: "var(--gain)", done: r.minggu34.some(i => i.checked) },
+                  { phase: "Minggu 3-4", label: "Soft launch ke komunitas trader", icon: "🚀", color: "var(--gain)", done: r.minggu34.filter(i => i.checked).length >= 2 },
+                  { phase: "Bulan 2", label: "1 klien aktif ATAU 20 subscriber PRO", icon: "👤", color: "#9a86d4", done: r.bulan2.some(i => i.checked) },
+                  { phase: "Bulan 2", label: "Stripe payment fiat live", icon: "💰", color: "#9a86d4", done: r.bulan2.filter(i => i.checked).length >= 2 },
+                  { phase: "Bulan 3", label: "Emergency savings 1 bulan", icon: "🛡️", color: "var(--warning)", done: r.bulan3.some(i => i.checked) },
+                  { phase: "Bulan 3", label: "Zero Build Lab sebagai brand serius", icon: "🌐", color: "var(--warning)", done: r.bulan3.filter(i => i.checked).length >= 2 },
+                ].map((m, idx) => (
+                  <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 12, position: "relative" }}>
+                    {/* Status dot: done = gain, pending = hollow */}
+                    <div style={{
+                      position: "absolute",
+                      left: -24,
+                      top: 2,
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      background: m.done ? "var(--gain-soft)" : "var(--color-surface)",
+                      border: `1.5px solid ${m.done ? "var(--gain)" : "var(--color-border)"}`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 8,
+                      flexShrink: 0,
+                    }}>
+                      {m.done && <span style={{ color: "var(--gain)", fontWeight: 700 }}>✓</span>}
+                    </div>
 
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 10, color: m.color, fontFamily: "var(--font-mono)", fontWeight: 600, margin: "0 0 2px", letterSpacing: "0.04em" }}>
-                      {m.phase.toUpperCase()}
-                    </p>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 14 }}>{m.icon}</span>
-                      <p style={{ fontSize: 13, color: m.done ? "hsl(var(--foreground))" : "hsl(var(--muted-foreground))", margin: 0, fontWeight: m.done ? 600 : 400 }}>
-                        {m.label}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: m.color, fontWeight: 700, margin: "0 0 3px", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                        {m.phase}
                       </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <span style={{ fontSize: 13, flexShrink: 0 }}>{m.icon}</span>
+                        <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: m.done ? "var(--color-text)" : "var(--color-muted)", margin: 0, fontWeight: m.done ? 600 : 400 }}>
+                          {m.label}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        </SectionCard>
+          </Panel>
+        </Slab>
       )}
 
       {/* ── VISION TAB ── */}
       {activeTab === "vision" && (
         <>
-          {/* 5-Year Timeline */}
-          <SectionCard title="Roadmap 5 Tahun — ZERØ Empire">
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {YEAR_MILESTONES.map((m, idx) => (
-                <div
-                  key={m.year}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: "14px 16px",
-                    borderRadius: 12,
-                    background: `${m.color}10`,
-                    border: `1px solid ${m.color}30`,
-                  }}
-                >
+          {/* 5-Year timeline slab */}
+          <Slab>
+            <PanelHead title={<span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><TrendingUp size={11} color="var(--color-muted)" /> Roadmap 5 Tahun · ZERØ Empire</span>} />
+            <SeamGrid cols="1fr">
+              {YEAR_MILESTONES.map((m) => (
+                <Panel key={m.year} style={{ display: "flex", alignItems: "center", gap: 13 }}>
                   <div style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 10,
-                    background: `${m.color}20`,
-                    border: `1px solid ${m.color}40`,
+                    width: 40,
+                    height: 40,
+                    borderRadius: 8,
+                    background: "var(--color-surface)",
+                    border: `1px solid ${SEAM}`,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}>
-                    <span style={{ fontSize: 20 }}>{m.icon}</span>
+                    <span style={{ fontSize: 19 }}>{m.icon}</span>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 11, color: m.color, fontFamily: "var(--font-mono)", fontWeight: 700, margin: "0 0 2px", letterSpacing: "0.05em" }}>
-                      TAHUN {m.year}
-                    </p>
-                    <p style={{ fontSize: 14, fontWeight: 600, color: "hsl(var(--foreground))", margin: 0 }}>{m.label}</p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: m.color, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                      Tahun {m.year}
+                    </span>
+                    <p style={{ fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 600, color: "var(--color-text)", margin: "3px 0 0", letterSpacing: "-0.01em" }}>{m.label}</p>
                   </div>
-                  <div style={{
-                    padding: "5px 12px",
-                    borderRadius: 8,
-                    background: `${m.color}15`,
-                    border: `1px solid ${m.color}30`,
-                  }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: m.color, margin: 0, fontFamily: "var(--font-mono)" }}>{m.target}</p>
-                  </div>
-                </div>
+                  <span className="num" style={{
+                    fontFamily: "var(--font-mono)",
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: m.color,
+                    background: "var(--color-surface)",
+                    border: `1px solid ${SEAM}`,
+                    padding: "5px 11px",
+                    borderRadius: 6,
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}>{m.target}</span>
+                </Panel>
               ))}
-            </div>
-          </SectionCard>
+            </SeamGrid>
+          </Slab>
 
           {/* Editable long-term vision */}
-          <SectionCard title="Vision Statement — Versi Lu">
-            <EditableText
-              value={r.roadmap5tahun}
-              onChange={(val) => update((d) => ({ ...d, roadmap: { ...d.roadmap, roadmap5tahun: val } }))}
-            />
-          </SectionCard>
+          <Slab>
+            <PanelHead title="Vision Statement · Versi Lu" />
+            <Panel>
+              <EditableText
+                value={r.roadmap5tahun}
+                onChange={(val) => update((d) => ({ ...d, roadmap: { ...d.roadmap, roadmap5tahun: val } }))}
+              />
+            </Panel>
+          </Slab>
         </>
       )}
 
       {/* Notes */}
-      <SectionCard title="Notes">
-        <NotesList
-          notes={r.notes}
-          onChange={(notes) => update((d) => ({ ...d, roadmap: { ...d.roadmap, notes } }))}
-        />
-      </SectionCard>
+      <Slab>
+        <PanelHead title="Notes" />
+        <Panel>
+          <NotesList
+            notes={r.notes}
+            onChange={(notes) => update((d) => ({ ...d, roadmap: { ...d.roadmap, notes } }))}
+          />
+        </Panel>
+      </Slab>
     </div>
   );
 }

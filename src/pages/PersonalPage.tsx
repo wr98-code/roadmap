@@ -1,11 +1,14 @@
-// ─── ZERØ COMMAND — PersonalPage.tsx ─────────────────────────────────────────
-// Survival rules, daily discipline, mindset, habit streak tracker, rebuild plan
+// ─── ZERØ COMMAND — PersonalPage.tsx v2.0 "Terminal Slab" ────────────────────
+// Institutional restructure: floating cards → flat paneled slabs joined by
+// hairline seams, dense rows, mono micro-labels, tabular numerals. All habit /
+// mood localStorage logic, the keyed Fragment heatmap, getDateKey, and the mood
+// emoji scale are preserved verbatim — only structure + color-var hygiene change.
 import { useState, useEffect, Fragment } from "react";
 import { AppData } from "@/lib/store";
-import { SectionCard } from "@/components/SectionCard";
 import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
+import { Slab, Panel, PanelHead, SeamGrid, Badge, Stat, SEAM, tLabelStyle } from "@/components/terminal";
 import { Flame, Shield, Brain, Target, Calendar, CheckCircle2, Circle, TrendingUp } from "lucide-react";
 
 interface Props {
@@ -55,12 +58,14 @@ function getLast7Days() {
 }
 
 // ─── MOOD TRACKER ─────────────────────────────────────────────────────────────
+// Emoji scale preserved; colors mapped to theme vars so the scale reads in both
+// light & dark (loss → warning → neutral → gain → gold prestige).
 const MOODS = [
-  { value: 1, label: "Hancur",   emoji: "😵", color: "#ef4444" },
-  { value: 2, label: "Berat",    emoji: "😔", color: "#f97316" },
-  { value: 3, label: "Oke",      emoji: "😐", color: "#eab308" },
-  { value: 4, label: "Bagus",    emoji: "😊", color: "#22c55e" },
-  { value: 5, label: "Fired Up", emoji: "🔥", color: "#8b5cf6" },
+  { value: 1, label: "Hancur",   emoji: "😵", color: "var(--loss)" },
+  { value: 2, label: "Berat",    emoji: "😔", color: "var(--warning)" },
+  { value: 3, label: "Oke",      emoji: "😐", color: "var(--color-muted)" },
+  { value: 4, label: "Bagus",    emoji: "😊", color: "var(--gain)" },
+  { value: 5, label: "Fired Up", emoji: "🔥", color: "var(--gold)" },
 ];
 
 const MOOD_KEY = "zero-mood-log-v1";
@@ -70,6 +75,14 @@ function loadMoods(): Record<string, number> {
 function saveMoods(m: Record<string, number>) {
   localStorage.setItem(MOOD_KEY, JSON.stringify(m));
 }
+
+// ─── IDENTITY STATEMENTS ──────────────────────────────────────────────────────
+const IDENTITY = [
+  { label: "Builder",   desc: "Lu builder. Bukan trader doang. Bukan freelancer doang. Lu bangun sistem." },
+  { label: "Resilient", desc: "Lu udah survive situasi worse dari ini. Lu bakal survive ini juga." },
+  { label: "Iterating", desc: "Failure bukan kekalahan. Failure adalah data. Lu iterating." },
+  { label: "Patient",   desc: "Compound butuh waktu. Trust the process. Satu langkah per hari." },
+];
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 export function PersonalPage({ data, update }: Props) {
@@ -119,101 +132,134 @@ export function PersonalPage({ data, update }: Props) {
   };
 
   const todayMood = moodLog[today];
+  const todayMoodDef = MOODS.find((m) => m.value === todayMood);
   const todayDoneCount = todayHabits.length;
   const totalHabits = HABIT_DEFINITIONS.length;
   const completionPct = Math.round((todayDoneCount / totalHabits) * 100);
 
-  const tabStyle = (t: string) => ({
-    padding: "6px 14px",
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 500,
-    fontFamily: "var(--font-sans)",
-    border: "none",
+  const TABS: { key: "habits" | "rules" | "mindset"; label: string; icon: string }[] = [
+    { key: "habits",  label: "Daily Habits",       icon: "🔥" },
+    { key: "rules",   label: "Rules & Discipline",  icon: "🛡️" },
+    { key: "mindset", label: "Mindset",            icon: "🧠" },
+  ];
+
+  const tabStyle = (t: string): React.CSSProperties => ({
+    display: "flex",
+    alignItems: "center",
+    gap: 7,
+    padding: "8px 14px",
+    borderRadius: 7,
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    fontWeight: 600,
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
     cursor: "pointer",
-    background: activeTab === t ? "hsl(var(--primary))" : "hsl(var(--muted) / 0.5)",
-    color: activeTab === t ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+    background: activeTab === t ? "var(--rail-active-bg)" : "var(--color-surface)",
+    color: activeTab === t ? "var(--color-primary)" : "var(--color-muted)",
+    border: activeTab === t ? "1px solid var(--rail-active-border)" : `1px solid ${SEAM}`,
     transition: "all 0.15s",
-  } as React.CSSProperties);
+    whiteSpace: "nowrap",
+  });
 
   return (
-    <div className="space-y-5">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-      {/* Tab Navigation */}
+      {/* ── Tab Navigation ── */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button style={tabStyle("habits")} onClick={() => setActiveTab("habits")}>🔥 Daily Habits</button>
-        <button style={tabStyle("rules")} onClick={() => setActiveTab("rules")}>🛡️ Rules & Discipline</button>
-        <button style={tabStyle("mindset")} onClick={() => setActiveTab("mindset")}>🧠 Mindset</button>
+        {TABS.map((t) => (
+          <button key={t.key} style={tabStyle(t.key)} onClick={() => setActiveTab(t.key)}>
+            <span style={{ fontSize: 13 }}>{t.icon}</span>{t.label}
+          </button>
+        ))}
       </div>
 
       {/* ── HABITS TAB ── */}
       {activeTab === "habits" && (
         <>
-          {/* Today Summary */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-            <div style={{ padding: "14px", borderRadius: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", textAlign: "center" }}>
-              <p style={{ fontSize: 28, fontWeight: 800, fontFamily: "var(--font-mono)", color: "hsl(var(--primary))", margin: 0 }}>
-                {todayDoneCount}/{totalHabits}
-              </p>
-              <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "4px 0 0", fontFamily: "var(--font-mono)" }}>Hari ini</p>
-            </div>
-            <div style={{ padding: "14px", borderRadius: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", textAlign: "center" }}>
-              <p style={{ fontSize: 28, fontWeight: 800, fontFamily: "var(--font-mono)", color: completionPct === 100 ? "#22c55e" : "hsl(var(--foreground))", margin: 0 }}>
-                {completionPct}%
-              </p>
-              <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "4px 0 0", fontFamily: "var(--font-mono)" }}>Completion</p>
-            </div>
-            <div style={{ padding: "14px", borderRadius: 12, background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", textAlign: "center" }}>
-              {todayMood ? (
-                <>
-                  <p style={{ fontSize: 28, margin: 0 }}>{MOODS.find((m) => m.value === todayMood)?.emoji}</p>
-                  <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "4px 0 0" }}>
-                    {MOODS.find((m) => m.value === todayMood)?.label}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p style={{ fontSize: 20, margin: 0 }}>—</p>
-                  <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "4px 0 0" }}>Mood belum</p>
-                </>
-              )}
-            </div>
-          </div>
+          {/* Today Summary — KPI triad */}
+          <Slab>
+            <PanelHead
+              title={`Today · ${today}`}
+              right={<Badge tone={completionPct === 100 ? "gain" : "muted"}>{todayDoneCount}/{totalHabits} DONE</Badge>}
+            />
+            <SeamGrid cols="1fr 1fr 1fr">
+              <Stat
+                label="Completed"
+                value={<span className="num">{todayDoneCount}/{totalHabits}</span>}
+                tint="var(--color-primary)"
+                sub="Habits today"
+              />
+              <Stat
+                label="Completion"
+                value={<span className="num">{completionPct}%</span>}
+                tint={completionPct === 100 ? "var(--gain)" : "var(--color-text)"}
+                sub={completionPct === 100 ? "Perfect day" : "Keep going"}
+              />
+              <Stat
+                label="Mood"
+                value={<span style={{ fontSize: 24 }}>{todayMoodDef ? todayMoodDef.emoji : "—"}</span>}
+                sub={todayMoodDef ? todayMoodDef.label : "Belum di-log"}
+              />
+            </SeamGrid>
+          </Slab>
 
           {/* Mood Check-in */}
-          <SectionCard title="Mood Hari Ini">
-            <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
-              {MOODS.map((m) => (
-                <button
-                  key={m.value}
-                  onClick={() => setMood(m.value)}
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 4,
-                    padding: "10px 6px",
-                    borderRadius: 10,
-                    border: `2px solid ${todayMood === m.value ? m.color : "hsl(var(--border) / 0.5)"}`,
-                    background: todayMood === m.value ? m.color + "20" : "transparent",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  <span style={{ fontSize: 22 }}>{m.emoji}</span>
-                  <span style={{ fontSize: 9, color: todayMood === m.value ? m.color : "hsl(var(--muted-foreground))", fontWeight: 600, fontFamily: "var(--font-mono)" }}>
-                    {m.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </SectionCard>
+          <Slab>
+            <PanelHead
+              title="Mood Hari Ini"
+              right={todayMoodDef
+                ? <Badge tone="accent">{todayMoodDef.label}</Badge>
+                : <span style={tLabelStyle}>Tap untuk log</span>}
+            />
+            <Panel>
+              <div style={{ display: "flex", gap: 8 }}>
+                {MOODS.map((m) => {
+                  const sel = todayMood === m.value;
+                  return (
+                    <button
+                      key={m.value}
+                      onClick={() => setMood(m.value)}
+                      style={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 5,
+                        padding: "10px 6px",
+                        borderRadius: 7,
+                        border: sel ? `1.5px solid ${m.color}` : `1px solid ${SEAM}`,
+                        background: sel ? "var(--color-surface)" : "transparent",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                      <span style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                        color: sel ? m.color : "var(--color-muted)",
+                      }}>
+                        {m.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </Panel>
+          </Slab>
 
-          {/* Habit Tracker */}
-          <SectionCard title="Daily Habits — Tap untuk Check/Uncheck">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {HABIT_DEFINITIONS.map((habit) => {
+          {/* Habit Tracker — dense hairline rows */}
+          <Slab>
+            <PanelHead
+              title="Daily Habits — Tap Check/Uncheck"
+              right={<Badge tone={completionPct === 100 ? "gain" : "muted"}>{todayDoneCount}/{totalHabits}</Badge>}
+            />
+            <Panel style={{ padding: 0 }}>
+              {HABIT_DEFINITIONS.map((habit, i) => {
                 const done = todayHabits.includes(habit.id);
                 const streak = getStreak(habit.id);
                 return (
@@ -223,171 +269,182 @@ export function PersonalPage({ data, update }: Props) {
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 10,
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      background: done ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted) / 0.3)",
-                      border: `1px solid ${done ? "hsl(var(--primary) / 0.3)" : "hsl(var(--border) / 0.5)"}`,
+                      gap: 11,
+                      padding: "11px 16px",
+                      borderBottom: i < HABIT_DEFINITIONS.length - 1 ? `1px solid ${SEAM}` : "none",
+                      background: done ? "var(--color-surface)" : "transparent",
                       cursor: "pointer",
-                      transition: "all 0.15s",
                       userSelect: "none",
+                      transition: "background 0.15s",
                     }}
                   >
-                    <span style={{ fontSize: 18, flexShrink: 0 }}>{habit.icon}</span>
-                    <span style={{ flex: 1, fontSize: 13, color: done ? "hsl(var(--foreground))" : "hsl(var(--foreground) / 0.7)", fontWeight: done ? 600 : 400, textDecoration: done ? "none" : "none" }}>
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>{habit.icon}</span>
+                    <span style={{
+                      flex: 1,
+                      fontFamily: "var(--font-sans)",
+                      fontSize: 13,
+                      color: done ? "var(--color-text)" : "var(--color-muted)",
+                      fontWeight: done ? 600 : 400,
+                    }}>
                       {habit.label}
                     </span>
                     {streak > 0 && (
-                      <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700, display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
+                      <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--warning)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
                         🔥 {streak}d
                       </span>
                     )}
-                    <div style={{ flexShrink: 0, color: done ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.4)" }}>
-                      {done ? <CheckCircle2 size={18} /> : <Circle size={18} />}
+                    <div style={{ flexShrink: 0, display: "flex", color: done ? "var(--color-primary)" : "var(--color-muted)" }}>
+                      {done ? <CheckCircle2 size={17} /> : <Circle size={17} />}
                     </div>
                   </div>
                 );
               })}
-            </div>
-          </SectionCard>
+            </Panel>
+          </Slab>
 
-          {/* 7-Day View */}
-          <SectionCard title="7 Hari Terakhir">
-            <div style={{ overflowX: "auto" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "auto repeat(7, 1fr)", gap: 4, minWidth: 380 }}>
-                {/* Header row */}
-                <div style={{ fontSize: 10, color: "hsl(var(--muted-foreground))" }} />
-                {last7.map((d) => (
-                  <div key={d.toISOString()} style={{ textAlign: "center" }}>
-                    <p style={{ fontSize: 9, color: "hsl(var(--muted-foreground))", fontFamily: "var(--font-mono)", margin: 0 }}>
-                      {d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}
-                    </p>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: getDateKey(d) === today ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))", margin: "2px 0 4px" }}>
-                      {d.getDate()}
-                    </p>
-                  </div>
-                ))}
-
-                {/* Habit rows */}
-                {HABIT_DEFINITIONS.map((habit) => (
-                  <Fragment key={habit.id}>
-                    <div style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", display: "flex", alignItems: "center", paddingRight: 8, whiteSpace: "nowrap" }}>
-                      {habit.icon}
+          {/* 7-Day View — consistency heatmap */}
+          <Slab>
+            <PanelHead title="7 Hari Terakhir" right={<span style={tLabelStyle}>{HABIT_DEFINITIONS.length} habits</span>} />
+            <Panel>
+              <div style={{ overflowX: "auto" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "auto repeat(7, 1fr)", gap: 4, minWidth: 380 }}>
+                  {/* Header row */}
+                  <div />
+                  {last7.map((d) => (
+                    <div key={d.toISOString()} style={{ textAlign: "center" }}>
+                      <p className="num" style={{ ...tLabelStyle, fontSize: 9, margin: 0 }}>
+                        {d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()}
+                      </p>
+                      <p className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 600, color: getDateKey(d) === today ? "var(--color-primary)" : "var(--color-muted)", margin: "2px 0 4px" }}>
+                        {d.getDate()}
+                      </p>
                     </div>
-                    {last7.map((d) => {
-                      const key = getDateKey(d);
-                      const done = (habitLog[key] || []).includes(habit.id);
-                      return (
-                        <div
-                          key={`${habit.id}-${key}`}
-                          style={{
-                            aspectRatio: "1",
-                            borderRadius: 4,
-                            background: done ? "hsl(var(--primary) / 0.7)" : "hsl(var(--muted) / 0.3)",
-                            border: `1px solid ${done ? "hsl(var(--primary) / 0.4)" : "hsl(var(--border) / 0.3)"}`,
-                          }}
-                        />
-                      );
-                    })}
-                  </Fragment>
-                ))}
+                  ))}
+
+                  {/* Habit rows */}
+                  {HABIT_DEFINITIONS.map((habit) => (
+                    <Fragment key={habit.id}>
+                      <div style={{ fontSize: 12, color: "var(--color-muted)", display: "flex", alignItems: "center", paddingRight: 8, whiteSpace: "nowrap" }}>
+                        {habit.icon}
+                      </div>
+                      {last7.map((d) => {
+                        const key = getDateKey(d);
+                        const done = (habitLog[key] || []).includes(habit.id);
+                        return (
+                          <div
+                            key={`${habit.id}-${key}`}
+                            style={{
+                              aspectRatio: "1",
+                              borderRadius: 3,
+                              background: done ? "var(--color-primary)" : "var(--color-surface)",
+                              border: `1px solid ${done ? "var(--color-primary)" : SEAM}`,
+                            }}
+                          />
+                        );
+                      })}
+                    </Fragment>
+                  ))}
+                </div>
               </div>
-            </div>
-          </SectionCard>
+            </Panel>
+          </Slab>
         </>
       )}
 
       {/* ── RULES TAB ── */}
       {activeTab === "rules" && (
         <>
-          <SectionCard title="🛡️ Rules Survival Mode">
-            <EditableText
-              value={p.rulesSurvival}
-              onChange={(val) => update((d) => ({ ...d, personal: { ...d.personal, rulesSurvival: val } }))}
-            />
-          </SectionCard>
+          <Slab>
+            <PanelHead title="🛡️ Rules Survival Mode" />
+            <Panel>
+              <EditableText
+                value={p.rulesSurvival}
+                onChange={(val) => update((d) => ({ ...d, personal: { ...d.personal, rulesSurvival: val } }))}
+              />
+            </Panel>
+          </Slab>
 
-          <SectionCard title="✅ Daily Discipline Checklist">
-            <CheckList
-              items={p.dailyDiscipline}
-              onChange={(items) => update((d) => ({ ...d, personal: { ...d.personal, dailyDiscipline: items } }))}
-            />
-          </SectionCard>
+          <Slab>
+            <PanelHead title="✅ Daily Discipline Checklist" />
+            <Panel>
+              <CheckList
+                items={p.dailyDiscipline}
+                onChange={(items) => update((d) => ({ ...d, personal: { ...d.personal, dailyDiscipline: items } }))}
+              />
+            </Panel>
+          </Slab>
 
-          <SectionCard title="🔄 Checklist Rebuild">
-            <CheckList
-              items={p.checklistRebuild}
-              onChange={(items) => update((d) => ({ ...d, personal: { ...d.personal, checklistRebuild: items } }))}
-            />
-          </SectionCard>
+          <Slab>
+            <PanelHead title="🔄 Checklist Rebuild" />
+            <Panel>
+              <CheckList
+                items={p.checklistRebuild}
+                onChange={(items) => update((d) => ({ ...d, personal: { ...d.personal, checklistRebuild: items } }))}
+              />
+            </Panel>
+          </Slab>
         </>
       )}
 
       {/* ── MINDSET TAB ── */}
       {activeTab === "mindset" && (
         <>
-          {/* Affirmation card */}
-          <div
-            style={{
-              padding: "20px 20px",
-              borderRadius: 14,
-              background: "linear-gradient(135deg, hsl(var(--primary) / 0.1), hsl(var(--primary) / 0.05))",
-              border: "1px solid hsl(var(--primary) / 0.2)",
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: 32, margin: "0 0 12px" }}>🧠</p>
-            <p style={{ fontSize: 16, fontWeight: 700, color: "hsl(var(--foreground))", lineHeight: 1.5, fontFamily: "var(--font-sans)", margin: 0 }}>
-              "Ini bukan kegagalan — ini rebuild."
-            </p>
-            <p style={{ fontSize: 13, color: "hsl(var(--muted-foreground))", marginTop: 8, lineHeight: 1.5 }}>
-              Skill masih ada. Pengalaman masih ada. Modal bisa dibangun lagi.
-            </p>
-          </div>
+          {/* Affirmation — flat, no gradient */}
+          <Slab>
+            <Panel style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", padding: "24px 20px" }}>
+              <span style={{ fontSize: 30 }}>🧠</span>
+              <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 17, fontWeight: 500, color: "var(--color-text)", lineHeight: 1.5, margin: 0 }}>
+                "Ini bukan kegagalan — ini rebuild."
+              </p>
+              <p style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, color: "var(--color-muted)", lineHeight: 1.5, margin: 0, maxWidth: 440 }}>
+                Skill masih ada. Pengalaman masih ada. Modal bisa dibangun lagi.
+              </p>
+            </Panel>
+          </Slab>
 
-          <SectionCard title="Mindset Core">
-            <EditableText
-              value={p.mindset}
-              onChange={(val) => update((d) => ({ ...d, personal: { ...d.personal, mindset: val } }))}
-            />
-          </SectionCard>
+          <Slab>
+            <PanelHead title="Mindset Core" />
+            <Panel>
+              <EditableText
+                value={p.mindset}
+                onChange={(val) => update((d) => ({ ...d, personal: { ...d.personal, mindset: val } }))}
+              />
+            </Panel>
+          </Slab>
 
-          {/* Identity statements */}
-          <SectionCard title="Identity — Siapa Lu">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { label: "Builder", desc: "Lu builder. Bukan trader doang. Bukan freelancer doang. Lu bangun sistem." },
-                { label: "Resilient", desc: "Lu udah survive situasi worse dari ini. Lu bakal survive ini juga." },
-                { label: "Iterating", desc: "Failure bukan kekalahan. Failure adalah data. Lu iterating." },
-                { label: "Patient", desc: "Compound butuh waktu. Trust the process. Satu langkah per hari." },
-              ].map((id) => (
+          {/* Identity statements — dense hairline rows */}
+          <Slab>
+            <PanelHead title="Identity — Siapa Lu" />
+            <Panel style={{ padding: 0 }}>
+              {IDENTITY.map((id, i) => (
                 <div
                   key={id.label}
                   style={{
-                    padding: "12px 14px",
-                    borderRadius: 10,
-                    background: "hsl(var(--muted) / 0.3)",
-                    border: "1px solid hsl(var(--border) / 0.5)",
+                    padding: "12px 16px",
+                    borderBottom: i < IDENTITY.length - 1 ? `1px solid ${SEAM}` : "none",
                   }}
                 >
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "hsl(var(--primary))", margin: "0 0 4px", fontFamily: "var(--font-mono)", letterSpacing: "0.05em" }}>
+                  <p style={{ ...tLabelStyle, color: "var(--color-primary)", margin: "0 0 5px" }}>
                     // {id.label.toUpperCase()}
                   </p>
-                  <p style={{ fontSize: 13, color: "hsl(var(--foreground))", margin: 0, lineHeight: 1.5 }}>{id.desc}</p>
+                  <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text)", margin: 0, lineHeight: 1.5 }}>{id.desc}</p>
                 </div>
               ))}
-            </div>
-          </SectionCard>
+            </Panel>
+          </Slab>
         </>
       )}
 
-      {/* Notes */}
-      <SectionCard title="Notes">
-        <NotesList
-          notes={p.notes}
-          onChange={(notes) => update((d) => ({ ...d, personal: { ...d.personal, notes } }))}
-        />
-      </SectionCard>
+      {/* ── Notes (always visible) ── */}
+      <Slab>
+        <PanelHead title="Notes" />
+        <Panel>
+          <NotesList
+            notes={p.notes}
+            onChange={(notes) => update((d) => ({ ...d, personal: { ...d.personal, notes } }))}
+          />
+        </Panel>
+      </Slab>
     </div>
   );
 }

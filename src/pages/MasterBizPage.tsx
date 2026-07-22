@@ -1,6 +1,8 @@
 // ─── ZERØ COMMAND — MasterBizPage.tsx ─────────────────────────────────────────
 // Master Business Intelligence · All Industries · 2025–2035
 // Research: Claude (Anthropic) · Updated: April 2026
+// Institutional terminal restructure — flat hairline-seam panels (Slab),
+// theme-aware CSS-var color hygiene (light + dark). Logic + data unchanged.
 
 import { useState } from 'react';
 import {
@@ -8,6 +10,10 @@ import {
   Bitcoin, Code2, Layers, HeartPulse, ChevronDown, ChevronUp,
   Rocket, Star, AlertTriangle, CheckCircle2, ArrowRight, Package,
 } from 'lucide-react';
+import {
+  Slab, PageTitle, PanelHead, Badge,
+  tLabelStyle, tNumStyle, SEAM,
+} from '@/components/terminal';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface MarketData {
@@ -379,60 +385,62 @@ const ANTIPATTERNS = [
 ];
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
+// Phase accent colors — theme-aware CSS vars (work in light + dark).
 const PHASE_LABEL: Record<number, { label: string; color: string }> = {
-  1: { label: 'FASE 1 · 0–3 Bulan', color: '#10b981' },
-  2: { label: 'FASE 2 · 3–6 Bulan', color: '#2563eb' },
-  3: { label: 'FASE 3 · 6–12 Bulan', color: '#7c3aed' },
-  4: { label: 'FASE 4 · 12–24 Bulan', color: '#d97706' },
+  1: { label: 'FASE 1 · 0–3 Bulan', color: 'var(--gain)' },
+  2: { label: 'FASE 2 · 3–6 Bulan', color: 'var(--color-primary)' },
+  3: { label: 'FASE 3 · 6–12 Bulan', color: 'var(--gold)' },
+  4: { label: 'FASE 4 · 12–24 Bulan', color: 'var(--warning)' },
 };
-const STATUS_COLOR = { EXISTING: '#10b981', BUILD: '#2563eb', EXPAND: '#d97706' };
-const EFFORT_COLOR = { LOW: '#10b981', MED: '#d97706', HIGH: '#dc2626' };
-const MATCH_COLOR = { HIGH: '#10b981', MED: '#d97706', LOW: '#6b7280' };
-const PRIORITY_COLOR = { NOW: '#dc2626', SOON: '#d97706', LATER: '#2563eb' };
 
-function Badge({ text, color }: { text: string; color: string }) {
-  return (
-    <span style={{
-      fontSize: 9, fontWeight: 700, fontFamily: 'monospace', letterSpacing: 1,
-      padding: '2px 7px', borderRadius: 4,
-      background: color + '20', color,
-    }}>{text}</span>
-  );
-}
+// Semantic status → Badge tone (all map to theme-aware CSS vars inside Badge).
+type Tone = 'muted' | 'gain' | 'loss' | 'warning' | 'accent';
+const STATUS_TONE: Record<BuildItem['status'], Tone> = { EXISTING: 'gain', BUILD: 'accent', EXPAND: 'warning' };
+const EFFORT_TONE: Record<BuildItem['effort'], Tone> = { LOW: 'gain', MED: 'warning', HIGH: 'loss' };
+const MATCH_TONE: Record<MarketData['skillMatch'], Tone> = { HIGH: 'gain', MED: 'warning', LOW: 'muted' };
+const PRIORITY_TONE: Record<DistChannel['priority'], Tone> = { NOW: 'loss', SOON: 'warning', LATER: 'accent' };
 
+// Collapsible terminal section: outer Slab + hairline-underlined header + body.
 function Section({ title, icon: Icon, color, children }: {
   title: string; icon: any; color: string; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
   return (
-    <div style={{
-      background: 'var(--color-card)', borderRadius: 12,
-      border: '1px solid var(--color-border)', overflow: 'hidden',
-    }}>
+    <Slab>
       <button
         onClick={() => setOpen(!open)}
         style={{
-          width: '100%', padding: '14px 18px', display: 'flex', alignItems: 'center',
-          gap: 10, background: 'var(--color-surface)', border: 'none',
-          borderBottom: open ? '1px solid var(--color-border)' : 'none',
+          width: '100%', padding: '11px 16px', display: 'flex', alignItems: 'center',
+          gap: 10, background: 'var(--glass-bg)', border: 'none',
+          borderBottom: open ? `1px solid ${SEAM}` : 'none',
           cursor: 'pointer', textAlign: 'left',
         }}
       >
-        <span style={{
-          width: 28, height: 28, borderRadius: 7, background: color + '20',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        }}>
-          <Icon size={14} color={color} />
-        </span>
-        <span style={{ fontSize: 11, fontWeight: 700, fontFamily: 'monospace', letterSpacing: 1.5, color: 'var(--color-text)', flex: 1 }}>
-          {title}
-        </span>
+        <Icon size={14} color={color} style={{ flexShrink: 0 }} />
+        <span style={{ ...tLabelStyle, fontSize: 10, flex: 1 }}>{title}</span>
         {open ? <ChevronUp size={14} color="var(--color-muted)" /> : <ChevronDown size={14} color="var(--color-muted)" />}
       </button>
-      {open && <div style={{ padding: '18px' }}>{children}</div>}
-    </div>
+      {open && <div style={{ padding: 16 }}>{children}</div>}
+    </Slab>
   );
 }
+
+// Terminal filter tab (square-ish, var-driven active/inactive states).
+function tabStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+    fontFamily: 'var(--font-mono)', letterSpacing: '0.04em',
+    border: `1px solid ${active ? 'var(--rail-active-border)' : 'var(--color-border)'}`,
+    background: active ? 'var(--rail-active-bg)' : 'var(--color-surface)',
+    color: active ? 'var(--color-primary)' : 'var(--color-muted)',
+    cursor: 'pointer', transition: 'all .15s',
+  };
+}
+
+// Mono micro-label used inline before dense values.
+const microLabel: React.CSSProperties = {
+  ...tLabelStyle, fontSize: 9, minWidth: 52, flexShrink: 0, paddingTop: 2,
+};
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 export function MasterBizPage() {
@@ -445,58 +453,47 @@ export function MasterBizPage() {
   const phaseGroups = [1, 2, 3, 4] as const;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* ── HEADER ── */}
-      <div style={{ marginBottom: 4 }}>
-        <h2 style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 700, letterSpacing: 2, color: 'var(--color-text)', marginBottom: 4 }}>
-          MASTER BUSINESS INTEL
-        </h2>
-        <p style={{ fontSize: 12, color: 'var(--color-muted)' }}>
-          All industries · All verticals · 2025–2035 · Riset deep + data real
-        </p>
-      </div>
+      <PageTitle
+        title="Master Business Intel"
+        subtitle="All industries · All verticals · 2025–2035 · Riset deep + data real"
+      />
 
       {/* ── 1. POSITIONING ── */}
-      <div style={{
-        background: 'var(--color-card)', border: '1px solid var(--color-border)',
-        borderRadius: 12, padding: '16px 18px',
-      }}>
-        <p style={{ fontSize: 9, fontFamily: 'monospace', letterSpacing: 2, fontWeight: 700, color: 'var(--color-muted)', marginBottom: 10 }}>
-          ⚡ POSITIONING STATEMENT
-        </p>
-        <p style={{
-          fontSize: 15, fontWeight: 700, color: 'var(--color-text)',
-          lineHeight: 1.6, fontStyle: 'italic',
-        }}>
-          "Solo full-stack engineer yang ship real-time crypto fintech dan AI tools dengan paying users —
-          spesialisasi WebSocket infrastructure, on-chain analytics, dan AI-integrated systems."
-        </p>
-        <p style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 10 }}>
-          Ini rare. Mayoritas developer Indo belum di sini. Overseas rate: <strong style={{ color: 'var(--color-text)' }}>$75–$150/jam</strong>.
-        </p>
-      </div>
+      <Slab>
+        <PanelHead title="POSITIONING STATEMENT" right={<Zap size={13} color="var(--warning)" />} />
+        <div style={{ padding: 16, background: 'var(--glass-bg)' }}>
+          <p style={{
+            fontSize: 15, fontWeight: 600, color: 'var(--color-text)',
+            lineHeight: 1.6, fontStyle: 'italic', margin: 0,
+          }}>
+            "Solo full-stack engineer yang ship real-time crypto fintech dan AI tools dengan paying users —
+            spesialisasi WebSocket infrastructure, on-chain analytics, dan AI-integrated systems."
+          </p>
+          <p style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 10, marginBottom: 0 }}>
+            Ini rare. Mayoritas developer Indo belum di sini. Overseas rate:{' '}
+            <strong style={{ ...tNumStyle, fontWeight: 700 }}>$75–$150/jam</strong>.
+          </p>
+        </div>
+      </Slab>
 
       {/* ── 2. SKILLS ── */}
-      <Section title="WHO YOU ARE · SKILL INVENTORY" icon={Star} color="#d97706">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
+      <Section title="WHO YOU ARE · SKILL INVENTORY" icon={Star} color="var(--warning)">
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+          gap: 1, background: SEAM, border: `1px solid ${SEAM}`,
+        }}>
           {SKILLS.map(s => (
             <div key={s.label} style={{
-              padding: '10px 12px', borderRadius: 8,
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
+              padding: '12px 14px', background: 'var(--glass-bg)',
               display: 'flex', gap: 10, alignItems: 'flex-start',
             }}>
-              <span style={{
-                fontSize: 10, fontWeight: 800, fontFamily: 'monospace',
-                padding: '2px 6px', borderRadius: 4,
-                background: s.tier === 'S' ? '#d9770620' : '#2563eb20',
-                color: s.tier === 'S' ? '#d97706' : '#2563eb',
-                flexShrink: 0,
-              }}>{s.tier}</span>
-              <div>
+              <Badge tone={s.tier === 'S' ? 'warning' : 'accent'}>{s.tier}</Badge>
+              <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', marginBottom: 2 }}>{s.label}</p>
-                <p style={{ fontSize: 11, color: 'var(--color-muted)' }}>{s.detail}</p>
+                <p style={{ fontSize: 11, color: 'var(--color-muted)', margin: 0 }}>{s.detail}</p>
               </div>
             </div>
           ))}
@@ -504,70 +501,70 @@ export function MasterBizPage() {
       </Section>
 
       {/* ── 3. MARKET DATA ── */}
-      <Section title="SEMUA INDUSTRI · MARKET SIZE + PELUANG" icon={Globe} color="#2563eb">
-        <p style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 14 }}>
+      <Section title="SEMUA INDUSTRI · MARKET SIZE + PELUANG" icon={Globe} color="var(--color-primary)">
+        <p style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 12, marginTop: 0 }}>
           Data dari Mordor Intelligence, Grand View Research, MarkNtel, Precedence Research · Apr 2026
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {MARKETS.map(m => {
+        <div style={{ border: `1px solid ${SEAM}` }}>
+          {MARKETS.map((m, mi) => {
             const Icon = m.icon;
             const isExpanded = expandedMarket === m.name;
             return (
               <div key={m.name} style={{
-                border: '1px solid var(--color-border)', borderRadius: 10, overflow: 'hidden',
-                background: 'var(--color-surface)',
+                borderBottom: mi < MARKETS.length - 1 ? `1px solid ${SEAM}` : 'none',
+                background: 'var(--glass-bg)',
               }}>
                 <button
                   onClick={() => setExpandedMarket(isExpanded ? null : m.name)}
                   style={{
-                    width: '100%', padding: '12px 14px',
+                    width: '100%', padding: '11px 14px',
                     display: 'flex', alignItems: 'center', gap: 10,
                     background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left',
                   }}
                 >
-                  <span style={{
-                    width: 30, height: 30, borderRadius: 7,
-                    background: m.color + '20',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
-                    <Icon size={14} color={m.color} />
-                  </span>
+                  {/* Small decorative category glyph — brand hue kept intentionally */}
+                  <Icon size={15} color={m.color} style={{ flexShrink: 0 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)' }}>{m.name}</span>
-                      <Badge text={`SKILL ${m.skillMatch}`} color={MATCH_COLOR[m.skillMatch]} />
-                      <Badge text={`CAGR ${m.cagr}`} color={m.color} />
+                      <Badge tone={MATCH_TONE[m.skillMatch]}>SKILL {m.skillMatch}</Badge>
+                      <Badge tone="muted">CAGR {m.cagr}</Badge>
                     </div>
-                    <div style={{ display: 'flex', gap: 12, marginTop: 3, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>2025: <strong style={{ color: 'var(--color-text)' }}>{m.market2025}</strong></span>
-                      <ArrowRight size={10} color="var(--color-muted)" style={{ alignSelf: 'center' }} />
-                      <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>2030: <strong style={{ color: m.color }}>{m.market2030}</strong></span>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>
+                        2025: <strong style={{ ...tNumStyle, fontWeight: 700, fontSize: 11 }}>{m.market2025}</strong>
+                      </span>
+                      <ArrowRight size={10} color="var(--color-muted)" />
+                      <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>
+                        2030: <strong style={{ ...tNumStyle, fontWeight: 700, fontSize: 11, color: 'var(--color-primary)' }}>{m.market2030}</strong>
+                      </span>
                     </div>
                   </div>
                   {isExpanded ? <ChevronUp size={13} color="var(--color-muted)" /> : <ChevronDown size={13} color="var(--color-muted)" />}
                 </button>
                 {isExpanded && (
-                  <div style={{ padding: '14px', borderTop: '1px solid var(--color-border)' }}>
-                    <p style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.7, marginBottom: 12 }}>
+                  <div style={{ padding: '14px', borderTop: `1px solid ${SEAM}`, background: 'var(--color-surface)' }}>
+                    <p style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.7, marginTop: 0, marginBottom: 12 }}>
                       <strong style={{ color: 'var(--color-text)' }}>GAP / PELUANG:</strong> {m.gap}
                     </p>
                     <div style={{ marginBottom: 12 }}>
-                      <p style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, letterSpacing: 1, color: 'var(--color-muted)', marginBottom: 6 }}>PRODUK YANG BISA LO BUILD</p>
+                      <p style={{ ...tLabelStyle, marginBottom: 6 }}>PRODUK YANG BISA LO BUILD</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {m.products.map((p, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                            <CheckCircle2 size={12} color={m.color} style={{ marginTop: 1, flexShrink: 0 }} />
+                            <CheckCircle2 size={12} color="var(--color-primary)" style={{ marginTop: 2, flexShrink: 0 }} />
                             <span style={{ fontSize: 12, color: 'var(--color-text)' }}>{p}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                     <div style={{
-                      padding: '8px 12px', borderRadius: 7,
-                      background: m.color + '15', border: `1px solid ${m.color}30`,
+                      display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+                      padding: '8px 12px', background: 'var(--glass-bg)', border: `1px solid ${SEAM}`,
                     }}>
-                      <span style={{ fontSize: 11, color: m.color, fontWeight: 600, fontFamily: 'monospace' }}>
-                        💰 PRICING RANGE: {m.pricingRange}
+                      <span style={tLabelStyle}>PRICING RANGE</span>
+                      <span style={{ ...tNumStyle, fontSize: 12, fontWeight: 600, color: 'var(--color-primary)', marginLeft: 'auto' }}>
+                        {m.pricingRange}
                       </span>
                     </div>
                   </div>
@@ -579,66 +576,53 @@ export function MasterBizPage() {
       </Section>
 
       {/* ── 4. MASTER BUILD LIST ── */}
-      <Section title="MASTER BUILD LIST · SEMUA PRODUK YANG HARUS DIBANGUN" icon={Rocket} color="#10b981">
+      <Section title="MASTER BUILD LIST · SEMUA PRODUK YANG HARUS DIBANGUN" icon={Rocket} color="var(--gain)">
         {/* Filter */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
           {(['all', 1, 2, 3, 4] as const).map(f => (
-            <button
-              key={String(f)}
-              onClick={() => setBuildFilter(f)}
-              style={{
-                padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                border: buildFilter === f ? 'none' : '1px solid var(--color-border)',
-                background: buildFilter === f ? '#10b981' : 'var(--color-card)',
-                color: buildFilter === f ? 'white' : 'var(--color-muted)',
-                cursor: 'pointer',
-              }}
-            >
+            <button key={String(f)} onClick={() => setBuildFilter(f)} style={tabStyle(buildFilter === f)}>
               {f === 'all' ? 'Semua Fase' : PHASE_LABEL[f].label}
             </button>
           ))}
         </div>
 
         {/* By Phase */}
-        {(buildFilter === 'all' ? phaseGroups : [buildFilter] as (1|2|3|4)[]).map(phase => {
+        {(buildFilter === 'all' ? phaseGroups : [buildFilter] as (1 | 2 | 3 | 4)[]).map(phase => {
           const items = filteredBuild.filter(b => b.phase === phase);
           if (items.length === 0) return null;
           const ph = PHASE_LABEL[phase];
           return (
-            <div key={phase} style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <div style={{ width: 3, height: 14, borderRadius: 2, background: ph.color }} />
-                <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, letterSpacing: 1.5, color: ph.color }}>
-                  {ph.label}
-                </span>
+            <div key={phase} style={{ marginBottom: 18 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div style={{ width: 3, height: 12, background: ph.color }} />
+                <span style={{ ...tLabelStyle, fontSize: 10, color: ph.color }}>{ph.label}</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {items.map(b => (
+              <div style={{ border: `1px solid ${SEAM}` }}>
+                {items.map((b, bi) => (
                   <div key={b.name} style={{
-                    padding: '12px 14px', borderRadius: 9,
-                    border: '1px solid var(--color-border)',
-                    background: 'var(--color-surface)',
+                    padding: '12px 14px', background: 'var(--glass-bg)',
+                    borderBottom: bi < items.length - 1 ? `1px solid ${SEAM}` : 'none',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap', marginBottom: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)', flex: 1 }}>{b.name}</span>
                       <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                        <Badge text={b.status} color={STATUS_COLOR[b.status]} />
-                        <Badge text={`EFFORT ${b.effort}`} color={EFFORT_COLOR[b.effort]} />
+                        <Badge tone={STATUS_TONE[b.status]}>{b.status}</Badge>
+                        <Badge tone={EFFORT_TONE[b.effort]}>EFFORT {b.effort}</Badge>
                       </div>
                     </div>
-                    <p style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 6 }}>{b.tagline}</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#d97706', fontWeight: 700, flexShrink: 0 }}>💰</span>
-                        <span style={{ fontSize: 12, color: 'var(--color-text)' }}>{b.pricing}</span>
+                    <p style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 0, marginBottom: 8 }}>{b.tagline}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ ...microLabel, color: 'var(--warning)' }}>PRICE</span>
+                        <span style={{ ...tNumStyle, fontSize: 12, color: 'var(--color-text)' }}>{b.pricing}</span>
                       </div>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#10b981', fontWeight: 700, flexShrink: 0 }}>📈</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ ...microLabel, color: 'var(--gain)' }}>UPSIDE</span>
                         <span style={{ fontSize: 12, color: 'var(--color-text)' }}>{b.upside}</span>
                       </div>
-                      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                        <span style={{ fontSize: 10, fontFamily: 'monospace', color: '#2563eb', fontWeight: 700, flexShrink: 0 }}>⚡</span>
-                        <span style={{ fontSize: 12, color: 'var(--color-muted)' }}><strong style={{ color: 'var(--color-text)' }}>ACTION:</strong> {b.action}</span>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                        <span style={{ ...microLabel, color: 'var(--color-primary)' }}>ACTION</span>
+                        <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>{b.action}</span>
                       </div>
                     </div>
                   </div>
@@ -650,16 +634,16 @@ export function MasterBizPage() {
       </Section>
 
       {/* ── 5. DISTRIBUTION ── */}
-      <Section title="DISTRIBUSI · CARA DAPET KLIEN + USER" icon={Target} color="#ec4899">
+      <Section title="DISTRIBUSI · CARA DAPET KLIEN + USER" icon={Target} color="var(--loss)">
         {/* Why 300 DMs Failed */}
         <div style={{
-          padding: '12px 14px', borderRadius: 8, marginBottom: 16,
-          background: '#dc262610', border: '1px solid #dc262630',
+          padding: '12px 14px', marginBottom: 14,
+          background: 'var(--loss-soft)', border: `1px solid ${SEAM}`, borderLeft: '2px solid var(--loss)',
         }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: '#dc2626', marginBottom: 6, fontFamily: 'monospace', letterSpacing: 1 }}>
-            ❌ KENAPA 300 DM = 0 CLOSING
+          <p style={{ ...tLabelStyle, color: 'var(--loss)', marginTop: 0, marginBottom: 6 }}>
+            KENAPA 300 DM = 0 CLOSING
           </p>
-          <p style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.7 }}>
+          <p style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.7, margin: 0 }}>
             DM template/copy-paste → orang langsung skip. Target audiens salah (belum sadar butuh produk lo). Offer tidak spesifik. Harga tidak jelas. Distribusi ke wrong platform. <strong style={{ color: 'var(--color-text)' }}>Masalah bukan produk — masalah distribusi dan positioning.</strong>
           </p>
         </div>
@@ -667,37 +651,26 @@ export function MasterBizPage() {
         {/* Filter */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
           {(['all', 'NOW', 'SOON', 'LATER'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setDistFilter(f)}
-              style={{
-                padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                border: distFilter === f ? 'none' : '1px solid var(--color-border)',
-                background: distFilter === f ? '#ec4899' : 'var(--color-card)',
-                color: distFilter === f ? 'white' : 'var(--color-muted)',
-                cursor: 'pointer',
-              }}
-            >
+            <button key={f} onClick={() => setDistFilter(f)} style={tabStyle(distFilter === f)}>
               {f === 'all' ? 'Semua' : f}
             </button>
           ))}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {filteredDist.map(d => (
+        <div style={{ border: `1px solid ${SEAM}` }}>
+          {filteredDist.map((d, di) => (
             <div key={d.platform} style={{
-              padding: '12px 14px', borderRadius: 9,
-              border: '1px solid var(--color-border)',
-              background: 'var(--color-surface)',
+              padding: '12px 14px', background: 'var(--glass-bg)',
+              borderBottom: di < filteredDist.length - 1 ? `1px solid ${SEAM}` : 'none',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', flex: 1 }}>{d.platform}</span>
-                <Badge text={d.priority} color={PRIORITY_COLOR[d.priority]} />
+                <Badge tone={PRIORITY_TONE[d.priority]}>{d.priority}</Badge>
               </div>
-              <p style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 6, lineHeight: 1.7 }}>{d.tactic}</p>
+              <p style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 0, marginBottom: 6, lineHeight: 1.7 }}>{d.tactic}</p>
               <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                <TrendingUp size={11} color="#10b981" style={{ marginTop: 1, flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: '#10b981', fontWeight: 500 }}>{d.expectedResult}</span>
+                <TrendingUp size={11} color="var(--gain)" style={{ marginTop: 2, flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: 'var(--gain)', fontWeight: 500 }}>{d.expectedResult}</span>
               </div>
             </div>
           ))}
@@ -705,29 +678,30 @@ export function MasterBizPage() {
       </Section>
 
       {/* ── 6. TECH ROADMAP ── */}
-      <Section title="TECH STACK ROADMAP · APA YANG HARUS DIKUASAI" icon={Code2} color="#7c3aed">
+      <Section title="TECH STACK ROADMAP · APA YANG HARUS DIKUASAI" icon={Code2} color="var(--color-primary)">
         <div style={{ marginBottom: 16 }}>
-          <p style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, letterSpacing: 1.5, color: '#10b981', marginBottom: 8 }}>✅ SUDAH KUAT</p>
+          <p style={{ ...tLabelStyle, color: 'var(--gain)', marginTop: 0, marginBottom: 8 }}>SUDAH KUAT</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {TECH_STRONG.map(t => (
               <span key={t} style={{
                 fontSize: 11, padding: '4px 10px', borderRadius: 5,
-                background: '#10b98115', color: '#10b981',
-                border: '1px solid #10b98130',
+                background: 'var(--gain-soft)', color: 'var(--gain)',
+                fontFamily: 'var(--font-mono)', letterSpacing: '0.02em',
               }}>{t}</span>
             ))}
           </div>
         </div>
         <div>
-          <p style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, letterSpacing: 1.5, color: '#d97706', marginBottom: 8 }}>🎯 PERLU DITAMBAH</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {TECH_ADD.map(t => (
+          <p style={{ ...tLabelStyle, color: 'var(--warning)', marginTop: 0, marginBottom: 8 }}>PERLU DITAMBAH</p>
+          <div style={{ border: `1px solid ${SEAM}` }}>
+            {TECH_ADD.map((t, ti) => (
               <div key={t.name} style={{
-                padding: '8px 12px', borderRadius: 7, display: 'flex', alignItems: 'flex-start', gap: 10,
-                border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+                padding: '9px 12px', display: 'flex', alignItems: 'flex-start', gap: 10,
+                background: 'var(--glass-bg)',
+                borderBottom: ti < TECH_ADD.length - 1 ? `1px solid ${SEAM}` : 'none',
               }}>
-                <span style={{ fontSize: 10, fontFamily: 'monospace', flexShrink: 0, paddingTop: 1 }}>{t.priority.split(' ')[0]}</span>
-                <div>
+                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', flexShrink: 0, paddingTop: 1 }}>{t.priority.split(' ')[0]}</span>
+                <div style={{ minWidth: 0 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>{t.name}</span>
                   <span style={{ fontSize: 11, color: 'var(--color-muted)', marginLeft: 6 }}>— {t.why}</span>
                 </div>
@@ -738,14 +712,11 @@ export function MasterBizPage() {
       </Section>
 
       {/* ── 7. ANTIPATTERNS ── */}
-      <Section title="ANTIPATTERNS · JANGAN LAKUKAN INI" icon={AlertTriangle} color="#dc2626">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <Section title="ANTIPATTERNS · JANGAN LAKUKAN INI" icon={AlertTriangle} color="var(--loss)">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {ANTIPATTERNS.map((a, i) => (
             <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{
-                fontSize: 10, fontWeight: 800, fontFamily: 'monospace',
-                color: '#dc2626', paddingTop: 1, flexShrink: 0,
-              }}>❌</span>
+              <AlertTriangle size={12} color="var(--loss)" style={{ marginTop: 3, flexShrink: 0 }} />
               <span style={{ fontSize: 12, color: 'var(--color-text)', lineHeight: 1.7 }}>{a}</span>
             </div>
           ))}
@@ -753,8 +724,11 @@ export function MasterBizPage() {
       </Section>
 
       {/* ── 8. PRICING GUIDE ── */}
-      <Section title="PRICING GUIDE · RATE & PLATFORM" icon={TrendingUp} color="#d97706">
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10 }}>
+      <Section title="PRICING GUIDE · RATE & PLATFORM" icon={TrendingUp} color="var(--warning)">
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: 1, background: SEAM, border: `1px solid ${SEAM}`,
+        }}>
           {[
             { label: 'Micro-SaaS subscription', range: '$9–$199/bulan', note: 'Sweet spot lo: $29–$49/bulan' },
             { label: 'Lifetime deal', range: '$9–$999 one-time', note: 'Bagus buat launch, tapi limitasi revenue ceiling' },
@@ -765,31 +739,29 @@ export function MasterBizPage() {
             { label: 'Game backend as-a-service', range: '$9–$49/bulan', note: 'Per studio. Low price, high volume potential.' },
             { label: 'UMKM automation (jasa)', range: '$29–$99/bulan', note: 'Atau Rp 300k–Rp 1.5jt/bulan per klien' },
           ].map(p => (
-            <div key={p.label} style={{
-              padding: '12px 14px', borderRadius: 9,
-              border: '1px solid var(--color-border)', background: 'var(--color-surface)',
-            }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>{p.label}</p>
-              <p style={{ fontSize: 14, fontWeight: 800, color: '#d97706', fontFamily: 'monospace', marginBottom: 4 }}>{p.range}</p>
-              <p style={{ fontSize: 11, color: 'var(--color-muted)' }}>{p.note}</p>
+            <div key={p.label} style={{ padding: '12px 14px', background: 'var(--glass-bg)' }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', marginTop: 0, marginBottom: 4 }}>{p.label}</p>
+              <p style={{ ...tNumStyle, fontSize: 14, fontWeight: 800, color: 'var(--warning)', marginTop: 0, marginBottom: 4 }}>{p.range}</p>
+              <p style={{ fontSize: 11, color: 'var(--color-muted)', margin: 0 }}>{p.note}</p>
             </div>
           ))}
         </div>
       </Section>
 
       {/* ── FOOTER NOTE ── */}
-      <div style={{
-        padding: '12px 16px', borderRadius: 9,
-        border: '1px solid var(--color-border)', background: 'var(--color-surface)',
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
-        <Zap size={14} color="#d97706" />
-        <p style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.7 }}>
-          Data dari: Mordor Intelligence · Grand View Research · MarkNtel · Indie Hackers · Superframeworks · Lovable ·
-          BCG Gaming Report · CoinLaw · Precedence Research. Co-authored by Claude (Anthropic) · April 2026.
-          <strong style={{ color: 'var(--color-text)' }}> Update tiap 3 bulan.</strong>
-        </p>
-      </div>
+      <Slab>
+        <div style={{
+          padding: '12px 16px', background: 'var(--glass-bg)',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <Zap size={14} color="var(--warning)" style={{ flexShrink: 0 }} />
+          <p style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.7, margin: 0 }}>
+            Data dari: Mordor Intelligence · Grand View Research · MarkNtel · Indie Hackers · Superframeworks · Lovable ·
+            BCG Gaming Report · CoinLaw · Precedence Research. Co-authored by Claude (Anthropic) · April 2026.
+            <strong style={{ color: 'var(--color-text)' }}> Update tiap 3 bulan.</strong>
+          </p>
+        </div>
+      </Slab>
 
     </div>
   );

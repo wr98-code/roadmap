@@ -3,6 +3,7 @@
 // No API keys needed. All free public APIs.
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, Activity, Wifi, WifiOff } from 'lucide-react';
+import { Slab, PanelHead, Badge, PageTitle, tLabelStyle, SEAM } from '@/components/terminal';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface MarketItem {
@@ -202,12 +203,14 @@ function fmtPrice(price: number, currency: string, isMcap = false): string {
   return `$${price.toFixed(4)}`;
 }
 
+// Contrarian Fear & Greed palette — all CSS vars so it holds in light AND dark.
+// extreme greed = loss/red (overheated) … extreme fear = gain/green (opportunity)
 function fgColor(val: number): string {
-  if (val >= 75) return '#ef4444';
-  if (val >= 55) return '#f59e0b';
-  if (val >= 45) return '#94a3b8';
-  if (val >= 25) return '#3b82f6';
-  return '#8b5cf6';
+  if (val >= 75) return 'var(--loss)';
+  if (val >= 55) return 'var(--warning)';
+  if (val >= 45) return 'var(--color-muted)';
+  if (val >= 25) return 'var(--color-primary)';
+  return 'var(--gain)';
 }
 
 const GROUP_ORDER: MarketItem['group'][] = ['crypto', 'stocks', 'commodities', 'macro', 'sentiment'];
@@ -216,55 +219,72 @@ const GROUP_TITLE: Record<string, string> = {
   commodities: '🥇 Commodities', macro: '🌍 Macro', sentiment: '😱 Sentiment',
 };
 
-// ─── PRICE CARD ───────────────────────────────────────────────────────────────
-function PriceCard({ item }: { item: MarketItem }) {
+// Small decorative category dots — muted brand hues, all CSS vars (theme-safe).
+const GROUP_DOT: Record<string, string> = {
+  crypto: 'var(--gold)',
+  stocks: 'var(--color-primary)',
+  commodities: 'var(--warning)',
+  macro: 'var(--color-muted)',
+  sentiment: 'var(--gain)',
+};
+
+// ─── PRICE CELL — flat terminal readout, joined by hairline seams ─────────────
+function PriceCell({ item }: { item: MarketItem }) {
   const isUp = item.change24h >= 0;
   const isMcap = item.symbol === 'MCAP';
   const isFG = item.group === 'sentiment';
   const fgVal = isFG ? item.price : 0;
+  const dot = isFG ? fgColor(fgVal) : (GROUP_DOT[item.group] || 'var(--color-muted)');
 
   return (
     <div style={{
-      padding: '14px 16px', borderRadius: 12,
-      background: 'var(--color-card)',
-      border: isFG
-        ? `1px solid ${fgColor(fgVal)}40`
-        : '1px solid var(--color-border)',
-      display: 'flex', flexDirection: 'column', gap: 6,
-      transition: 'border-color .2s, transform .1s',
-      cursor: 'default',
+      borderTop: `1px solid ${SEAM}`, borderLeft: `1px solid ${SEAM}`,
+      padding: '11px 14px', display: 'flex', flexDirection: 'column', gap: 7, minWidth: 0,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <p style={{ fontSize: 10, fontFamily: 'monospace', color: 'var(--color-muted)', fontWeight: 700, letterSpacing: 1, margin: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: dot, flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--color-text)', whiteSpace: 'nowrap' }}>
             {item.symbol}
-          </p>
-          <p style={{ fontSize: 11, color: 'var(--color-muted)', margin: 0, marginTop: 1 }}>{item.name}</p>
-        </div>
+          </span>
+        </span>
         {!isFG && item.change24h !== 0 && (
-          <span style={{
-            fontSize: 11, fontWeight: 700,
-            color: isUp ? '#22c55e' : '#ef4444',
+          <span className="num" style={{
             display: 'flex', alignItems: 'center', gap: 2,
+            fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
+            fontSize: 10, fontWeight: 700,
+            color: isUp ? 'var(--gain)' : 'var(--loss)',
+            background: isUp ? 'var(--gain-soft)' : 'var(--loss-soft)',
+            padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap',
           }}>
             {isUp ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
             {isUp ? '+' : ''}{item.change24h.toFixed(2)}%
           </span>
         )}
         {isFG && (
-          <span style={{ fontSize: 11, fontWeight: 700, color: fgColor(fgVal) }}>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700,
+            letterSpacing: '0.06em', textTransform: 'uppercase',
+            color: fgColor(fgVal), background: 'var(--color-surface)',
+            padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap',
+          }}>
             {item.label}
           </span>
         )}
       </div>
-      <p style={{
-        fontSize: isMcap ? 15 : 19, fontWeight: 700,
-        fontFamily: 'monospace',
-        color: isFG ? fgColor(fgVal) : 'var(--color-text)',
-        margin: 0,
-      }}>
-        {fmtPrice(item.price, item.currency, isMcap)}
-      </p>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ fontSize: 11, color: 'var(--color-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+          {item.name}
+        </span>
+        <span className="num" style={{
+          fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
+          fontSize: isMcap ? 14 : 17, fontWeight: 700,
+          color: isFG ? fgColor(fgVal) : 'var(--color-text)',
+          letterSpacing: '-0.01em', whiteSpace: 'nowrap',
+        }}>
+          {fmtPrice(item.price, item.currency, isMcap)}
+        </span>
+      </div>
     </div>
   );
 }
@@ -365,46 +385,48 @@ export function MarketsPage() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h2 className="font-heading text-lg" style={{ color: 'var(--color-text)' }}>Market Prices</h2>
-          <p style={{ fontSize: 12, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
-            {online
-              ? <><Wifi size={11} color="#22c55e" /> Live</>
-              : <><WifiOff size={11} color="#ef4444" /> Offline — showing cache</>}
-            {state.lastUpdate && ` · ${state.lastUpdate}`}
-            {!loading && hasData && (
-              <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.6 }}>
-                · CoinGecko · Yahoo Finance · Alternative.me
-                · auto-refresh in {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
-              </span>
-            )}
-          </p>
-        </div>
-        <button
-          onClick={refresh}
-          disabled={loading || !online}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--color-text)', color: 'var(--color-bg)',
-            border: 'none', borderRadius: 8, padding: '9px 18px',
-            fontSize: 13, fontWeight: 600,
-            cursor: loading || !online ? 'not-allowed' : 'pointer',
-            opacity: loading || !online ? 0.6 : 1,
-            transition: 'opacity .15s',
-          }}
-        >
-          <RefreshCw size={13} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
-          {loading ? 'Fetching...' : 'Refresh'}
-        </button>
-      </div>
+      <PageTitle
+        title="Market Prices"
+        subtitle="Live multi-asset board · crypto · equities · commodities · macro"
+        right={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+              color: online ? 'var(--gain)' : 'var(--warning)',
+              background: online ? 'var(--gain-soft)' : 'rgba(224,162,49,0.12)',
+              padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap',
+            }}>
+              {online ? <Wifi size={11} /> : <WifiOff size={11} />}
+              {online ? 'LIVE' : 'OFFLINE'}
+            </span>
+            <button
+              onClick={refresh}
+              disabled={loading || !online}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: 'var(--rail-active-bg)', color: 'var(--color-primary)',
+                border: '1px solid var(--rail-active-border)', borderRadius: 7, padding: '8px 14px',
+                fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 700,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
+                cursor: loading || !online ? 'not-allowed' : 'pointer',
+                opacity: loading || !online ? 0.55 : 1,
+                transition: 'opacity .15s',
+              }}
+            >
+              <RefreshCw size={12} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
+              {loading ? 'Fetching' : 'Refresh'}
+            </button>
+          </div>
+        }
+      />
 
-      {/* Partial errors — non-blocking warning */}
+      {/* Partial errors — non-blocking warning (offline feed banner) */}
       {partialErrors.length > 0 && !loading && (
         <div style={{
-          fontSize: 12, color: '#f59e0b',
-          background: '#f59e0b0d', padding: '8px 12px',
-          borderRadius: 8, border: '1px solid #f59e0b20',
+          fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--warning)',
+          background: 'rgba(224,162,49,0.12)', padding: '9px 13px',
+          borderRadius: 8, border: '1px solid rgba(224,162,49,0.30)',
         }}>
           ⚠️ {partialErrors.join(', ')} gagal fetch. Data lain tetap ditampilkan.
         </div>
@@ -412,82 +434,119 @@ export function MarketsPage() {
 
       {/* Loading skeleton */}
       {loading && !hasData && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 10 }}>
-          {[...Array(10)].map((_, i) => (
-            <div key={i} style={{
-              height: 88, borderRadius: 12,
-              background: 'var(--color-card)', border: '1px solid var(--color-border)',
-              animation: 'pulse 1.5s ease-in-out infinite',
-            }} />
-          ))}
-        </div>
+        <Slab>
+          <PanelHead title="Global Price Board" right={<Badge tone="muted">Loading</Badge>} />
+          <div style={{ overflow: 'hidden' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', background: 'var(--glass-bg)', marginTop: -1, marginLeft: -1 }}>
+              {[...Array(10)].map((_, i) => (
+                <div key={i} style={{
+                  borderTop: `1px solid ${SEAM}`, borderLeft: `1px solid ${SEAM}`,
+                  height: 74, background: 'var(--color-surface)',
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }} />
+              ))}
+            </div>
+          </div>
+        </Slab>
       )}
 
       {/* Empty state */}
       {!loading && !hasData && (
-        <div style={{
-          textAlign: 'center', padding: '80px 20px',
-          background: 'var(--color-card)', borderRadius: 12,
-          border: '1px solid var(--color-border)',
-        }}>
-          <Activity size={36} color="var(--color-muted)" style={{ display: 'block', margin: '0 auto 12px' }} />
-          <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>Klik Refresh untuk load harga live</p>
-          <p style={{ color: 'var(--color-muted)', fontSize: 12, marginTop: 4 }}>
-            CoinGecko · Yahoo Finance · Alternative.me — semua gratis
-          </p>
-        </div>
+        <Slab>
+          <PanelHead title="Global Price Board" right={<Badge tone="muted">No Data</Badge>} />
+          <div style={{ textAlign: 'center', padding: '72px 20px', background: 'var(--glass-bg)' }}>
+            <Activity size={34} color="var(--color-muted)" style={{ display: 'block', margin: '0 auto 12px' }} />
+            <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--color-muted)', fontSize: 14 }}>Klik Refresh untuk load harga live</p>
+            <p style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-muted)', fontSize: 11, marginTop: 6, letterSpacing: '0.04em' }}>
+              CoinGecko · Yahoo Finance · Alternative.me — semua gratis
+            </p>
+          </div>
+        </Slab>
       )}
 
-      {/* Price Groups */}
-      {grouped.map(({ group, items }) => (
-        <div key={group}>
-          <p style={{
-            fontSize: 10, fontWeight: 700, fontFamily: 'monospace',
-            letterSpacing: 1.5, color: 'var(--color-muted)',
-            marginBottom: 10, textTransform: 'uppercase',
-          }}>
-            {GROUP_TITLE[group]}
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: 10 }}>
-            {items.map(item => <PriceCard key={item.symbol} item={item} />)}
+      {/* Price Board — flat panels, hairline seams, dense readouts */}
+      {hasData && (
+        <Slab>
+          <PanelHead
+            title="Global Price Board"
+            right={
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {state.lastUpdate && (
+                  <span className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--color-muted)', letterSpacing: '0.08em' }}>
+                    UPD {state.lastUpdate}
+                  </span>
+                )}
+                <Badge tone={online ? 'gain' : 'warning'}>{Object.keys(state.items).length} FEEDS</Badge>
+              </div>
+            }
+          />
+          {grouped.map(({ group, items }, gi) => (
+            <div key={group}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 16px', background: 'var(--color-surface)',
+                borderBottom: `1px solid ${SEAM}`,
+                ...(gi > 0 ? { borderTop: `1px solid ${SEAM}` } : {}),
+              }}>
+                <span style={tLabelStyle}>{GROUP_TITLE[group]}</span>
+                <span className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: 'var(--color-muted)', letterSpacing: '0.08em' }}>{items.length}</span>
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', background: 'var(--glass-bg)', marginTop: -1, marginLeft: -1 }}>
+                  {items.map(item => <PriceCell key={item.symbol} item={item} />)}
+                </div>
+              </div>
+            </div>
+          ))}
+          {/* Footer status line — sources + auto-refresh countdown */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '9px 16px', borderTop: `1px solid ${SEAM}`, background: 'var(--glass-bg)' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--color-muted)', letterSpacing: '0.1em' }}>DATA · COINGECKO · YAHOO FINANCE · ALTERNATIVE.ME</span>
+            {!loading && (
+              <span className="num" style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--color-muted)', letterSpacing: '0.08em' }}>
+                AUTO-REFRESH IN {Math.floor(countdown / 60)}:{String(countdown % 60).padStart(2, '0')}
+              </span>
+            )}
           </div>
-        </div>
-      ))}
+        </Slab>
+      )}
 
-      {/* Quick Links */}
-      {Object.entries(qlGrouped).map(([group, links]) => (
-        <div key={group} style={{
-          background: 'var(--color-card)', borderRadius: 12,
-          border: '1px solid var(--color-border)', padding: '14px 16px',
-        }}>
-          <p style={{
-            fontSize: 9, fontFamily: 'monospace', fontWeight: 700,
-            color: 'var(--color-muted)', letterSpacing: 1.5, marginBottom: 10,
-          }}>
-            {GROUP_LABELS[group]}
-          </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))', gap: 8 }}>
-            {links.map(link => (
-              <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
-                style={{
-                  display: 'flex', flexDirection: 'column', gap: 3,
-                  padding: '10px 12px', borderRadius: 8,
-                  border: '1px solid var(--color-border)',
-                  background: 'var(--color-surface)',
-                  textDecoration: 'none', transition: 'border-color .15s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-text)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}
-              >
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {link.label} <ExternalLink size={9} color="var(--color-muted)" />
-                </span>
-                <span style={{ fontSize: 10, color: 'var(--color-muted)' }}>{link.desc}</span>
-              </a>
-            ))}
+      {/* Quick Links — external desks */}
+      <Slab>
+        <PanelHead title="External Desks" right={<Badge tone="muted">{QUICK_LINKS.length} Links</Badge>} />
+        {Object.entries(qlGrouped).map(([group, links], gi) => (
+          <div key={group}>
+            <div style={{
+              padding: '8px 16px', background: 'var(--color-surface)',
+              borderBottom: `1px solid ${SEAM}`,
+              ...(gi > 0 ? { borderTop: `1px solid ${SEAM}` } : {}),
+            }}>
+              <span style={tLabelStyle}>{GROUP_LABELS[group]}</span>
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', background: 'var(--glass-bg)', marginTop: -1, marginLeft: -1 }}>
+                {links.map(link => (
+                  <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer"
+                    style={{
+                      display: 'flex', flexDirection: 'column', gap: 4,
+                      padding: '11px 14px',
+                      borderTop: `1px solid ${SEAM}`, borderLeft: `1px solid ${SEAM}`,
+                      background: 'transparent', textDecoration: 'none',
+                      transition: 'background .15s', minWidth: 0,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-surface)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 12, fontWeight: 600, color: 'var(--color-text)', display: 'flex', alignItems: 'center', gap: 5 }}>
+                      {link.label} <ExternalLink size={9} color="var(--color-muted)" />
+                    </span>
+                    <span style={{ fontFamily: 'var(--font-sans)', fontSize: 10, color: 'var(--color-muted)' }}>{link.desc}</span>
+                  </a>
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </Slab>
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

@@ -1,12 +1,17 @@
 // ─── ZERØ COMMAND — BuildLabPage.tsx ─────────────────────────────────────────
-// Status board, Kanban, income target, focus tracker
+// Status board, Kanban, income target, focus tracker. Institutional "terminal"
+// restructure — flat panels + hairline seams, mono tabular numerals, CSS-var
+// colors (light + dark). Every tab, handler, kanban op & feature preserved.
 import { useState } from "react";
 import { AppData } from "@/lib/store";
-import { SectionCard } from "@/components/SectionCard";
 import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
-import { Zap, TrendingUp, Target, Clock, Plus, Trash2, CheckCircle, Circle, Loader } from "lucide-react";
+import {
+  Slab, SeamGrid, Panel, PanelHead, Divider, Stat, Badge, PageTitle,
+  tLabelStyle, tNumStyle,
+} from "@/components/terminal";
+import { Zap, TrendingUp, Target, Plus, Trash2, CheckCircle, Circle, Loader } from "lucide-react";
 
 interface Props {
   data: AppData;
@@ -33,24 +38,25 @@ function saveKanban(cards: KanbanCard[]) {
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 
+// Priority — mapped to semantic theme vars (works light + dark)
 const PRIORITY_COLORS = {
-  high: { color: "#ef4444", bg: "#ef444418", label: "HIGH" },
-  mid:  { color: "#f59e0b", bg: "#f59e0b15", label: "MID" },
-  low:  { color: "#94a3b8", bg: "#94a3b815", label: "LOW" },
+  high: { color: "var(--loss)",         bg: "var(--loss-soft)",          label: "HIGH" },
+  mid:  { color: "var(--warning)",      bg: "rgba(224,162,49,0.12)",     label: "MID" },
+  low:  { color: "var(--color-muted)",  bg: "var(--color-surface)",      label: "LOW" },
 };
 
 const STATUS_CONFIG: Record<KanbanStatus, { label: string; icon: React.ReactNode; color: string }> = {
-  todo:  { label: "TODO",  icon: <Circle size={13} />,       color: "#94a3b8" },
-  doing: { label: "DOING", icon: <Loader size={13} />,       color: "#3b82f6" },
-  done:  { label: "DONE",  icon: <CheckCircle size={13} />,  color: "#22c55e" },
+  todo:  { label: "TODO",  icon: <Circle size={13} />,       color: "var(--color-muted)" },
+  doing: { label: "DOING", icon: <Loader size={13} />,       color: "var(--color-primary)" },
+  done:  { label: "DONE",  icon: <CheckCircle size={13} />,  color: "var(--gain)" },
 };
 
 // ─── INCOME PROJECTION ─────────────────────────────────────────────────────────
 const INCOME_TARGETS = [
-  { period: "Minggu 1–2", target: "1–2 bounty kecil",       amount: "Rp500K–2jt",   color: "#3b82f6" },
-  { period: "Bulan 1",    target: "1 klien / 20 sub PRO",    amount: "Rp1–3jt",     color: "#8b5cf6" },
-  { period: "Bulan 3",    target: "Gabungan income stabil",  amount: "Rp5–15jt",    color: "#22c55e" },
-  { period: "Bulan 6",    target: "Scale ke multiple streams", amount: "Rp15–30jt", color: "#f59e0b" },
+  { period: "Minggu 1–2", target: "1–2 bounty kecil",         amount: "Rp500K–2jt",  tint: "var(--color-primary)" },
+  { period: "Bulan 1",    target: "1 klien / 20 sub PRO",      amount: "Rp1–3jt",     tint: "var(--gold)" },
+  { period: "Bulan 3",    target: "Gabungan income stabil",    amount: "Rp5–15jt",    tint: "var(--gain)" },
+  { period: "Bulan 6",    target: "Scale ke multiple streams", amount: "Rp15–30jt",   tint: "var(--warning)" },
 ];
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
@@ -90,33 +96,78 @@ export function BuildLabPage({ data, update }: Props) {
     updateKanban(kanban.filter((c) => c.id !== id));
   };
 
+  // Status board chip → semantic theme vars
   const statusColor = (s: string) => {
-    if (s.includes("AKTIF"))    return { bg: "hsl(var(--primary) / 0.15)",   color: "hsl(var(--primary))" };
-    if (s.includes("✅"))       return { bg: "rgba(34,197,94,0.12)",           color: "#22c55e" };
-    if (s.includes("CRITICAL")) return { bg: "hsl(var(--destructive) / 0.15)", color: "hsl(var(--destructive))" };
-    if (s.includes("pending"))  return { bg: "rgba(245,158,11,0.12)",          color: "#f59e0b" };
-    return { bg: "hsl(var(--muted) / 0.5)", color: "hsl(var(--muted-foreground))" };
+    if (s.includes("AKTIF"))    return { bg: "var(--rail-active-bg)", color: "var(--color-primary)" };
+    if (s.includes("✅"))       return { bg: "var(--gain-soft)",       color: "var(--gain)" };
+    if (s.includes("CRITICAL")) return { bg: "var(--loss-soft)",       color: "var(--loss)" };
+    if (s.includes("pending"))  return { bg: "rgba(224,162,49,0.12)",  color: "var(--warning)" };
+    return { bg: "var(--color-surface)", color: "var(--color-muted)" };
   };
 
-  const tabStyle = (t: string) => ({
-    padding: "6px 14px",
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 500,
-    fontFamily: "var(--font-sans)",
-    border: "none",
-    cursor: "pointer",
-    background: activeTab === t ? "hsl(var(--primary))" : "hsl(var(--muted) / 0.5)",
-    color: activeTab === t ? "hsl(var(--primary-foreground))" : "hsl(var(--muted-foreground))",
+  const tabStyle = (t: string): React.CSSProperties => ({
+    padding: "7px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+    fontFamily: "var(--font-mono)", letterSpacing: "0.02em", cursor: "pointer",
+    background: activeTab === t ? "var(--rail-active-bg)" : "var(--color-surface)",
+    color: activeTab === t ? "var(--color-primary)" : "var(--color-muted)",
+    border: `1px solid ${activeTab === t ? "var(--rail-active-border)" : "var(--color-border)"}`,
     transition: "all 0.15s",
-  } as React.CSSProperties);
+  });
 
   // Kanban columns
   const columns: KanbanStatus[] = ["todo", "doing", "done"];
   const getCards = (status: KanbanStatus) => kanban.filter((c) => c.status === status);
 
+  // ── Derived readouts (truthful, no fabrication) ──
+  const focusTotal = bl.focusMingguIni.length;
+  const focusDone = bl.focusMingguIni.filter((f) => f.checked).length;
+  const focusPct = focusTotal ? Math.round((focusDone / focusTotal) * 100) : 0;
+  const kanbanDone = getCards("done").length;
+
+  // Institutional table header cell
+  const th = (opts?: { right?: boolean }): React.CSSProperties => ({
+    textAlign: opts?.right ? "right" : "left",
+    padding: "9px 14px",
+    fontFamily: "var(--font-mono)",
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: "0.12em",
+    textTransform: "uppercase",
+    color: "var(--color-muted)",
+    whiteSpace: "nowrap",
+  });
+
   return (
     <div className="space-y-5">
+      <PageTitle
+        title="Build Lab"
+        subtitle="EXECUTION · KANBAN · REVENUE"
+        right={<Badge tone="accent">LAB</Badge>}
+      />
+
+      {/* ── KPI readout spine (persistent across tabs) ── */}
+      <Slab>
+        <SeamGrid cols="1fr 1fr 1fr">
+          <Stat
+            label="Status Areas"
+            value={bl.statusBoard.length}
+            sub="tracked"
+            right={<Target size={13} style={{ color: "var(--color-muted)" }} />}
+          />
+          <Stat
+            label="Kanban Tasks"
+            value={kanban.length}
+            sub={`${kanbanDone} done`}
+            tint={kanban.length > 0 && kanbanDone === kanban.length ? "var(--gain)" : "var(--color-text)"}
+          />
+          <Stat
+            label="Focus Minggu Ini"
+            value={`${focusDone}/${focusTotal}`}
+            sub={`${focusPct}% complete`}
+            tint={focusTotal > 0 && focusDone === focusTotal ? "var(--gain)" : "var(--color-text)"}
+          />
+        </SeamGrid>
+      </Slab>
 
       {/* Tab Navigation */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -128,46 +179,49 @@ export function BuildLabPage({ data, update }: Props) {
       {/* ── STATUS BOARD TAB ── */}
       {activeTab === "status" && (
         <>
-          <SectionCard title="Project Status Board">
+          <Slab>
+            <PanelHead
+              title="Project Status Board"
+              right={bl.statusBoard.length > 0 ? <Badge>{bl.statusBoard.length} AREAS</Badge> : undefined}
+            />
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
-                  <tr style={{ borderBottom: "1px solid hsl(var(--border))" }}>
-                    {["Area", "Status", "Prioritas"].map((h) => (
-                      <th key={h} style={{ textAlign: "left", padding: "6px 10px", fontFamily: "var(--font-mono)", fontSize: 10, color: "hsl(var(--muted-foreground))", fontWeight: 600, letterSpacing: "0.05em" }}>
-                        {h.toUpperCase()}
-                      </th>
-                    ))}
+                  <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                    <th style={th()}>Area</th>
+                    <th style={th()}>Status</th>
+                    <th style={th({ right: true })}>Prioritas</th>
                   </tr>
                 </thead>
                 <tbody>
                   {bl.statusBoard.map((s, idx) => {
                     const sc = statusColor(s.status);
                     return (
-                      <tr key={s.id} style={{ borderBottom: "1px solid hsl(var(--border) / 0.4)" }}>
-                        <td style={{ padding: "10px 10px", fontSize: 13, color: "hsl(var(--foreground))", fontWeight: 500 }}>
+                      <tr key={s.id} style={{ borderTop: idx === 0 ? "none" : "1px solid var(--color-border)" }}>
+                        <td style={{ padding: "11px 14px", fontSize: 13, color: "var(--color-text)", fontWeight: 500 }}>
                           {s.area}
                         </td>
-                        <td style={{ padding: "10px 10px" }}>
+                        <td style={{ padding: "9px 14px" }}>
                           <span style={{
                             display: "inline-block",
                             padding: "3px 10px",
-                            borderRadius: 6,
-                            fontSize: 11,
-                            fontWeight: 600,
+                            borderRadius: 5,
+                            fontSize: 10,
+                            fontWeight: 700,
                             fontFamily: "var(--font-mono)",
+                            letterSpacing: "0.04em",
                             background: sc.bg,
                             color: sc.color,
                           }}>
                             {s.status}
                           </span>
                         </td>
-                        <td style={{ padding: "10px 10px" }}>
+                        <td style={{ padding: "9px 14px", textAlign: "right" }}>
                           <span style={{
+                            ...tNumStyle,
                             fontSize: 12,
                             fontWeight: 700,
-                            fontFamily: "var(--font-mono)",
-                            color: idx === 0 ? "#ef4444" : "hsl(var(--muted-foreground))",
+                            color: idx === 0 ? "var(--loss)" : "var(--color-muted)",
                           }}>
                             {s.prioritas}
                           </span>
@@ -178,47 +232,49 @@ export function BuildLabPage({ data, update }: Props) {
                 </tbody>
               </table>
             </div>
-          </SectionCard>
+          </Slab>
 
-          <SectionCard title="⚡ Focus Minggu Ini">
-            <CheckList
-              items={bl.focusMingguIni}
-              onChange={(items) => update((d) => ({ ...d, buildLab: { ...d.buildLab, focusMingguIni: items } }))}
+          <Slab>
+            <PanelHead
+              title={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Zap size={11} style={{ color: "var(--warning)" }} /> Focus Minggu Ini</span>}
+              right={focusTotal > 0 ? <Badge tone={focusDone === focusTotal ? "gain" : "muted"}>{focusDone}/{focusTotal}</Badge> : undefined}
             />
-          </SectionCard>
+            <div style={{ padding: "14px 16px" }}>
+              <CheckList
+                items={bl.focusMingguIni}
+                onChange={(items) => update((d) => ({ ...d, buildLab: { ...d.buildLab, focusMingguIni: items } }))}
+              />
+            </div>
+          </Slab>
         </>
       )}
 
       {/* ── KANBAN TAB ── */}
       {activeTab === "kanban" && (
-        <>
-          {/* Add Card */}
-          <SectionCard
+        <Slab>
+          <PanelHead
             title="Task Board"
-            actions={
+            right={
               <button
                 onClick={() => setAddingCard(!addingCard)}
                 style={{
-                  padding: "5px 10px",
-                  borderRadius: 7,
-                  background: "hsl(var(--primary))",
-                  color: "hsl(var(--primary-foreground))",
-                  border: "none",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fontFamily: "var(--font-sans)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  padding: "5px 11px", borderRadius: 7,
+                  background: "var(--rail-active-bg)", color: "var(--color-primary)",
+                  border: "1px solid var(--rail-active-border)",
+                  fontFamily: "var(--font-mono)", fontSize: 10, fontWeight: 700,
+                  letterSpacing: "0.06em", cursor: "pointer",
                 }}
               >
-                <Plus size={11} /> Add Task
+                <Plus size={11} /> ADD TASK
               </button>
             }
-          >
-            {addingCard && (
-              <div style={{ marginBottom: 14, padding: "12px", borderRadius: 10, background: "hsl(var(--muted) / 0.3)", border: "1px solid hsl(var(--border))", display: "flex", flexDirection: "column", gap: 8 }}>
+          />
+
+          {/* Add Card form */}
+          {addingCard && (
+            <>
+              <div style={{ padding: "14px 16px", background: "var(--color-surface)", display: "flex", flexDirection: "column", gap: 8 }}>
                 <input
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
@@ -235,12 +291,13 @@ export function BuildLabPage({ data, update }: Props) {
                       style={{
                         padding: "4px 10px",
                         borderRadius: 6,
-                        border: `1px solid ${newPriority === p ? PRIORITY_COLORS[p].color : "hsl(var(--border))"}`,
+                        border: `1px solid ${newPriority === p ? PRIORITY_COLORS[p].color : "var(--color-border)"}`,
                         background: newPriority === p ? PRIORITY_COLORS[p].bg : "transparent",
-                        color: newPriority === p ? PRIORITY_COLORS[p].color : "hsl(var(--muted-foreground))",
+                        color: newPriority === p ? PRIORITY_COLORS[p].color : "var(--color-muted)",
                         fontSize: 10,
                         fontWeight: 700,
                         fontFamily: "var(--font-mono)",
+                        letterSpacing: "0.04em",
                         cursor: "pointer",
                       }}
                     >
@@ -251,7 +308,7 @@ export function BuildLabPage({ data, update }: Props) {
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
                     placeholder="Tag"
-                    style={{ ...inputStyle, flex: 1, margin: 0 }}
+                    style={{ ...inputStyle, flex: 1 }}
                   />
                 </div>
                 <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
@@ -259,196 +316,189 @@ export function BuildLabPage({ data, update }: Props) {
                   <button onClick={addCard} style={primaryBtnStyle}>Add Task</button>
                 </div>
               </div>
-            )}
+              <Divider />
+            </>
+          )}
 
-            {/* Kanban columns */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-              {columns.map((col) => {
-                const cfg = STATUS_CONFIG[col];
-                const cards = getCards(col);
-                return (
-                  <div key={col}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 8 }}>
-                      <span style={{ color: cfg.color }}>{cfg.icon}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: cfg.color, fontFamily: "var(--font-mono)" }}>{cfg.label}</span>
-                      <span style={{ fontSize: 10, color: "hsl(var(--muted-foreground))", marginLeft: "auto" }}>{cards.length}</span>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 60 }}>
-                      {cards.map((card) => {
-                        const pc = PRIORITY_COLORS[card.priority];
-                        return (
-                          <div
-                            key={card.id}
-                            style={{
-                              padding: "10px 10px",
-                              borderRadius: 9,
-                              background: "hsl(var(--muted) / 0.3)",
-                              border: "1px solid hsl(var(--border) / 0.6)",
-                            }}
-                          >
-                            <p style={{ fontSize: 12, color: "hsl(var(--foreground))", margin: "0 0 6px", fontWeight: 500, lineHeight: 1.3 }}>
-                              {card.title}
-                            </p>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: pc.bg, color: pc.color, fontFamily: "var(--font-mono)" }}>
-                                {pc.label}
+          {/* Kanban columns — hairline seams between columns */}
+          <SeamGrid cols="1fr 1fr 1fr">
+            {columns.map((col) => {
+              const cfg = STATUS_CONFIG[col];
+              const cards = getCards(col);
+              return (
+                <Panel key={col} style={{ padding: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 12px", borderBottom: "1px solid var(--color-border)" }}>
+                    <span style={{ color: cfg.color, display: "inline-flex" }}>{cfg.icon}</span>
+                    <span style={{ ...tLabelStyle, color: cfg.color, letterSpacing: "0.1em" }}>{cfg.label}</span>
+                    <span style={{ ...tNumStyle, fontSize: 10, color: "var(--color-muted)", marginLeft: "auto" }}>{cards.length}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 60, padding: "10px 12px" }}>
+                    {cards.map((card) => {
+                      const pc = PRIORITY_COLORS[card.priority];
+                      return (
+                        <div
+                          key={card.id}
+                          style={{
+                            padding: "10px",
+                            borderRadius: 6,
+                            background: "var(--color-surface)",
+                            border: "1px solid var(--color-border)",
+                          }}
+                        >
+                          <p style={{ fontSize: 12, color: "var(--color-text)", margin: "0 0 6px", fontWeight: 500, lineHeight: 1.3 }}>
+                            {card.title}
+                          </p>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: pc.bg, color: pc.color, fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
+                              {pc.label}
+                            </span>
+                            {card.tag && (
+                              <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "var(--color-bg)", color: "var(--color-muted)", fontFamily: "var(--font-mono)" }}>
+                                {card.tag}
                               </span>
-                              {card.tag && (
-                                <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 4, background: "hsl(var(--muted))", color: "hsl(var(--muted-foreground))" }}>
-                                  {card.tag}
-                                </span>
-                              )}
-                            </div>
-                            {/* Move buttons */}
-                            <div style={{ display: "flex", gap: 3, marginTop: 8 }}>
-                              {columns.filter((c) => c !== col).map((target) => (
-                                <button
-                                  key={target}
-                                  onClick={() => moveCard(card.id, target)}
-                                  style={{
-                                    flex: 1,
-                                    padding: "3px 0",
-                                    borderRadius: 5,
-                                    border: "1px solid hsl(var(--border) / 0.5)",
-                                    background: "transparent",
-                                    color: STATUS_CONFIG[target].color,
-                                    fontSize: 9,
-                                    fontWeight: 600,
-                                    cursor: "pointer",
-                                    fontFamily: "var(--font-mono)",
-                                  }}
-                                >
-                                  → {STATUS_CONFIG[target].label}
-                                </button>
-                              ))}
+                            )}
+                          </div>
+                          {/* Move buttons */}
+                          <div style={{ display: "flex", gap: 3, marginTop: 8 }}>
+                            {columns.filter((c) => c !== col).map((target) => (
                               <button
-                                onClick={() => removeCard(card.id)}
+                                key={target}
+                                onClick={() => moveCard(card.id, target)}
                                 style={{
-                                  padding: "3px 5px",
+                                  flex: 1,
+                                  padding: "3px 0",
                                   borderRadius: 5,
-                                  border: "1px solid hsl(var(--border) / 0.5)",
+                                  border: "1px solid var(--color-border)",
                                   background: "transparent",
-                                  color: "hsl(var(--muted-foreground))",
-                                  fontSize: 10,
+                                  color: STATUS_CONFIG[target].color,
+                                  fontSize: 9,
+                                  fontWeight: 700,
                                   cursor: "pointer",
+                                  fontFamily: "var(--font-mono)",
+                                  letterSpacing: "0.02em",
                                 }}
                               >
-                                <Trash2 size={9} />
+                                → {STATUS_CONFIG[target].label}
                               </button>
-                            </div>
+                            ))}
+                            <button
+                              onClick={() => removeCard(card.id)}
+                              style={{
+                                display: "inline-flex", alignItems: "center", justifyContent: "center",
+                                padding: "3px 6px",
+                                borderRadius: 5,
+                                border: "1px solid var(--color-border)",
+                                background: "transparent",
+                                color: "var(--color-muted)",
+                                fontSize: 10,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Trash2 size={9} />
+                            </button>
                           </div>
-                        );
-                      })}
-                      {cards.length === 0 && (
-                        <div style={{ padding: "16px 0", textAlign: "center", fontSize: 11, color: "hsl(var(--muted-foreground) / 0.5)", border: "1px dashed hsl(var(--border) / 0.4)", borderRadius: 8 }}>
-                          Empty
                         </div>
-                      )}
-                    </div>
+                      );
+                    })}
+                    {cards.length === 0 && (
+                      <div style={{ padding: "16px 0", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 10, letterSpacing: "0.08em", color: "var(--color-muted)", border: "1px dashed var(--color-border)", borderRadius: 6 }}>
+                        EMPTY
+                      </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
-          </SectionCard>
-        </>
+                </Panel>
+              );
+            })}
+          </SeamGrid>
+        </Slab>
       )}
 
       {/* ── INCOME TAB ── */}
       {activeTab === "income" && (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {INCOME_TARGETS.map((t) => (
+          <Slab>
+            <PanelHead
+              title={<span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><TrendingUp size={11} style={{ color: "var(--gain)" }} /> Income Milestones</span>}
+              right={<Badge>{INCOME_TARGETS.length} TIERS</Badge>}
+            />
+            {INCOME_TARGETS.map((t, i) => (
               <div
                 key={t.period}
                 style={{
-                  padding: "14px 16px",
-                  borderRadius: 12,
-                  background: `${t.color}10`,
-                  border: `1px solid ${t.color}30`,
                   display: "flex",
-                  justifyContent: "space-between",
                   alignItems: "center",
+                  justifyContent: "space-between",
                   gap: 12,
+                  padding: "12px 16px",
+                  borderTop: i === 0 ? "none" : "1px solid var(--color-border)",
                 }}
               >
-                <div>
-                  <p style={{ fontSize: 11, color: t.color, fontFamily: "var(--font-mono)", fontWeight: 700, margin: "0 0 3px", letterSpacing: "0.04em" }}>
-                    {t.period.toUpperCase()}
-                  </p>
-                  <p style={{ fontSize: 13, color: "hsl(var(--foreground))", fontWeight: 500, margin: 0 }}>{t.target}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: t.tint, flexShrink: 0 }} />
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ ...tLabelStyle, color: t.tint, margin: "0 0 3px" }}>
+                      {t.period.toUpperCase()}
+                    </p>
+                    <p style={{ fontSize: 13, color: "var(--color-text)", fontWeight: 500, margin: 0 }}>{t.target}</p>
+                  </div>
                 </div>
-                <div style={{
-                  padding: "6px 14px",
-                  borderRadius: 8,
-                  background: `${t.color}20`,
-                  border: `1px solid ${t.color}35`,
-                }}>
-                  <p style={{ fontSize: 13, fontWeight: 800, color: t.color, margin: 0, fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>
-                    {t.amount}
-                  </p>
-                </div>
+                <span style={{ ...tNumStyle, fontSize: 13, fontWeight: 700, color: t.tint, whiteSpace: "nowrap" }}>
+                  {t.amount}
+                </span>
               </div>
             ))}
-          </div>
+          </Slab>
 
-          <SectionCard title="Income Target — Catatan">
-            <EditableText
-              value={bl.incomeTarget}
-              onChange={(val) => update((d) => ({ ...d, buildLab: { ...d.buildLab, incomeTarget: val } }))}
-            />
-          </SectionCard>
+          <Slab>
+            <PanelHead title="Income Target — Catatan" />
+            <div style={{ padding: "14px 16px" }}>
+              <EditableText
+                value={bl.incomeTarget}
+                onChange={(val) => update((d) => ({ ...d, buildLab: { ...d.buildLab, incomeTarget: val } }))}
+              />
+            </div>
+          </Slab>
 
           {/* Revenue streams */}
-          <SectionCard title="Revenue Streams yang Lagi Dibangun">
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { name: "Web3 Freelance",       desc: "Bounties Dework + direct outreach ke protocol",   status: "AKTIF", statusColor: "#3b82f6" },
-                { name: "ZERØ WATCH",            desc: "Trading dashboard — Gumroad $9 lifetime",        status: "SETUP",  statusColor: "#f59e0b" },
-                { name: "ZERØ MERIDIAN",         desc: "Analytics — Stripe paywall pending",             status: "LIVE",   statusColor: "#22c55e" },
-                { name: "Content / Consulting",  desc: "X/Twitter trader audience, jangka menengah",    status: "PLAN",   statusColor: "#8b5cf6" },
-              ].map((s) => (
-                <div
-                  key={s.name}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    background: "hsl(var(--muted) / 0.3)",
-                    border: "1px solid hsl(var(--border) / 0.5)",
-                  }}
-                >
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "hsl(var(--foreground))", margin: 0 }}>{s.name}</p>
-                    <p style={{ fontSize: 11, color: "hsl(var(--muted-foreground))", margin: "2px 0 0" }}>{s.desc}</p>
-                  </div>
-                  <span style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: "3px 9px",
-                    borderRadius: 6,
-                    background: s.statusColor + "20",
-                    color: s.statusColor,
-                    fontFamily: "var(--font-mono)",
-                    flexShrink: 0,
-                  }}>
-                    {s.status}
-                  </span>
+          <Slab>
+            <PanelHead title="Revenue Streams yang Lagi Dibangun" />
+            {[
+              { name: "Web3 Freelance",      desc: "Bounties Dework + direct outreach ke protocol", status: "AKTIF", tone: "accent" as const },
+              { name: "ZERØ WATCH",          desc: "Trading dashboard — Gumroad $9 lifetime",       status: "SETUP", tone: "warning" as const },
+              { name: "ZERØ MERIDIAN",       desc: "Analytics — Stripe paywall pending",            status: "LIVE",  tone: "gain" as const },
+              { name: "Content / Consulting", desc: "X/Twitter trader audience, jangka menengah",   status: "PLAN",  tone: "muted" as const },
+            ].map((s, i) => (
+              <div
+                key={s.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "12px 16px",
+                  borderTop: i === 0 ? "none" : "1px solid var(--color-border)",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)", margin: 0 }}>{s.name}</p>
+                  <p style={{ fontSize: 11, color: "var(--color-muted)", margin: "2px 0 0" }}>{s.desc}</p>
                 </div>
-              ))}
-            </div>
-          </SectionCard>
+                <Badge tone={s.tone}>{s.status}</Badge>
+              </div>
+            ))}
+          </Slab>
         </>
       )}
 
       {/* Notes */}
-      <SectionCard title="Notes">
-        <NotesList
-          notes={bl.notes}
-          onChange={(notes) => update((d) => ({ ...d, buildLab: { ...d.buildLab, notes } }))}
-        />
-      </SectionCard>
+      <Slab>
+        <PanelHead title="Notes" />
+        <div style={{ padding: "14px 16px" }}>
+          <NotesList
+            notes={bl.notes}
+            onChange={(notes) => update((d) => ({ ...d, buildLab: { ...d.buildLab, notes } }))}
+          />
+        </div>
+      </Slab>
     </div>
   );
 }
@@ -456,10 +506,10 @@ export function BuildLabPage({ data, update }: Props) {
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "7px 10px",
-  borderRadius: 8,
-  border: "1px solid hsl(var(--border))",
-  background: "hsl(var(--background))",
-  color: "hsl(var(--foreground))",
+  borderRadius: 6,
+  border: "1px solid var(--color-border)",
+  background: "var(--color-bg)",
+  color: "var(--color-text)",
   fontSize: 13,
   fontFamily: "var(--font-sans)",
   outline: "none",
@@ -468,24 +518,25 @@ const inputStyle: React.CSSProperties = {
 
 const primaryBtnStyle: React.CSSProperties = {
   padding: "6px 14px",
-  borderRadius: 8,
-  border: "none",
+  borderRadius: 7,
+  border: "1px solid var(--rail-active-border)",
   cursor: "pointer",
   fontSize: 12,
-  fontWeight: 600,
-  fontFamily: "var(--font-sans)",
-  background: "hsl(var(--primary))",
-  color: "hsl(var(--primary-foreground))",
+  fontWeight: 700,
+  fontFamily: "var(--font-mono)",
+  letterSpacing: "0.04em",
+  background: "var(--rail-active-bg)",
+  color: "var(--color-primary)",
 };
 
 const cancelBtnStyle: React.CSSProperties = {
   padding: "6px 14px",
-  borderRadius: 8,
-  border: "1px solid hsl(var(--border))",
+  borderRadius: 7,
+  border: "1px solid var(--color-border)",
   cursor: "pointer",
   fontSize: 12,
   fontWeight: 600,
   fontFamily: "var(--font-sans)",
   background: "transparent",
-  color: "hsl(var(--muted-foreground))",
+  color: "var(--color-muted)",
 };

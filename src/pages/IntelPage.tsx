@@ -2,6 +2,8 @@
 // Bloomberg-grade Intelligence Terminal
 // v3.0: Auto-refresh + Batch AI Translation ID + Breaking badges + Sentiment tags
 //       Background prefetch all categories + Smart dedup + Live ticker + Billionaire UX
+// v3.1: Institutional terminal restructure — flat hairline-seam panels (Slab),
+//       theme-aware CSS-var color hygiene (light + dark). Logic unchanged.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
@@ -15,6 +17,7 @@ import {
   formatTimestamp, formatFullDate, todayKey,
 } from '@/lib/api';
 import { cloudSet } from '@/lib/cloudStorage';
+import { Slab, PanelHead, Divider, Badge, tLabelStyle, SEAM } from '@/components/terminal';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface FeedItem {
@@ -234,6 +237,8 @@ function setRssCache(cat: string, articles: RssArticle[]) {
 }
 
 // ─── CATEGORIES ───────────────────────────────────────────────────────────────
+// NOTE: per-category `color`/`bg` are semantic brand hues used ONLY for small
+// decorative markers (icons, source chips, breaking dots) — allowed to stay fixed.
 const CATEGORIES = [
   { key: 'world',     label: 'World',     icon: Globe,      color: '#2563eb', bg: '#2563eb18',
     aiPrompt: (date: string, rss: string) =>
@@ -277,7 +282,7 @@ function RefreshCountdown({ nextRefresh, onRefresh, loading }: {
       <div style={{ position: 'relative', width: 28, height: 28 }}>
         <svg width="28" height="28" style={{ transform: 'rotate(-90deg)' }}>
           <circle cx="14" cy="14" r="11" fill="none" stroke="var(--color-border)" strokeWidth="2" />
-          <circle cx="14" cy="14" r="11" fill="none" stroke="#10b981" strokeWidth="2"
+          <circle cx="14" cy="14" r="11" fill="none" stroke="var(--gain)" strokeWidth="2"
             strokeDasharray={`${2 * Math.PI * 11}`}
             strokeDashoffset={`${2 * Math.PI * 11 * (1 - pct / 100)}`}
             style={{ transition: 'stroke-dashoffset 1s linear' }}
@@ -287,10 +292,10 @@ function RefreshCountdown({ nextRefresh, onRefresh, loading }: {
           position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'transparent', border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
         }}>
-          <RefreshCw size={10} color="#10b981" style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
+          <RefreshCw size={10} color="var(--gain)" style={{ animation: loading ? 'spin 1s linear infinite' : 'none' }} />
         </button>
       </div>
-      <span style={{ fontFamily: 'monospace', fontSize: 10, color: 'var(--color-muted)' }}>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--color-muted)', fontVariantNumeric: 'tabular-nums' }}>
         {loading ? 'Updating…' : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`}
       </span>
     </div>
@@ -301,16 +306,16 @@ function RefreshCountdown({ nextRefresh, onRefresh, loading }: {
 function SentimentBadge({ s }: { s?: RssArticle['sentiment'] }) {
   if (!s) return null;
   const cfg = {
-    BULLISH:  { color: '#10b981', bg: '#10b98115', Icon: TrendingUp,   label: 'BULLISH'  },
-    BEARISH:  { color: '#ef4444', bg: '#ef444415', Icon: TrendingDown,  label: 'BEARISH'  },
-    NEUTRAL:  { color: '#94a3b8', bg: '#94a3b815', Icon: Minus,         label: 'NEUTRAL'  },
+    BULLISH:  { color: 'var(--gain)',        bg: 'var(--gain-soft)',    Icon: TrendingUp,   label: 'BULLISH'  },
+    BEARISH:  { color: 'var(--loss)',        bg: 'var(--loss-soft)',    Icon: TrendingDown, label: 'BEARISH'  },
+    NEUTRAL:  { color: 'var(--color-muted)', bg: 'var(--color-surface)', Icon: Minus,       label: 'NEUTRAL'  },
   }[s];
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 3,
-      fontSize: 9, fontWeight: 700, fontFamily: 'monospace',
+      fontSize: 9, fontWeight: 700, fontFamily: 'var(--font-mono)',
       color: cfg.color, background: cfg.bg,
-      padding: '1px 6px', borderRadius: 4, letterSpacing: 0.5,
+      padding: '1px 6px', borderRadius: 4, letterSpacing: '0.06em',
     }}>
       <cfg.Icon size={8} /> {cfg.label}
     </span>
@@ -354,37 +359,32 @@ function MorningBrief({ hasKey }: { hasKey: boolean }) {
   };
 
   return (
-    <div style={{
-      background: 'var(--color-card)', border: '1px solid var(--color-border)',
-      borderRadius: 14, overflow: 'hidden', marginBottom: 24,
-      boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
-    }}>
+    <Slab style={{ marginBottom: 24 }}>
       {/* Header */}
       <div style={{
-        padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10,
-        cursor: 'pointer', borderBottom: expanded ? '1px solid var(--color-border)' : 'none',
-        background: 'linear-gradient(135deg, rgba(132,204,22,0.06), transparent)',
+        padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 10,
+        cursor: 'pointer', borderBottom: expanded ? `1px solid ${SEAM}` : 'none',
       }} onClick={() => setExpanded(e => !e)}>
-        <div style={{ position: 'relative' }}>
-          <Sunrise size={16} color="#84cc16" />
+        <div style={{ position: 'relative', display: 'flex' }}>
+          <Sunrise size={15} color="var(--color-primary)" />
           {!brief && hasKey && !loading && (
             <div style={{
-              position: 'absolute', top: -3, right: -3, width: 7, height: 7,
-              borderRadius: '50%', background: '#84cc16', animation: 'rpulse 2s infinite',
+              position: 'absolute', top: -3, right: -3, width: 6, height: 6,
+              borderRadius: '50%', background: 'var(--color-primary)', animation: 'rpulse 2s infinite',
             }} />
           )}
         </div>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text)', flex: 1, fontFamily: 'monospace', letterSpacing: 2 }}>
+        <span style={{ ...tLabelStyle, fontSize: 10, flex: 1 }}>
           MORNING BRIEF
         </span>
         {brief && (
-          <span style={{ fontSize: 10, color: 'var(--color-muted)', fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 10, color: 'var(--color-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
             {brief.timestamp} · auto-generated
           </span>
         )}
         <button onClick={e => { e.stopPropagation(); generate(); }} disabled={loading || !hasKey} style={{
-          background: loading ? 'var(--color-border)' : '#84cc16',
-          color: loading ? 'var(--color-muted)' : '#000',
+          background: loading ? 'var(--color-surface)' : 'var(--color-primary)',
+          color: loading ? 'var(--color-muted)' : '#fff',
           border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
           cursor: loading || !hasKey ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', gap: 5, opacity: !hasKey ? 0.5 : 1,
@@ -397,16 +397,16 @@ function MorningBrief({ hasKey }: { hasKey: boolean }) {
       </div>
 
       {expanded && (
-        <div style={{ padding: '18px 22px' }}>
-          {error && <p style={{ fontSize: 12, color: '#f87171', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}><AlertCircle size={12} /> {error}</p>}
+        <div style={{ padding: '16px 18px' }}>
+          {error && <p style={{ fontSize: 12, color: 'var(--loss)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 5 }}><AlertCircle size={12} /> {error}</p>}
           {loading && (
             <div style={{ color: 'var(--color-muted)', fontSize: 13, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Activity size={13} color="#84cc16" style={{ animation: 'rpulse 1s infinite' }} />
+                <Activity size={13} color="var(--color-primary)" style={{ animation: 'rpulse 1s infinite' }} />
                 Fetching RSS feeds + generating brief dalam Bahasa Indonesia…
               </div>
-              <div style={{ height: 3, background: 'var(--color-border)', borderRadius: 99, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: '60%', background: 'linear-gradient(90deg, #84cc16, #22d3ee)', borderRadius: 99, animation: 'progress 1.8s ease-in-out infinite' }} />
+              <div style={{ height: 3, background: 'var(--color-surface)', borderRadius: 99, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: '60%', background: 'var(--color-primary)', borderRadius: 99, animation: 'progress 1.8s ease-in-out infinite' }} />
               </div>
             </div>
           )}
@@ -422,7 +422,7 @@ function MorningBrief({ hasKey }: { hasKey: boolean }) {
           )}
         </div>
       )}
-    </div>
+    </Slab>
   );
 }
 
@@ -479,40 +479,40 @@ function RssPanel({ category, color, hasKey, forceRefresh }: {
   const isIDCat = category === 'indonesia';
 
   return (
-    <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, overflow: 'hidden' }}>
+    <Slab>
       {/* Header */}
-      <div onClick={() => setExpanded(e => !e)} style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: `${color}08` }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', background: loading || translating ? '#f59e0b' : '#10b981', boxShadow: `0 0 6px ${loading || translating ? '#f59e0b' : '#10b981'}`, animation: 'rpulse 2s infinite' }} />
+      <div onClick={() => setExpanded(e => !e)} style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', borderBottom: expanded ? `1px solid ${SEAM}` : 'none' }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: loading || translating ? 'var(--warning)' : 'var(--gain)', animation: 'rpulse 2s infinite' }} />
         <Rss size={13} color={color} />
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text)', flex: 1, fontFamily: 'monospace', letterSpacing: 0.5 }}>
+        <span style={{ ...tLabelStyle, fontSize: 10, flex: 1 }}>
           LIVE RSS
         </span>
         {breaking.length > 0 && (
-          <span style={{ fontSize: 9, fontWeight: 800, color: '#ef4444', background: '#ef444415', padding: '2px 7px', borderRadius: 4, fontFamily: 'monospace', letterSpacing: 1, animation: 'rpulse 1.5s infinite' }}>
-            🔴 {breaking.length} BREAKING
+          <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--loss)', background: 'var(--loss-soft)', padding: '2px 7px', borderRadius: 4, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', animation: 'rpulse 1.5s infinite' }}>
+            {breaking.length} BREAKING
           </span>
         )}
-        <span style={{ fontSize: 10, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 10, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--font-mono)' }}>
           {feeds.map(f => f.name).join(' · ')}
         </span>
         {/* Translate toggle */}
         {hasKey && !isIDCat && articles.some(a => a.titleID) && (
           <button onClick={e => { e.stopPropagation(); setShowID(v => !v); }} style={{
             display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 5,
-            background: showID ? `${color}20` : 'var(--color-border)',
-            border: `1px solid ${showID ? color + '40' : 'transparent'}`,
-            color: showID ? color : 'var(--color-muted)', fontSize: 10, fontWeight: 600, cursor: 'pointer',
+            background: showID ? 'var(--rail-active-bg)' : 'var(--color-surface)',
+            border: `1px solid ${showID ? 'var(--rail-active-border)' : 'var(--color-border)'}`,
+            color: showID ? 'var(--color-primary)' : 'var(--color-muted)', fontSize: 10, fontWeight: 600, cursor: 'pointer',
           }}>
             <Languages size={10} /> {showID ? 'ID' : 'EN'}
           </button>
         )}
         <RefreshCountdown nextRefresh={nextRefresh} onRefresh={() => load()} loading={loading || translating} />
-        {translating && <span style={{ fontSize: 9, color: '#f59e0b', fontFamily: 'monospace', animation: 'rpulse 1s infinite' }}>Translating…</span>}
+        {translating && <span style={{ fontSize: 9, color: 'var(--warning)', fontFamily: 'var(--font-mono)', animation: 'rpulse 1s infinite' }}>Translating…</span>}
         {expanded ? <ChevronUp size={12} color="var(--color-muted)" /> : <ChevronDown size={12} color="var(--color-muted)" />}
       </div>
 
       {expanded && (
-        <div style={{ borderTop: '1px solid var(--color-border)', maxHeight: 440, overflowY: 'auto' }}>
+        <div style={{ maxHeight: 440, overflowY: 'auto' }}>
           {loading && articles.length === 0 ? (
             <div style={{ padding: 20, textAlign: 'center', color: 'var(--color-muted)', fontSize: 13 }}>
               <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite', display: 'inline', marginRight: 6 }} />
@@ -525,18 +525,18 @@ function RssPanel({ category, color, hasKey, forceRefresh }: {
           ) : articles.map((a, i) => (
             <a key={a.id} href={a.link} target="_blank" rel="noopener noreferrer" style={{
               display: 'block', padding: '11px 16px',
-              borderBottom: i < articles.length - 1 ? '1px solid var(--color-border)' : 'none',
+              borderBottom: i < articles.length - 1 ? `1px solid ${SEAM}` : 'none',
               textDecoration: 'none', transition: 'background .12s',
-              background: a.isBreaking ? '#ef444406' : 'transparent',
+              background: a.isBreaking ? 'var(--loss-soft)' : 'transparent',
             }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-card)')}
-              onMouseLeave={e => (e.currentTarget.style.background = a.isBreaking ? '#ef444406' : 'transparent')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--color-surface)')}
+              onMouseLeave={e => (e.currentTarget.style.background = a.isBreaking ? 'var(--loss-soft)' : 'transparent')}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{ flex: 1 }}>
                   {/* Breaking badge */}
                   {a.isBreaking && (
-                    <span style={{ fontSize: 8, fontWeight: 800, color: '#ef4444', background: '#ef444415', padding: '1px 5px', borderRadius: 3, fontFamily: 'monospace', letterSpacing: 1, marginRight: 6 }}>🔴 BREAKING</span>
+                    <span style={{ fontSize: 8, fontWeight: 800, color: 'var(--loss)', background: 'var(--loss-soft)', padding: '1px 5px', borderRadius: 3, fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', marginRight: 6 }}>BREAKING</span>
                   )}
                   <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', margin: 0, lineHeight: 1.45 }}>
                     {showID && a.titleID ? a.titleID : a.title}
@@ -549,12 +549,12 @@ function RssPanel({ category, color, hasKey, forceRefresh }: {
                     <p style={{ fontSize: 11, color: 'var(--color-muted)', margin: '3px 0 0', lineHeight: 1.4 }}>{a.description}</p>
                   )}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 5, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color, background: color + '15', padding: '1px 6px', borderRadius: 4, fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color, background: color + '15', padding: '1px 6px', borderRadius: 4, fontFamily: 'var(--font-mono)' }}>
                       {a.source}
                     </span>
                     {a.sentiment && <SentimentBadge s={a.sentiment} />}
                     {a.pubDate && (
-                      <span style={{ fontSize: 10, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      <span style={{ fontSize: 10, color: 'var(--color-muted)', display: 'flex', alignItems: 'center', gap: 3, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>
                         <Clock size={9} /> {getRelativeTime(a.pubDate)}
                       </span>
                     )}
@@ -566,11 +566,11 @@ function RssPanel({ category, color, hasKey, forceRefresh }: {
           ))}
         </div>
       )}
-    </div>
+    </Slab>
   );
 }
 
-// Feed Item Card
+// Feed Item Card — flat panel, hairline-separated inside the AI feed Slab
 function FeedItemCard({ item, onDelete, catConfig }: {
   item: FeedItem; onDelete: (id: string) => void; catConfig: typeof CATEGORIES[number] | undefined;
 }) {
@@ -580,22 +580,15 @@ function FeedItemCard({ item, onDelete, catConfig }: {
   const hasMore = item.content.length > 280;
 
   return (
-    <div style={{
-      background: 'var(--color-card)', borderRadius: 12,
-      border: `1px solid ${catConfig?.color ?? '#334155'}28`,
-      overflow: 'hidden', transition: 'box-shadow .15s',
-    }}
-      onMouseEnter={e => (e.currentTarget.style.boxShadow = `0 4px 20px ${catConfig?.color ?? '#334155'}18`)}
-      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-    >
-      <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, background: catConfig?.bg ?? '#33415510', cursor: 'pointer' }}
+    <div style={{ background: 'var(--glass-bg)' }}>
+      <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
         onClick={() => setExpanded(e => !e)}>
         <Icon size={13} color={catConfig?.color ?? 'var(--color-muted)'} />
-        <span style={{ fontSize: 9, fontWeight: 700, fontFamily: 'monospace', color: catConfig?.color ?? 'var(--color-muted)', letterSpacing: 1, textTransform: 'uppercase' }}>
+        <span style={{ ...tLabelStyle, letterSpacing: '0.1em', color: catConfig?.color ?? 'var(--color-muted)' }}>
           {catConfig?.label ?? item.category}
         </span>
-        <span style={{ fontSize: 10, color: 'var(--color-muted)', fontFamily: 'monospace' }}>{item.timestamp}</span>
-        {item.source === 'rss' && <span style={{ fontSize: 9, fontWeight: 700, color: '#84cc16', background: '#84cc1615', padding: '1px 5px', borderRadius: 3 }}>RSS</span>}
+        <span style={{ fontSize: 10, color: 'var(--color-muted)', fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{item.timestamp}</span>
+        {item.source === 'rss' && <Badge tone="accent">RSS</Badge>}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
           <button onClick={e => { e.stopPropagation(); onDelete(item.id); }} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-muted)', padding: 2, display: 'flex', alignItems: 'center' }}>
             <Trash2 size={12} />
@@ -603,11 +596,11 @@ function FeedItemCard({ item, onDelete, catConfig }: {
           {expanded ? <ChevronUp size={13} color="var(--color-muted)" /> : <ChevronDown size={13} color="var(--color-muted)" />}
         </div>
       </div>
-      <div style={{ padding: '14px 16px' }}>
+      <div style={{ padding: '0 16px 14px' }}>
         <div style={{ fontSize: 14, color: 'var(--color-text)', lineHeight: 1.9, whiteSpace: 'pre-wrap' }}>
           {expanded ? item.content : preview}
           {!expanded && hasMore && (
-            <span onClick={() => setExpanded(true)} style={{ color: catConfig?.color ?? '#2563eb', cursor: 'pointer', fontSize: 12, marginLeft: 4 }}>
+            <span onClick={() => setExpanded(true)} style={{ color: catConfig?.color ?? 'var(--color-primary)', cursor: 'pointer', fontSize: 12, marginLeft: 4 }}>
               … selengkapnya
             </span>
           )}
@@ -690,6 +683,13 @@ export function IntelPage() {
 
   const filteredFeed = feed.filter(i => i.category === activeCategory);
 
+  // Shared terminal button style (secondary actions)
+  const btnStyle: React.CSSProperties = {
+    display: 'flex', alignItems: 'center', gap: 5,
+    border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+    borderRadius: 7, padding: '6px 12px', fontSize: 12, color: 'var(--color-text)', cursor: 'pointer',
+  };
+
   return (
     <div className="space-y-6">
       <MorningBrief hasKey={hasKey} />
@@ -697,27 +697,23 @@ export function IntelPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Radio size={16} color="#ef4444" style={{ animation: 'rpulse 1.5s infinite' }} />
+          <Radio size={16} color="var(--loss)" style={{ animation: 'rpulse 1.5s infinite' }} />
           <div>
-            <h2 style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 700, color: 'var(--color-text)', letterSpacing: 1 }}>INTEL FEED</h2>
-            <p style={{ fontSize: 11, color: 'var(--color-muted)' }}>
+            <h2 style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 700, color: 'var(--color-text)', letterSpacing: '0.08em', margin: 0 }}>INTEL FEED</h2>
+            <p style={{ fontSize: 11, color: 'var(--color-muted)', fontFamily: 'var(--font-mono)', margin: '3px 0 0', letterSpacing: '0.02em' }}>
               {feed.length} items · Live RSS · AI analysis · Auto-translate ID · Auto-refresh 10m
             </p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setForceRefresh(v => v + 1)} style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            border: '1px solid var(--color-border)', background: 'var(--color-card)',
-            borderRadius: 7, padding: '6px 12px', fontSize: 12, color: 'var(--color-text)', cursor: 'pointer',
-          }}>
+          <button onClick={() => setForceRefresh(v => v + 1)} style={btnStyle}>
             <RefreshCw size={12} /> Refresh All
           </button>
           {feed.length > 0 && <>
-            <button onClick={downloadFeed} style={{ display: 'flex', alignItems: 'center', gap: 5, border: '1px solid var(--color-border)', background: 'var(--color-card)', borderRadius: 7, padding: '6px 12px', fontSize: 12, color: 'var(--color-text)', cursor: 'pointer' }}>
+            <button onClick={downloadFeed} style={btnStyle}>
               <Download size={12} /> Export
             </button>
-            <button onClick={clearAll} style={{ display: 'flex', alignItems: 'center', gap: 5, border: '1px solid #fee2e250', background: '#fee2e210', borderRadius: 7, padding: '6px 12px', fontSize: 12, color: '#dc2626', cursor: 'pointer' }}>
+            <button onClick={clearAll} style={{ ...btnStyle, border: '1px solid transparent', background: 'var(--loss-soft)', color: 'var(--loss)' }}>
               <Trash2 size={12} /> Clear
             </button>
           </>}
@@ -734,20 +730,20 @@ export function IntelPage() {
           const hasBreaking = cached?.some(a => a.isBreaking);
           return (
             <button key={c.key} onClick={() => setActive(c.key)} style={{
-              display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 20,
-              border: isActive ? 'none' : '1px solid var(--color-border)',
-              background: isActive ? c.color : 'var(--color-card)',
-              color: isActive ? 'white' : 'var(--color-muted)',
+              display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 7,
+              border: `1px solid ${isActive ? 'var(--rail-active-border)' : 'var(--color-border)'}`,
+              background: isActive ? 'var(--rail-active-bg)' : 'var(--color-surface)',
+              color: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
               fontSize: 13, fontWeight: isActive ? 600 : 400, cursor: 'pointer', transition: 'all .15s',
               position: 'relative',
             }}>
-              <Icon size={13} /> {c.label}
+              <Icon size={13} color={isActive ? 'var(--color-primary)' : c.color} /> {c.label}
               {count > 0 && (
-                <span style={{ fontSize: 10, background: isActive ? 'rgba(255,255,255,.25)' : c.bg, color: isActive ? 'white' : c.color, borderRadius: 10, padding: '0 5px', fontWeight: 700 }}>{count}</span>
+                <span style={{ fontSize: 10, background: isActive ? 'var(--rail-active-border)' : 'var(--color-border)', color: isActive ? 'var(--color-primary)' : 'var(--color-muted)', borderRadius: 4, padding: '0 5px', fontWeight: 700, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums' }}>{count}</span>
               )}
               {/* Breaking dot */}
               {hasBreaking && !isActive && (
-                <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 4px #ef4444', animation: 'rpulse 1s infinite' }} />
+                <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: '50%', background: 'var(--loss)', animation: 'rpulse 1s infinite' }} />
               )}
             </button>
           );
@@ -755,10 +751,10 @@ export function IntelPage() {
 
         <button onClick={fetchIntel} disabled={loading || !hasKey} style={{
           marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
-          background: !hasKey ? 'var(--color-muted)' : loading ? cat.color + 'aa' : cat.color,
-          color: 'white', border: 'none', borderRadius: 8, padding: '8px 16px',
+          background: !hasKey ? 'var(--color-surface)' : 'var(--color-primary)',
+          color: !hasKey ? 'var(--color-muted)' : '#fff', border: 'none', borderRadius: 7, padding: '8px 16px',
           fontSize: 13, fontWeight: 600, cursor: loading || !hasKey ? 'not-allowed' : 'pointer',
-          opacity: !hasKey ? 0.5 : 1,
+          opacity: !hasKey ? 0.6 : loading ? 0.85 : 1,
         }}>
           {loading || rssLoading
             ? <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />{rssLoading ? 'Fetching RSS…' : 'Analyzing…'}</>
@@ -767,7 +763,7 @@ export function IntelPage() {
       </div>
 
       {error && (
-        <div style={{ fontSize: 13, color: '#dc2626', background: '#fee2e210', padding: '8px 12px', borderRadius: 8, border: '1px solid #fee2e230', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 13, color: 'var(--loss)', background: 'var(--loss-soft)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--loss-soft)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <AlertCircle size={14} /> {error}
         </div>
       )}
@@ -776,19 +772,23 @@ export function IntelPage() {
       <RssPanel category={activeCategory} color={cat.color} hasKey={hasKey} forceRefresh={forceRefresh} />
 
       {/* AI Feed */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <Slab>
+        <PanelHead title={`AI ANALYSIS · ${cat.label}`} right={<Badge tone="muted">{filteredFeed.length} ITEMS</Badge>} />
         {filteredFeed.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--color-card)', borderRadius: 12, border: '1px solid var(--color-border)' }}>
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: 'var(--glass-bg)' }}>
             <Zap size={28} color={cat.color} style={{ display: 'block', margin: '0 auto 10px' }} />
             <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>No {cat.label} AI intel yet</p>
             <p style={{ color: 'var(--color-muted)', fontSize: 12, marginTop: 4 }}>
               RSS live di atas · Klik "Fetch {cat.label}" untuk AI analysis
             </p>
           </div>
-        ) : filteredFeed.map(item => (
-          <FeedItemCard key={item.id} item={item} onDelete={deleteItem} catConfig={CATEGORIES.find(c => c.key === item.category)} />
+        ) : filteredFeed.map((item, i) => (
+          <div key={item.id}>
+            <FeedItemCard item={item} onDelete={deleteItem} catConfig={CATEGORIES.find(c => c.key === item.category)} />
+            {i < filteredFeed.length - 1 && <Divider />}
+          </div>
         ))}
-      </div>
+      </Slab>
 
       <style>{`
         @keyframes spin    { to { transform: rotate(360deg); } }
