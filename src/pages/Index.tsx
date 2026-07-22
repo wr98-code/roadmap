@@ -624,7 +624,7 @@ const Index = () => {
             </div>
           </div>
         </header>
-        <main style={{ flex:1, padding: isMobile ? "18px 14px 44px" : "28px 24px 48px", maxWidth:960, width:"100%", margin:"0 auto" }}>
+        <main style={{ flex:1, padding: isMobile ? "14px 12px 40px" : "20px 22px 40px", maxWidth:1240, width:"100%", margin:"0 auto" }}>
           {renderPage()}
         </main>
       </div>
