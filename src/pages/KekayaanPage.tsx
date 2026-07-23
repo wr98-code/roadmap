@@ -25,8 +25,8 @@ interface Props {
 const ASSET_CATS = ["Kas", "Kripto", "Saham", "Properti", "Bisnis", "Piutang", "Lainnya"];
 // Small decorative category hues (semantic data-viz colors for dots + alloc bars).
 const CAT_COLOR: Record<string, string> = {
-  Kas: "#45c07f", Kripto: "#d99a4e", Saham: "#5b8def", Properti: "#9a86d4",
-  Bisnis: "#c9a96a", Piutang: "#57b6c9", Lainnya: "#8b929c",
+  Kas: "var(--cat-green)", Kripto: "var(--cat-amber)", Saham: "var(--cat-blue)", Properti: "var(--cat-violet)",
+  Bisnis: "var(--cat-gold)", Piutang: "var(--cat-teal)", Lainnya: "var(--color-muted)",
 };
 const uid = () => Math.random().toString(36).slice(2, 9);
 

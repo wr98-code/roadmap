@@ -384,7 +384,7 @@ function MorningBrief({ hasKey }: { hasKey: boolean }) {
         )}
         <button onClick={e => { e.stopPropagation(); generate(); }} disabled={loading || !hasKey} style={{
           background: loading ? 'var(--color-surface)' : 'var(--color-primary)',
-          color: loading ? 'var(--color-muted)' : '#fff',
+          color: loading ? 'var(--color-muted)' : 'var(--on-primary)',
           border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 700,
           cursor: loading || !hasKey ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', gap: 5, opacity: !hasKey ? 0.5 : 1,
@@ -752,7 +752,7 @@ export function IntelPage() {
         <button onClick={fetchIntel} disabled={loading || !hasKey} style={{
           marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
           background: !hasKey ? 'var(--color-surface)' : 'var(--color-primary)',
-          color: !hasKey ? 'var(--color-muted)' : '#fff', border: 'none', borderRadius: 7, padding: '8px 16px',
+          color: !hasKey ? 'var(--color-muted)' : 'var(--on-primary)', border: 'none', borderRadius: 7, padding: '8px 16px',
           fontSize: 13, fontWeight: 600, cursor: loading || !hasKey ? 'not-allowed' : 'pointer',
           opacity: !hasKey ? 0.6 : loading ? 0.85 : 1,
         }}>

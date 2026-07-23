@@ -20,9 +20,9 @@ interface Props {
 // ─── SPRINT PHASES ─────────────────────────────────────────────────────────────
 // `color` = decorative category accent (semantically distinct per phase).
 const PHASES = [
-  { key: "minggu12", label: "Minggu 1–2", subtitle: "Cari Klien Aktif", icon: "🎯", color: "#5b8def",        duration: "2 minggu" },
+  { key: "minggu12", label: "Minggu 1–2", subtitle: "Cari Klien Aktif", icon: "🎯", color: "var(--cat-blue)",        duration: "2 minggu" },
   { key: "minggu34", label: "Minggu 3–4", subtitle: "Monetisasi",       icon: "💰", color: "var(--gain)",     duration: "2 minggu" },
-  { key: "bulan2",   label: "Bulan 2",    subtitle: "Scale",            icon: "🚀", color: "#9a86d4",         duration: "1 bulan" },
+  { key: "bulan2",   label: "Bulan 2",    subtitle: "Scale",            icon: "🚀", color: "var(--cat-violet)",         duration: "1 bulan" },
   { key: "bulan3",   label: "Bulan 3",    subtitle: "Stabilisasi",      icon: "🛡️", color: "var(--warning)",  duration: "1 bulan" },
 ] as const;
 
@@ -31,8 +31,8 @@ type PhaseKey = (typeof PHASES)[number]["key"];
 // ─── 5 YEAR MILESTONES ────────────────────────────────────────────────────────
 const YEAR_MILESTONES = [
   { year: 1, label: "Stabilisasi Income",  target: "$2K/bulan",  icon: "🌱", color: "var(--gain)" },
-  { year: 2, label: "Scale Zero Build Lab", target: "$5K/bulan", icon: "⚡", color: "#5b8def" },
-  { year: 3, label: "Tim Kecil",            target: "$10K/bulan", icon: "👥", color: "#9a86d4" },
+  { year: 2, label: "Scale Zero Build Lab", target: "$5K/bulan", icon: "⚡", color: "var(--cat-blue)" },
+  { year: 3, label: "Tim Kecil",            target: "$10K/bulan", icon: "👥", color: "var(--cat-violet)" },
   { year: 4, label: "Product-Led Growth",   target: "SaaS",      icon: "📦", color: "var(--warning)" },
   { year: 5, label: "Financial Freedom",    target: "Bebas",     icon: "🏆", color: "var(--gold)" },
 ];
@@ -251,12 +251,12 @@ export function RoadmapPage({ data, update }: Props) {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {[
-                  { phase: "Minggu 1-2", label: "Apply 5-10 jobs/hari", icon: "📨", color: "#5b8def", done: r.minggu12.some(i => i.checked) },
-                  { phase: "Minggu 1-2", label: "1-2 bounty pertama dari Dework", icon: "🏆", color: "#5b8def", done: r.minggu12.filter(i => i.checked).length >= 4 },
+                  { phase: "Minggu 1-2", label: "Apply 5-10 jobs/hari", icon: "📨", color: "var(--cat-blue)", done: r.minggu12.some(i => i.checked) },
+                  { phase: "Minggu 1-2", label: "1-2 bounty pertama dari Dework", icon: "🏆", color: "var(--cat-blue)", done: r.minggu12.filter(i => i.checked).length >= 4 },
                   { phase: "Minggu 3-4", label: "Setup payment link (Gumroad/LemonSqueezy)", icon: "💳", color: "var(--gain)", done: r.minggu34.some(i => i.checked) },
                   { phase: "Minggu 3-4", label: "Soft launch ke komunitas trader", icon: "🚀", color: "var(--gain)", done: r.minggu34.filter(i => i.checked).length >= 2 },
-                  { phase: "Bulan 2", label: "1 klien aktif ATAU 20 subscriber PRO", icon: "👤", color: "#9a86d4", done: r.bulan2.some(i => i.checked) },
-                  { phase: "Bulan 2", label: "Stripe payment fiat live", icon: "💰", color: "#9a86d4", done: r.bulan2.filter(i => i.checked).length >= 2 },
+                  { phase: "Bulan 2", label: "1 klien aktif ATAU 20 subscriber PRO", icon: "👤", color: "var(--cat-violet)", done: r.bulan2.some(i => i.checked) },
+                  { phase: "Bulan 2", label: "Stripe payment fiat live", icon: "💰", color: "var(--cat-violet)", done: r.bulan2.filter(i => i.checked).length >= 2 },
                   { phase: "Bulan 3", label: "Emergency savings 1 bulan", icon: "🛡️", color: "var(--warning)", done: r.bulan3.some(i => i.checked) },
                   { phase: "Bulan 3", label: "Zero Build Lab sebagai brand serius", icon: "🌐", color: "var(--warning)", done: r.bulan3.filter(i => i.checked).length >= 2 },
                 ].map((m, idx) => (

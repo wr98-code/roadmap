@@ -92,7 +92,7 @@ interface Holding {
 }
 
 // Coin brand hues — decorative avatar identity only (kept per token rules).
-const COLORS = ["#f7931a","#627eea","#26a17b","#e84142","#0033ad","#2775ca","#16213e"];
+const COLORS = ["var(--cat-amber)","var(--cat-blue)","var(--cat-green)","var(--loss)","var(--cat-violet)","var(--cat-teal)","var(--color-muted)"];
 const PORT_KEY = "zero-crypto-portfolio-v2";
 const SYNC_KEY = "zero-crypto-sync-time";
 
@@ -233,8 +233,8 @@ export function CryptoPage({ data, update }: Props) {
             ) : (
               <>
                 {[
-                  { id: "bitcoin", sym: "BTC", color: "#f7931a" },
-                  { id: "ethereum", sym: "ETH", color: "#627eea" },
+                  { id: "bitcoin", sym: "BTC", color: "var(--cat-amber)" },
+                  { id: "ethereum", sym: "ETH", color: "var(--cat-blue)" },
                 ].map(({ id, sym, color }) => {
                   const p = topPrices[id];
                   if (!p) return null;

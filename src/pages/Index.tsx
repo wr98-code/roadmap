@@ -581,7 +581,7 @@ const Index = () => {
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--rail-btn-bg)"; }}>
             {vibeInfo.emoji}
           </button>
-          <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg, #3b82f6, #6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono)", fontSize:12, fontWeight:700, color:"#fff", border:"2px solid var(--rail-btn-border)", boxShadow:"0 0 10px rgba(59,130,246,0.28)" }}>W</div>
+          <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg, #3b82f6, #6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono)", fontSize:12, fontWeight:700, color:"var(--on-primary)", border:"2px solid var(--rail-btn-border)", boxShadow:"0 0 10px rgba(59,130,246,0.28)" }}>W</div>
         </div>
       </nav>
 
@@ -620,7 +620,7 @@ const Index = () => {
             )}
             <div style={{ display:"flex", alignItems:"center", gap:7 }}>
               {!isMobile && <span style={{ fontFamily:"var(--font-sans)", fontSize:12, color:"var(--color-muted)" }}>Windu</span>}
-              <div style={{ width:27, height:27, borderRadius:"50%", background:"linear-gradient(135deg, #3b82f6, #6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono)", fontSize:11, fontWeight:700, color:"#fff", border:"1px solid var(--rail-btn-border)" }}>W</div>
+              <div style={{ width:27, height:27, borderRadius:"50%", background:"linear-gradient(135deg, #3b82f6, #6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono)", fontSize:11, fontWeight:700, color:"var(--on-primary)", border:"1px solid var(--rail-btn-border)" }}>W</div>
             </div>
           </div>
         </header>

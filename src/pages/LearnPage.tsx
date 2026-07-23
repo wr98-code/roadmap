@@ -219,7 +219,7 @@ function TopicCard({
             style={{
               padding: '6px 14px', borderRadius: 7,
               background: loading ? 'var(--color-surface)' : 'var(--color-primary)',
-              color: loading ? 'var(--color-muted)' : '#fff',
+              color: loading ? 'var(--color-muted)' : 'var(--on-primary)',
               border: 'none', fontSize: 12, fontWeight: 600,
               cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', gap: 4,
@@ -365,7 +365,7 @@ export function LearnPage() {
               {cat.emoji} {cat.label}
               <span className="num" style={{
                 fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
-                background: isActive ? 'var(--rail-active-border)' : 'var(--color-border)',
+                background: isActive ? 'var(--rail-active-bg)' : 'var(--color-border)',
                 color: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
                 borderRadius: 4, padding: '0 5px',
               }}>
@@ -426,7 +426,7 @@ export function LearnPage() {
               style={{
                 padding: '10px 18px', borderRadius: 7,
                 background: customLoading ? 'var(--color-surface)' : 'var(--color-primary)',
-                color: customLoading ? 'var(--color-muted)' : '#fff',
+                color: customLoading ? 'var(--color-muted)' : 'var(--on-primary)',
                 border: 'none', fontSize: 13, fontWeight: 600,
                 cursor: customLoading || !customQuestion.trim() ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', gap: 6,

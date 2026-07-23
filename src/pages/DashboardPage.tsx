@@ -336,7 +336,7 @@ function Today({ data, update }: { data: AppData; update: (fn: (p: AppData) => A
               border: done[i] ? "1px solid var(--ember)" : "1.5px solid var(--color-border)",
               transition: "all var(--dur-fast) var(--ease-spring)",
             }}>
-              {done[i] && <Check size={13} color="#fff" strokeWidth={3} />}
+              {done[i] && <Check size={13} color="var(--on-primary)" strokeWidth={3} />}
             </span>
             <span style={{ fontSize: 15, color: done[i] ? "var(--color-muted)" : "var(--color-text)", textDecoration: done[i] ? "line-through" : "none" }}>{t}</span>
           </button>
