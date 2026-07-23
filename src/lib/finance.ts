@@ -36,7 +36,8 @@ export interface FinanceAccount {
 export interface IncomeSource {
   id: string;
   name: string;
-  emoji: string;
+  /** legacy — tidak dirender lagi (UI profesional tanpa emoji) */
+  emoji?: string;
   color: CatKey;
   /** "trading" → dapat chart P&L harian (masuk − keluar kategori trading-loss) */
   kind?: "trading";
@@ -45,7 +46,8 @@ export interface IncomeSource {
 export interface FinanceCategory {
   id: string;
   name: string;
-  emoji: string;
+  /** legacy — tidak dirender lagi (UI profesional tanpa emoji) */
+  emoji?: string;
   color: CatKey;
   /** batas budget bulanan opsional (envelope limit); 0/undefined = tanpa limit */
   limit?: number;
@@ -120,21 +122,21 @@ export function defaultFinance(): FinanceData {
       { id: uid(), name: "Cash / Tunai", type: "cash", color: "gold", initialBalance: 0, createdAt: new Date().toISOString() },
     ],
     sources: [
-      { id: uid(), name: "Trading", emoji: "📈", color: "blue", kind: "trading" },
-      { id: uid(), name: "Bisnis — Zero Build Lab", emoji: "🚀", color: "amber" },
-      { id: uid(), name: "Personal / Gaji", emoji: "💼", color: "violet" },
+      { id: uid(), name: "Trading", color: "blue", kind: "trading" },
+      { id: uid(), name: "Bisnis — Zero Build Lab", color: "amber" },
+      { id: uid(), name: "Personal / Gaji", color: "violet" },
     ],
     categories: [
-      { id: uid(), name: "Makan", emoji: "🍜", color: "rose" },
-      { id: uid(), name: "Jajan / Kopi", emoji: "☕", color: "amber" },
-      { id: uid(), name: "Transport", emoji: "🛵", color: "teal" },
-      { id: uid(), name: "Tagihan", emoji: "🧾", color: "blue" },
-      { id: uid(), name: "Belanja", emoji: "🛍️", color: "violet" },
-      { id: uid(), name: "Kesehatan", emoji: "💊", color: "green" },
-      { id: uid(), name: "Hiburan", emoji: "🎮", color: "gold" },
-      { id: uid(), name: "Tools / Subs", emoji: "🧰", color: "blue" },
-      { id: uid(), name: "Trading Loss", emoji: "📉", color: "muted", kind: "trading-loss" },
-      { id: uid(), name: "Lainnya", emoji: "📦", color: "muted" },
+      { id: uid(), name: "Makan", color: "rose" },
+      { id: uid(), name: "Jajan / Kopi", color: "amber" },
+      { id: uid(), name: "Transport", color: "teal" },
+      { id: uid(), name: "Tagihan", color: "blue" },
+      { id: uid(), name: "Belanja", color: "violet" },
+      { id: uid(), name: "Kesehatan", color: "green" },
+      { id: uid(), name: "Hiburan", color: "gold" },
+      { id: uid(), name: "Tools / Subs", color: "blue" },
+      { id: uid(), name: "Trading Loss", color: "muted", kind: "trading-loss" },
+      { id: uid(), name: "Lainnya", color: "muted" },
     ],
     transactions: [],
     currency: "IDR",
@@ -163,12 +165,10 @@ export function migrateFinance(raw: Partial<FinanceData> | undefined | null): Fi
     color: VALID_KEYS.has(a.color) ? a.color : CAT_KEYS[i % CAT_KEYS.length],
   }));
   fin.sources = fin.sources.map((s, i) => ({
-    emoji: "💵",
     ...s,
     color: VALID_KEYS.has(s.color) ? s.color : CAT_KEYS[i % CAT_KEYS.length],
   }));
   fin.categories = fin.categories.map((c, i) => ({
-    emoji: "🏷️",
     ...c,
     color: VALID_KEYS.has(c.color) ? c.color : CAT_KEYS[i % CAT_KEYS.length],
   }));
@@ -321,7 +321,6 @@ export function monthTotals(fin: FinanceData, monthKey: string): MonthTotals {
 export interface CategorySlice {
   categoryId: string;
   name: string;
-  emoji: string;
   color: CatKey;
   total: number;
   limit?: number;
@@ -341,7 +340,6 @@ export function categoryBreakdown(fin: FinanceData, monthKey: string): CategoryS
     slices.push({
       categoryId: catId,
       name: cat?.name ?? "Tanpa kategori",
-      emoji: cat?.emoji ?? "🏷️",
       color: cat?.color ?? "muted",
       total,
       limit: cat?.limit || undefined,
@@ -353,7 +351,6 @@ export function categoryBreakdown(fin: FinanceData, monthKey: string): CategoryS
 export interface SourceSlice {
   sourceId: string;
   name: string;
-  emoji: string;
   color: CatKey;
   total: number;
   txCount: number;
@@ -373,14 +370,13 @@ export function sourceBreakdown(fin: FinanceData, monthKey: string): SourceSlice
   const slices: SourceSlice[] = fin.sources.map((s) => ({
     sourceId: s.id,
     name: s.name,
-    emoji: s.emoji,
     color: s.color,
     total: totals.get(s.id)?.total ?? 0,
     txCount: totals.get(s.id)?.n ?? 0,
   }));
   if (totals.has("_none")) {
     const x = totals.get("_none")!;
-    slices.push({ sourceId: "_none", name: "Tanpa sumber", emoji: "❔", color: "muted", total: x.total, txCount: x.n });
+    slices.push({ sourceId: "_none", name: "Tanpa sumber", color: "muted", total: x.total, txCount: x.n });
   }
   return slices.sort((a, b) => b.total - a.total);
 }

@@ -10,7 +10,11 @@ import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
 import { Slab, Panel, SeamGrid, PanelHead, Badge, tLabelStyle, SEAM } from "@/components/terminal";
-import { Target, Calendar, TrendingUp, Flag, Clock } from "lucide-react";
+import {
+  Target, Calendar, TrendingUp, Flag, Clock, DollarSign, Rocket, Shield,
+  Sprout, Zap, Users, Package, Trophy, Sparkles, Send, CreditCard, User,
+  Globe, Check,
+} from "lucide-react";
 
 interface Props {
   data: AppData;
@@ -20,21 +24,21 @@ interface Props {
 // ─── SPRINT PHASES ─────────────────────────────────────────────────────────────
 // `color` = decorative category accent (semantically distinct per phase).
 const PHASES = [
-  { key: "minggu12", label: "Minggu 1–2", subtitle: "Cari Klien Aktif", icon: "🎯", color: "var(--cat-blue)",        duration: "2 minggu" },
-  { key: "minggu34", label: "Minggu 3–4", subtitle: "Monetisasi",       icon: "💰", color: "var(--gain)",     duration: "2 minggu" },
-  { key: "bulan2",   label: "Bulan 2",    subtitle: "Scale",            icon: "🚀", color: "var(--cat-violet)",         duration: "1 bulan" },
-  { key: "bulan3",   label: "Bulan 3",    subtitle: "Stabilisasi",      icon: "🛡️", color: "var(--warning)",  duration: "1 bulan" },
+  { key: "minggu12", label: "Minggu 1–2", subtitle: "Cari Klien Aktif", icon: Target,     color: "var(--cat-blue)",        duration: "2 minggu" },
+  { key: "minggu34", label: "Minggu 3–4", subtitle: "Monetisasi",       icon: DollarSign, color: "var(--gain)",     duration: "2 minggu" },
+  { key: "bulan2",   label: "Bulan 2",    subtitle: "Scale",            icon: Rocket,     color: "var(--cat-violet)",         duration: "1 bulan" },
+  { key: "bulan3",   label: "Bulan 3",    subtitle: "Stabilisasi",      icon: Shield,     color: "var(--warning)",  duration: "1 bulan" },
 ] as const;
 
 type PhaseKey = (typeof PHASES)[number]["key"];
 
 // ─── 5 YEAR MILESTONES ────────────────────────────────────────────────────────
 const YEAR_MILESTONES = [
-  { year: 1, label: "Stabilisasi Income",  target: "$2K/bulan",  icon: "🌱", color: "var(--gain)" },
-  { year: 2, label: "Scale Zero Build Lab", target: "$5K/bulan", icon: "⚡", color: "var(--cat-blue)" },
-  { year: 3, label: "Tim Kecil",            target: "$10K/bulan", icon: "👥", color: "var(--cat-violet)" },
-  { year: 4, label: "Product-Led Growth",   target: "SaaS",      icon: "📦", color: "var(--warning)" },
-  { year: 5, label: "Financial Freedom",    target: "Bebas",     icon: "🏆", color: "var(--gold)" },
+  { year: 1, label: "Stabilisasi Income",  target: "$2K/bulan",  icon: Sprout,  color: "var(--gain)" },
+  { year: 2, label: "Scale Zero Build Lab", target: "$5K/bulan", icon: Zap,     color: "var(--cat-blue)" },
+  { year: 3, label: "Tim Kecil",            target: "$10K/bulan", icon: Users,  color: "var(--cat-violet)" },
+  { year: 4, label: "Product-Led Growth",   target: "SaaS",      icon: Package, color: "var(--warning)" },
+  { year: 5, label: "Financial Freedom",    target: "Bebas",     icon: Trophy,  color: "var(--gold)" },
 ];
 
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
@@ -108,9 +112,9 @@ export function RoadmapPage({ data, update }: Props) {
 
       {/* ── Tab function bar ── */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button style={tabStyle("sprint")} onClick={() => setActiveTab("sprint")}>🎯 90 Hari Sprint</button>
-        <button style={tabStyle("milestones")} onClick={() => setActiveTab("milestones")}>🗓️ Milestones</button>
-        <button style={tabStyle("vision")} onClick={() => setActiveTab("vision")}>🌟 5 Tahun Vision</button>
+        <button style={tabStyle("sprint")} onClick={() => setActiveTab("sprint")}><Target size={12} /> 90 Hari Sprint</button>
+        <button style={tabStyle("milestones")} onClick={() => setActiveTab("milestones")}><Calendar size={12} /> Milestones</button>
+        <button style={tabStyle("vision")} onClick={() => setActiveTab("vision")}><Sparkles size={12} /> 5 Tahun Vision</button>
       </div>
 
       {/* ── SPRINT TAB ── */}
@@ -192,7 +196,7 @@ export function RoadmapPage({ data, update }: Props) {
                       transition: "background 0.15s var(--ease-out)",
                     }}
                   >
-                    <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1 }}>{phase.icon}</span>
+                    <phase.icon size={15} color={phase.color} style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontFamily: "var(--font-sans)", fontSize: 12.5, fontWeight: 600, color: "var(--color-text)", margin: 0, letterSpacing: "-0.01em" }}>
                         {phase.label} — {phase.subtitle}
@@ -251,14 +255,14 @@ export function RoadmapPage({ data, update }: Props) {
 
               <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 {[
-                  { phase: "Minggu 1-2", label: "Apply 5-10 jobs/hari", icon: "📨", color: "var(--cat-blue)", done: r.minggu12.some(i => i.checked) },
-                  { phase: "Minggu 1-2", label: "1-2 bounty pertama dari Dework", icon: "🏆", color: "var(--cat-blue)", done: r.minggu12.filter(i => i.checked).length >= 4 },
-                  { phase: "Minggu 3-4", label: "Setup payment link (Gumroad/LemonSqueezy)", icon: "💳", color: "var(--gain)", done: r.minggu34.some(i => i.checked) },
-                  { phase: "Minggu 3-4", label: "Soft launch ke komunitas trader", icon: "🚀", color: "var(--gain)", done: r.minggu34.filter(i => i.checked).length >= 2 },
-                  { phase: "Bulan 2", label: "1 klien aktif ATAU 20 subscriber PRO", icon: "👤", color: "var(--cat-violet)", done: r.bulan2.some(i => i.checked) },
-                  { phase: "Bulan 2", label: "Stripe payment fiat live", icon: "💰", color: "var(--cat-violet)", done: r.bulan2.filter(i => i.checked).length >= 2 },
-                  { phase: "Bulan 3", label: "Emergency savings 1 bulan", icon: "🛡️", color: "var(--warning)", done: r.bulan3.some(i => i.checked) },
-                  { phase: "Bulan 3", label: "Zero Build Lab sebagai brand serius", icon: "🌐", color: "var(--warning)", done: r.bulan3.filter(i => i.checked).length >= 2 },
+                  { phase: "Minggu 1-2", label: "Apply 5-10 jobs/hari", icon: Send, color: "var(--cat-blue)", done: r.minggu12.some(i => i.checked) },
+                  { phase: "Minggu 1-2", label: "1-2 bounty pertama dari Dework", icon: Trophy, color: "var(--cat-blue)", done: r.minggu12.filter(i => i.checked).length >= 4 },
+                  { phase: "Minggu 3-4", label: "Setup payment link (Gumroad/LemonSqueezy)", icon: CreditCard, color: "var(--gain)", done: r.minggu34.some(i => i.checked) },
+                  { phase: "Minggu 3-4", label: "Soft launch ke komunitas trader", icon: Rocket, color: "var(--gain)", done: r.minggu34.filter(i => i.checked).length >= 2 },
+                  { phase: "Bulan 2", label: "1 klien aktif ATAU 20 subscriber PRO", icon: User, color: "var(--cat-violet)", done: r.bulan2.some(i => i.checked) },
+                  { phase: "Bulan 2", label: "Stripe payment fiat live", icon: DollarSign, color: "var(--cat-violet)", done: r.bulan2.filter(i => i.checked).length >= 2 },
+                  { phase: "Bulan 3", label: "Emergency savings 1 bulan", icon: Shield, color: "var(--warning)", done: r.bulan3.some(i => i.checked) },
+                  { phase: "Bulan 3", label: "Zero Build Lab sebagai brand serius", icon: Globe, color: "var(--warning)", done: r.bulan3.filter(i => i.checked).length >= 2 },
                 ].map((m, idx) => (
                   <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: 12, position: "relative" }}>
                     {/* Status dot: done = gain, pending = hollow */}
@@ -277,7 +281,7 @@ export function RoadmapPage({ data, update }: Props) {
                       fontSize: 8,
                       flexShrink: 0,
                     }}>
-                      {m.done && <span style={{ color: "var(--gain)", fontWeight: 700 }}>✓</span>}
+                      {m.done && <Check size={9} color="var(--gain)" strokeWidth={3.5} />}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -285,7 +289,7 @@ export function RoadmapPage({ data, update }: Props) {
                         {m.phase}
                       </p>
                       <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                        <span style={{ fontSize: 13, flexShrink: 0 }}>{m.icon}</span>
+                        <m.icon size={13} color={m.color} style={{ flexShrink: 0 }} />
                         <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: m.done ? "var(--color-text)" : "var(--color-muted)", margin: 0, fontWeight: m.done ? 600 : 400 }}>
                           {m.label}
                         </p>
@@ -319,7 +323,7 @@ export function RoadmapPage({ data, update }: Props) {
                     justifyContent: "center",
                     flexShrink: 0,
                   }}>
-                    <span style={{ fontSize: 19 }}>{m.icon}</span>
+                    <m.icon size={19} color={m.color} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: m.color, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase" }}>

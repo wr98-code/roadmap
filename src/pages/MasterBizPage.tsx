@@ -361,15 +361,22 @@ const TECH_STRONG = [
   'Solana Web3.js', 'Multi-exchange WebSocket', 'Whisper AI pipeline',
 ];
 const TECH_ADD = [
-  { name: 'n8n / Make', why: 'Automation consulting — $150–$300/jam rate', priority: '🔴 CRITICAL' },
-  { name: 'Telegram Bot API', why: 'Alert delivery — demand tinggi dari trader', priority: '🔴 CRITICAL' },
-  { name: 'Stripe Subscriptions', why: 'Ganti dari Gumroad lifetime ke recurring revenue', priority: '🔴 CRITICAL' },
-  { name: 'Docker + Railway/Render', why: 'Backend yang butuh persistent server', priority: '🟡 PENTING' },
-  { name: 'Unity/Godot SDK basics', why: 'Game analytics SDK untuk indie devs', priority: '🟡 PENTING' },
-  { name: 'WhatsApp Business API', why: 'UMKM automation market', priority: '🟡 PENTING' },
-  { name: 'Smart Contract (Solidity/Rust)', why: 'DeFi tooling expansion', priority: '🟢 NICE' },
-  { name: 'EVM / Base / Polygon', why: 'Expand dari Solana-only ke multi-chain', priority: '🟢 NICE' },
+  { name: 'n8n / Make', why: 'Automation consulting — $150–$300/jam rate', priority: 'CRITICAL' },
+  { name: 'Telegram Bot API', why: 'Alert delivery — demand tinggi dari trader', priority: 'CRITICAL' },
+  { name: 'Stripe Subscriptions', why: 'Ganti dari Gumroad lifetime ke recurring revenue', priority: 'CRITICAL' },
+  { name: 'Docker + Railway/Render', why: 'Backend yang butuh persistent server', priority: 'PENTING' },
+  { name: 'Unity/Godot SDK basics', why: 'Game analytics SDK untuk indie devs', priority: 'PENTING' },
+  { name: 'WhatsApp Business API', why: 'UMKM automation market', priority: 'PENTING' },
+  { name: 'Smart Contract (Solidity/Rust)', why: 'DeFi tooling expansion', priority: 'NICE' },
+  { name: 'EVM / Base / Polygon', why: 'Expand dari Solana-only ke multi-chain', priority: 'NICE' },
 ];
+
+// Priority accent for the TECH_ADD list — theme-aware CSS vars (replaces emoji dots).
+const TECH_PRIORITY_COLOR: Record<string, string> = {
+  CRITICAL: 'var(--loss)',
+  PENTING: 'var(--warning)',
+  NICE: 'var(--gain)',
+};
 
 // ─── DATA: ANTIPATTERNS ───────────────────────────────────────────────────────
 const ANTIPATTERNS = [
@@ -700,7 +707,7 @@ export function MasterBizPage() {
                 background: 'var(--glass-bg)',
                 borderBottom: ti < TECH_ADD.length - 1 ? `1px solid ${SEAM}` : 'none',
               }}>
-                <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', flexShrink: 0, paddingTop: 1 }}>{t.priority.split(' ')[0]}</span>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: TECH_PRIORITY_COLOR[t.priority] || 'var(--color-muted)', flexShrink: 0, marginTop: 4 }} />
                 <div style={{ minWidth: 0 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text)' }}>{t.name}</span>
                   <span style={{ fontSize: 11, color: 'var(--color-muted)', marginLeft: 6 }}>— {t.why}</span>

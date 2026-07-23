@@ -6,7 +6,7 @@
 // verbatim — only structure + color-var hygiene change so it reads in light AND
 // dark as one cohesive terminal panel.
 import { useRef } from 'react';
-import { Plus, Trash2, Download, CheckCircle2, Circle, Clock } from 'lucide-react';
+import { Plus, Trash2, Download, CheckCircle2, Circle, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import { useCloudState } from '@/lib/cloudStorage';
 import { Slab, Panel, PanelHead, SeamGrid, Divider, Badge, Stat, PageTitle, SEAM, tLabelStyle } from '@/components/terminal';
 
@@ -26,9 +26,9 @@ interface Task {
 // in both light & dark; the soft bg tints match the shared Badge palette.
 
 const PRIORITY_CONFIG = {
-  high:   { label: '🔴 High',   color: 'var(--loss)',    bg: 'var(--loss-soft)'        },
-  normal: { label: '🟡 Normal', color: 'var(--warning)', bg: 'rgba(224,162,49,0.12)'   },
-  low:    { label: '🟢 Low',    color: 'var(--gain)',    bg: 'var(--gain-soft)'        },
+  high:   { label: 'High',   color: 'var(--loss)',    bg: 'var(--loss-soft)'        },
+  normal: { label: 'Normal', color: 'var(--warning)', bg: 'rgba(224,162,49,0.12)'   },
+  low:    { label: 'Low',    color: 'var(--gain)',    bg: 'var(--gain-soft)'        },
 };
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export function MyDayPage() {
             </div>
             {pct === 100 && (
               <p style={{ fontSize: 11, color: 'var(--gain)', marginTop: 9, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
-                🎉 Semua task selesai! GG WP!
+                Semua task selesai! GG WP!
               </p>
             )}
           </Panel>
@@ -312,7 +312,7 @@ export function MyDayPage() {
                   letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--color-muted)',
                 }}
               >
-                <span>{showHistory ? '▼' : '▶'}</span>
+                {showHistory ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                 <Badge>{historyTasks.length} tasks</Badge>
               </button>
             }

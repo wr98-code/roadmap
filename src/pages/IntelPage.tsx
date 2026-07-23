@@ -347,7 +347,7 @@ function MorningBrief({ hasKey }: { hasKey: boolean }) {
       const rssCtx = `\nLive RSS:\nWORLD: ${worldRss.slice(0,4).map(a=>a.title).join(' | ')}\nCRYPTO: ${cryptoRss.slice(0,3).map(a=>a.title).join(' | ')}\nINDONESIA: ${idRss.slice(0,3).map(a=>a.title).join(' | ')}`;
 
       const content = await callClaude(
-        `Today is ${formatFullDate()}.${rssCtx}\n\nBuat morning intelligence briefing tajam untuk solo crypto fintech founder di Surabaya, Indonesia. Gunakan Bahasa Indonesia. Format EXACT:\n\n🌍 DUNIA\n[3 berita global, ringkasan 2 kalimat each]\n\n🇺🇸 US / TRUMP\n[Situasi politik AS hari ini]\n\n₿ CRYPTO\n[BTC, sentimen market, top crypto news]\n\n🤖 TECH / AI\n[2 berita tech/AI terpenting]\n\n🔥 VIRAL\n[Yang lagi trending]\n\n🇮🇩 INDONESIA\n[Berita penting — ekonomi, politik, IHSG, Rupiah]\n\n⚡ SINYAL HARI INI\n[SATU hal terpenting yang harus diketahui — 1 kalimat, bold, langsung]\n\nTajam. Pakai data RSS di atas. Tanpa basa-basi.`,
+        `Today is ${formatFullDate()}.${rssCtx}\n\nBuat morning intelligence briefing tajam untuk solo crypto fintech founder di Surabaya, Indonesia. Gunakan Bahasa Indonesia. Format EXACT (header teks polos, TANPA emoji sama sekali):\n\nDUNIA\n[3 berita global, ringkasan 2 kalimat each]\n\nUS / TRUMP\n[Situasi politik AS hari ini]\n\nCRYPTO\n[BTC, sentimen market, top crypto news]\n\nTECH / AI\n[2 berita tech/AI terpenting]\n\nVIRAL\n[Yang lagi trending]\n\nINDONESIA\n[Berita penting — ekonomi, politik, IHSG, Rupiah]\n\nSINYAL HARI INI\n[SATU hal terpenting yang harus diketahui — 1 kalimat, bold, langsung]\n\nTajam. Pakai data RSS di atas. Tanpa basa-basi.`,
         { maxTokens: 1500 }
       );
       const b: Brief = { content, timestamp: formatTimestamp(), dateKey: todayKey() };

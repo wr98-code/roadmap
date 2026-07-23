@@ -4,7 +4,7 @@
 // Shows "Add to Home Screen" guide on iOS Safari
 
 import { useState, useEffect, useRef } from "react";
-import { Download, X, Smartphone, Monitor } from "lucide-react";
+import { Download, X, Smartphone, Monitor, Share, SquarePlus, Check } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -135,7 +135,9 @@ export function PWAInstall() {
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📱</div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 12, color: "hsl(var(--primary))" }}>
+            <Smartphone size={32} />
+          </div>
           <p style={{ fontFamily: "var(--font-sans)", fontSize: 15, fontWeight: 600, color: "hsl(var(--foreground))", marginBottom: 8 }}>
             Install ZERØ COMMAND
           </p>
@@ -145,9 +147,9 @@ export function PWAInstall() {
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, textAlign: "left" }}>
             {[
-              { step: "1", icon: "⬆️", text: 'Tap tombol Share di bawah browser (kotak dengan panah ke atas)' },
-              { step: "2", icon: "➕", text: 'Scroll ke bawah, pilih "Add to Home Screen"' },
-              { step: "3", icon: "✅", text: 'Tap "Add" di pojok kanan atas' },
+              { step: "1", Icon: Share, text: 'Tap tombol Share di bawah browser (kotak dengan panah ke atas)' },
+              { step: "2", Icon: SquarePlus, text: 'Scroll ke bawah, pilih "Add to Home Screen"' },
+              { step: "3", Icon: Check, text: 'Tap "Add" di pojok kanan atas' },
             ].map((s) => (
               <div
                 key={s.step}
@@ -160,7 +162,7 @@ export function PWAInstall() {
                   borderRadius: 10,
                 }}
               >
-                <span style={{ fontSize: 18, flexShrink: 0 }}>{s.icon}</span>
+                <s.Icon size={16} style={{ flexShrink: 0, marginTop: 1, color: "hsl(var(--primary))" }} />
                 <span style={{ fontSize: 13, color: "hsl(var(--foreground))", lineHeight: 1.4 }}>{s.text}</span>
               </div>
             ))}

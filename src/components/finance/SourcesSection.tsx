@@ -41,8 +41,8 @@ export function SourcesSection({ fin, month }: Props) {
   // bulan tercatat tapi sumber X nihil → 0 (nol asli)
   const hasNone = series.some((p) => p.bySource["_none"]);
   const chartSources = useMemo(() => {
-    const base = fin.sources.map((s) => ({ id: s.id, name: s.name, colorKey: s.color, emoji: s.emoji }));
-    if (hasNone) base.push({ id: "_none", name: "Tanpa sumber", colorKey: "muted" as const, emoji: "❔" });
+    const base = fin.sources.map((s) => ({ id: s.id, name: s.name, colorKey: s.color }));
+    if (hasNone) base.push({ id: "_none", name: "Tanpa sumber", colorKey: "muted" as const });
     return base;
   }, [fin.sources, hasNone]);
 
@@ -144,7 +144,7 @@ export function SourcesSection({ fin, month }: Props) {
                 <div key={s.sourceId} style={{ display: "flex", alignItems: "center", gap: 9 }}>
                   <span style={{ width: 9, height: 9, borderRadius: 3, background: catColor(s.color), flexShrink: 0 }} />
                   <span style={{ fontSize: 13.5, color: "var(--color-text)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {s.emoji} {s.name}
+                    {s.name}
                   </span>
                   {s.total > 0 ? (
                     <>
@@ -260,7 +260,7 @@ export function SourcesSection({ fin, month }: Props) {
         <div style={{ marginTop: 22, borderTop: "1px solid var(--color-border)", paddingTop: 18 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
             <Label style={{ fontSize: 10, display: "inline-flex", alignItems: "center" }}>
-              {tradingSource.emoji} {tradingSource.name} · P&L harian · {monthLabel(month, true)}
+              {tradingSource.name} · P&L harian · {monthLabel(month, true)}
               <MetricInfo termId="pnl">
                 Untung dicatat sebagai Masuk (sumber {tradingSource.name}); rugi sebagai
                 Keluar berkategori Trading Loss — chart ini selisih hariannya.

@@ -4,7 +4,7 @@
 // panels (Slab), theme-aware CSS-var color hygiene (light + dark). All logic,
 // useCloudState, add/delete/export preserved.
 import { useState, useRef } from 'react';
-import { Download, Trash2, Plus, BookOpen } from 'lucide-react';
+import { Download, Trash2, Plus, BookOpen, Flame, Smile, Meh, Frown, Lightbulb, type LucideIcon } from 'lucide-react';
 import { useCloudState } from '@/lib/cloudStorage';
 import { Slab, Panel, SeamGrid, PanelHead, Divider, Badge, Stat, tLabelStyle, tNumStyle } from '@/components/terminal';
 
@@ -22,15 +22,20 @@ interface JournalEntry {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const MOODS = [
-  { emoji: '🔥', label: 'Produktif' },
-  { emoji: '😊', label: 'Baik' },
-  { emoji: '😐', label: 'Biasa' },
-  { emoji: '😔', label: 'Berat' },
-  { emoji: '💡', label: 'Insight' },
+// `emoji` adalah KEY penyimpanan (kompatibel dengan entri lama di cloud state) —
+// tidak pernah dirender ke UI; yang dirender adalah ikon lucide di `icon`.
+const MOODS: { emoji: string; icon: LucideIcon; label: string }[] = [
+  { emoji: '🔥', icon: Flame,    label: 'Produktif' },
+  { emoji: '😊', icon: Smile,    label: 'Baik' },
+  { emoji: '😐', icon: Meh,      label: 'Biasa' },
+  { emoji: '😔', icon: Frown,    label: 'Berat' },
+  { emoji: '💡', icon: Lightbulb, label: 'Insight' },
 ];
 
-const TAGS = ['📝 Catatan', '✅ Achievement', '💡 Ide', '⚠️ Masalah', '🎯 Focus'];
+const TAGS = ['Catatan', 'Achievement', 'Ide', 'Masalah', 'Focus'];
+
+// Entri lama menyimpan tag berformat "<emoji> Label" — tampilkan labelnya saja.
+const tagLabel = (tag: string) => tag.replace(/[^\p{L}\p{N}\s]/gu, '').trim();
 
 // ─── Entry Row (flat, hairline-separated) ─────────────────────────────────────
 
@@ -43,18 +48,19 @@ function EntryRow({
   const [expanded, setExpanded] = useState(false);
   const preview = entry.content.slice(0, 200);
   const hasMore = entry.content.length > 200;
+  const moodDef = MOODS.find(m => m.emoji === entry.mood);
 
   return (
     <div style={{ background: 'var(--glass-bg)', padding: '12px 16px' }}>
       {/* Meta line */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 16, lineHeight: 1 }}>{entry.mood}</span>
+        {moodDef && <moodDef.icon size={15} color="var(--color-primary)" style={{ flexShrink: 0 }} />}
         <span style={{
           fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
           background: 'var(--color-surface)', color: 'var(--color-muted)',
           padding: '2px 8px', borderRadius: 4, border: '1px solid var(--color-border)',
         }}>
-          {entry.tag}
+          {tagLabel(entry.tag)}
         </span>
         <span className="num" style={{ ...tNumStyle, fontSize: 11, color: 'var(--color-muted)', marginLeft: 'auto' }}>
           {entry.date} · {entry.time}
@@ -97,8 +103,8 @@ function EntryRow({
 export function JournalPage() {
   const [entries, setEntries] = useCloudState<JournalEntry[]>('zero-journal-entries', []);
   const [text, setText] = useState('');
-  const [mood, setMood] = useState('😊');
-  const [tag, setTag] = useState('📝 Catatan');
+  const [mood, setMood] = useState('😊'); // storage key — dirender sebagai ikon lucide
+  const [tag, setTag] = useState('Catatan');
   const textRef = useRef<HTMLTextAreaElement>(null);
 
   const now = new Date();
@@ -205,11 +211,13 @@ export function JournalPage() {
                 style={{
                   background: active ? 'var(--rail-active-bg)' : 'var(--color-surface)',
                   border: active ? '1.5px solid var(--color-primary)' : '1.5px solid var(--color-border)',
-                  borderRadius: 6, padding: '3px 8px', fontSize: 16,
+                  borderRadius: 6, padding: '4px 8px',
+                  display: 'flex', alignItems: 'center',
+                  color: active ? 'var(--color-primary)' : 'var(--color-muted)',
                   cursor: 'pointer', transition: 'all .1s', lineHeight: 1,
                 }}
               >
-                {m.emoji}
+                <m.icon size={16} />
               </button>
             );
           })}

@@ -104,9 +104,19 @@ const MODULES = [
 
 function statusTone(s: string) {
   if (s.includes("AKTIF")) return { c: "var(--gain)", bg: "var(--gain-soft)" };
-  if (s.includes("✅")) return { c: "var(--color-primary)", bg: "var(--ember-soft)" };
+  if (s.includes("✅") || /\b(live|deploy)\b/i.test(s)) return { c: "var(--color-primary)", bg: "var(--ember-soft)" };
   if (s.includes("CRITICAL")) return { c: "var(--loss)", bg: "var(--loss-soft)" };
   return { c: "var(--color-muted)", bg: "var(--color-surface)" };
+}
+
+/* Data pengguna lama bisa memuat emoji — saring hanya untuk tampilan,
+   isi penyimpanan tidak diubah. */
+export function stripEmoji(s: string): string {
+  return s
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu, "")
+    .replace(/\s*\/\s*/g, " · ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function greeting() {
@@ -322,7 +332,7 @@ function TermOfDay({ onNavigate }: { onNavigate: (k: string) => void }) {
         <span style={{ ...eyebrow, display: "inline-flex", alignItems: "center", gap: 6 }}>
           <BookMarked size={12} /> Istilah hari ini
         </span>
-        <span style={{ fontSize: 11, color: "var(--color-dim)" }}>{catInfo?.emoji} {catInfo?.label}</span>
+        <span style={{ fontSize: 11, color: "var(--color-dim)" }}>{catInfo?.label}</span>
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
         <span style={{ ...displayFace, fontSize: 27, fontWeight: 600, color: "var(--color-text)" }}>{t.term}</span>
@@ -418,7 +428,7 @@ function Status({ data }: { data: AppData }) {
             <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 0", borderTop: i === 0 ? "none" : "1px solid var(--color-border)" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: t.c, flexShrink: 0 }} />
               <span style={{ flex: 1, fontSize: 15, color: "var(--color-text)", minWidth: 0 }}>{s.area}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: t.c, background: t.bg, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>{s.status}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.c, background: t.bg, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>{stripEmoji(s.status)}</span>
             </div>
           );
         })}

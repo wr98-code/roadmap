@@ -54,13 +54,13 @@ export function ManageModal({ fin, setFin, onClose }: Props) {
   const addSource = () =>
     setFin((f) => ({
       ...f,
-      sources: [...f.sources, { id: newId(), name: "Sumber baru", emoji: "💵", color: CAT_KEYS[f.sources.length % CAT_KEYS.length] }],
+      sources: [...f.sources, { id: newId(), name: "Sumber baru", color: CAT_KEYS[f.sources.length % CAT_KEYS.length] }],
     }));
 
   const addCategory = () =>
     setFin((f) => ({
       ...f,
-      categories: [...f.categories, { id: newId(), name: "Kategori baru", emoji: "🏷️", color: CAT_KEYS[f.categories.length % CAT_KEYS.length] }],
+      categories: [...f.categories, { id: newId(), name: "Kategori baru", color: CAT_KEYS[f.categories.length % CAT_KEYS.length] }],
     }));
 
   const rowStyle = {
@@ -107,7 +107,6 @@ export function ManageModal({ fin, setFin, onClose }: Props) {
           {fin.sources.map((s) => (
             <div key={s.id}>
               <div style={rowStyle}>
-                <input value={s.emoji} onChange={(e) => patchSource(s.id, { emoji: e.target.value })} maxLength={4} aria-label="Emoji sumber" style={{ ...miniInput, width: 42, textAlign: "center", fontSize: 15 }} />
                 <input value={s.name} onChange={(e) => patchSource(s.id, { name: e.target.value })} aria-label="Nama sumber" style={{ ...miniInput, flex: 1, minWidth: 80 }} />
                 <button
                   onClick={() => setColorPickFor(colorPickFor === s.id ? null : s.id)}
@@ -147,7 +146,6 @@ export function ManageModal({ fin, setFin, onClose }: Props) {
           {fin.categories.map((c) => (
             <div key={c.id}>
               <div style={rowStyle}>
-                <input value={c.emoji} onChange={(e) => patchCategory(c.id, { emoji: e.target.value })} maxLength={4} aria-label="Emoji kategori" style={{ ...miniInput, width: 42, textAlign: "center", fontSize: 15 }} />
                 <input value={c.name} onChange={(e) => patchCategory(c.id, { name: e.target.value })} aria-label="Nama kategori" style={{ ...miniInput, flex: 1, minWidth: 80 }} />
                 <input
                   defaultValue={c.limit ? String(c.limit) : ""}

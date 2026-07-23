@@ -9,6 +9,7 @@ import { NotesList } from "@/components/NotesList";
 import { Slab, SeamGrid, PanelHead, Divider, Stat, Badge, tLabelStyle } from "@/components/terminal";
 import {
   TrendingUp, TrendingDown, RefreshCw, ExternalLink, AlertCircle,
+  BarChart3, Briefcase, Telescope, Link2, LineChart, Coins, Gem, Gauge,
 } from "lucide-react";
 
 interface Props {
@@ -70,11 +71,11 @@ function fgColor(v: number): string {
 
 // ─── NUPL & FUNDING TABLES ────────────────────────────────────────────────────
 const NUPL_ZONES = [
-  { range: "> 0.75",     label: "Euphoria",        signal: "🔴 JUAL",         color: "var(--loss)",          desc: "Market overheated. Take profit agresif." },
-  { range: "0.50–0.75",  label: "Belief / Denial", signal: "🟡 HATI-HATI",    color: "var(--warning)",       desc: "Masih bullish tapi mulai reduce position." },
-  { range: "0.25–0.50",  label: "Optimism",        signal: "🟢 HOLD",         color: "var(--gain)",          desc: "Sweet spot akumulasi selama uptrend." },
-  { range: "0.00–0.25",  label: "Hope / Fear",     signal: "🟢 BELI",         color: "var(--color-primary)", desc: "Early accumulation zone. DCA masuk." },
-  { range: "< 0.00",     label: "Capitulation",    signal: "🟢 BELI AGRESIF", color: "var(--gold)",          desc: "Extreme fear = maximum opportunity." },
+  { range: "> 0.75",     label: "Euphoria",        signal: "JUAL",         color: "var(--loss)",          desc: "Market overheated. Take profit agresif." },
+  { range: "0.50–0.75",  label: "Belief / Denial", signal: "HATI-HATI",    color: "var(--warning)",       desc: "Masih bullish tapi mulai reduce position." },
+  { range: "0.25–0.50",  label: "Optimism",        signal: "HOLD",         color: "var(--gain)",          desc: "Sweet spot akumulasi selama uptrend." },
+  { range: "0.00–0.25",  label: "Hope / Fear",     signal: "BELI",         color: "var(--color-primary)", desc: "Early accumulation zone. DCA masuk." },
+  { range: "< 0.00",     label: "Capitulation",    signal: "BELI AGRESIF", color: "var(--gold)",          desc: "Extreme fear = maximum opportunity." },
 ];
 
 const FUNDING_SIGNALS = [
@@ -202,6 +203,7 @@ export function CryptoPage({ data, update }: Props) {
     n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
 
   const tabStyle = (t: string): React.CSSProperties => ({
+    display: "inline-flex", alignItems: "center", gap: 6,
     padding: "7px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600,
     fontFamily: "var(--font-mono)", letterSpacing: "0.02em", cursor: "pointer",
     background: activeTab === t ? "var(--rail-active-bg)" : "var(--color-surface)",
@@ -263,9 +265,9 @@ export function CryptoPage({ data, update }: Props) {
 
       {/* Tab Navigation */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button style={tabStyle("onchain")} onClick={() => setActiveTab("onchain")}>📊 On-Chain Signals</button>
-        <button style={tabStyle("portfolio")} onClick={() => setActiveTab("portfolio")}>💼 Portfolio</button>
-        <button style={tabStyle("coinglass")} onClick={() => setActiveTab("coinglass")}>🔭 Coinglass Guide</button>
+        <button style={tabStyle("onchain")} onClick={() => setActiveTab("onchain")}><BarChart3 size={13} /> On-Chain Signals</button>
+        <button style={tabStyle("portfolio")} onClick={() => setActiveTab("portfolio")}><Briefcase size={13} /> Portfolio</button>
+        <button style={tabStyle("coinglass")} onClick={() => setActiveTab("coinglass")}><Telescope size={13} /> Coinglass Guide</button>
       </div>
 
       {/* ── ON-CHAIN TAB ── */}
@@ -383,12 +385,12 @@ export function CryptoPage({ data, update }: Props) {
             <PanelHead title="Tools & Resources" />
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 1, background: "var(--color-border)" }}>
               {[
-                { name: "Coinglass",   url: "https://www.coinglass.com",                          icon: "📊", desc: "Funding rate, OI, liquidations" },
-                { name: "CryptoQuant", url: "https://cryptoquant.com",                            icon: "⛓️", desc: "On-chain flows, NUPL" },
-                { name: "TradingView", url: "https://www.tradingview.com",                        icon: "📈", desc: "Charting & technicals" },
-                { name: "CoinGecko",   url: "https://www.coingecko.com",                          icon: "🦎", desc: "Prices & market data" },
-                { name: "Glassnode",   url: "https://studio.glassnode.com",                       icon: "🔮", desc: "Advanced on-chain" },
-                { name: "Fear & Greed",url: "https://alternative.me/crypto/fear-and-greed-index/",icon: "😱", desc: "Sentiment index" },
+                { name: "Coinglass",   url: "https://www.coinglass.com",                          icon: BarChart3, desc: "Funding rate, OI, liquidations" },
+                { name: "CryptoQuant", url: "https://cryptoquant.com",                            icon: Link2, desc: "On-chain flows, NUPL" },
+                { name: "TradingView", url: "https://www.tradingview.com",                        icon: LineChart, desc: "Charting & technicals" },
+                { name: "CoinGecko",   url: "https://www.coingecko.com",                          icon: Coins, desc: "Prices & market data" },
+                { name: "Glassnode",   url: "https://studio.glassnode.com",                       icon: Gem, desc: "Advanced on-chain" },
+                { name: "Fear & Greed",url: "https://alternative.me/crypto/fear-and-greed-index/",icon: Gauge, desc: "Sentiment index" },
               ].map((tool) => (
                 <a key={tool.name} href={tool.url} target="_blank" rel="noopener noreferrer"
                   style={{
@@ -401,7 +403,7 @@ export function CryptoPage({ data, update }: Props) {
                   onMouseLeave={e => (e.currentTarget.style.background = "var(--glass-bg)")}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 16 }}>{tool.icon}</span>
+                    <tool.icon size={14} style={{ color: "var(--color-muted)", flexShrink: 0 }} />
                     <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text)" }}>{tool.name}</span>
                     <ExternalLink size={10} style={{ color: "var(--color-muted)", marginLeft: "auto" }} />
                   </div>
@@ -439,8 +441,8 @@ export function CryptoPage({ data, update }: Props) {
               padding: "12px 16px", background: "var(--glass-bg)",
             }}>
               <div style={{ flex: 1, minWidth: 180 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text)", margin: 0 }}>
-                  🔄 Auto-Sync Harga via CoinGecko
+                <p style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text)", margin: 0, display: "flex", alignItems: "center", gap: 5 }}>
+                  <RefreshCw size={11} style={{ color: "var(--color-muted)", flexShrink: 0 }} /> Auto-Sync Harga via CoinGecko
                 </p>
                 <p className="num" style={{ fontSize: 11, color: "var(--color-muted)", margin: 0, marginTop: 2, fontFamily: "var(--font-mono)" }}>
                   {syncTime ? `Terakhir sync: ${syncTime}` : "Belum pernah sync"}
@@ -574,10 +576,10 @@ export function CryptoPage({ data, update }: Props) {
             <PanelHead title="Reading Open Interest" />
             <div>
               {[
-                { condition: "OI naik + Harga naik",  signal: "Trend konfirmasi BULLISH ✅", color: "var(--gain)" },
-                { condition: "OI naik + Harga turun", signal: "Trend konfirmasi BEARISH ✅", color: "var(--loss)" },
-                { condition: "OI turun + Harga naik", signal: "Short squeeze / tidak sustain ⚠️", color: "var(--warning)" },
-                { condition: "OI turun + Harga turun",signal: "Long liquidation / deleveraging ⚠️", color: "var(--warning)" },
+                { condition: "OI naik + Harga naik",  signal: "Trend konfirmasi BULLISH", color: "var(--gain)" },
+                { condition: "OI naik + Harga turun", signal: "Trend konfirmasi BEARISH", color: "var(--loss)" },
+                { condition: "OI turun + Harga naik", signal: "Short squeeze / tidak sustain", color: "var(--warning)" },
+                { condition: "OI turun + Harga turun",signal: "Long liquidation / deleveraging", color: "var(--warning)" },
               ].map((r, i) => (
                 <div key={r.condition} style={{
                   display: "flex", justifyContent: "space-between", alignItems: "center",

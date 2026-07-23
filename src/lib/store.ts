@@ -128,8 +128,8 @@ export const defaultData: AppData = {
   buildLab: {
     statusBoard: [
       { id: uid(), area: "Cari Klien Web3", status: "AKTIF", prioritas: "#1" },
-      { id: uid(), area: "ZERØ WATCH", status: "Deploy ✅ / Payment pending", prioritas: "#2" },
-      { id: uid(), area: "ZERØ MERIDIAN", status: "Live ✅ / Paywall belum", prioritas: "#3" },
+      { id: uid(), area: "ZERØ WATCH", status: "Deploy live / payment pending", prioritas: "#2" },
+      { id: uid(), area: "ZERØ MERIDIAN", status: "Live / paywall belum", prioritas: "#3" },
       { id: uid(), area: "Survival Mode", status: "1 bulan runway", prioritas: "CRITICAL" },
     ],
     focusMingguIni: [

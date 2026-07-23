@@ -2,7 +2,7 @@
 // Live market data: CoinGecko (crypto) + Yahoo Finance (stocks/macro) + Fear & Greed
 // No API keys needed. All free public APIs.
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, Activity, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, TrendingUp, TrendingDown, ExternalLink, Activity, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { Slab, PanelHead, Badge, PageTitle, tLabelStyle, SEAM } from '@/components/terminal';
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
@@ -185,8 +185,8 @@ const QUICK_LINKS = [
 ];
 
 const GROUP_LABELS: Record<string, string> = {
-  crypto: '₿ CRYPTO / FUTURES', chart: '📊 CHARTS & TRADING',
-  macro: '🌍 MACRO', research: '🔬 RESEARCH',
+  crypto: 'CRYPTO / FUTURES', chart: 'CHARTS & TRADING',
+  macro: 'MACRO', research: 'RESEARCH',
 };
 
 // ─── FORMAT HELPERS ───────────────────────────────────────────────────────────
@@ -215,8 +215,8 @@ function fgColor(val: number): string {
 
 const GROUP_ORDER: MarketItem['group'][] = ['crypto', 'stocks', 'commodities', 'macro', 'sentiment'];
 const GROUP_TITLE: Record<string, string> = {
-  crypto: '₿ Crypto', stocks: '📈 Equities',
-  commodities: '🥇 Commodities', macro: '🌍 Macro', sentiment: '😱 Sentiment',
+  crypto: 'Crypto', stocks: 'Equities',
+  commodities: 'Commodities', macro: 'Macro', sentiment: 'Sentiment',
 };
 
 // Small decorative category dots — muted brand hues, all CSS vars (theme-safe).
@@ -427,8 +427,10 @@ export function MarketsPage() {
           fontFamily: 'var(--font-sans)', fontSize: 12, color: 'var(--warning)',
           background: 'rgba(224,162,49,0.12)', padding: '9px 13px',
           borderRadius: 8, border: '1px solid rgba(224,162,49,0.30)',
+          display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          ⚠️ {partialErrors.join(', ')} gagal fetch. Data lain tetap ditampilkan.
+          <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+          {partialErrors.join(', ')} gagal fetch. Data lain tetap ditampilkan.
         </div>
       )}
 

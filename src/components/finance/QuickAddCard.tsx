@@ -138,7 +138,7 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
         : type === "keluar"
           ? `−${fmtMoney(parsed, cur)} dari ${accName}`
           : `${fmtMoney(parsed, cur)} ${accName} → ${activeAccounts.find((a) => a.id === toAccountId)?.name ?? ""}`;
-    toast.success(`Tercatat ✓ ${desc}`);
+    toast.success(`Tercatat — ${desc}`);
 
     // clear minimal: jumlah + catatan saja, konteks lain dipertahankan
     setAmountStr("");
@@ -154,12 +154,12 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
     const id = newId();
     if (kind === "kategori") {
       const color = CAT_KEYS[fin.categories.length % CAT_KEYS.length];
-      setFin((f) => ({ ...f, categories: [...f.categories, { id, name, emoji: "🏷️", color }] }));
+      setFin((f) => ({ ...f, categories: [...f.categories, { id, name, color }] }));
       setCategoryId(id);
       setManualCat(true);
     } else {
       const color = CAT_KEYS[fin.sources.length % CAT_KEYS.length];
-      setFin((f) => ({ ...f, sources: [...f.sources, { id, name, emoji: "💵", color }] }));
+      setFin((f) => ({ ...f, sources: [...f.sources, { id, name, color }] }));
       setSourceId(id);
     }
     toast.success(`${kind === "kategori" ? "Kategori" : "Sumber"} "${name}" dibuat`);
@@ -305,7 +305,7 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
                 {catsByUsage.map((c) => (
                   <Chip key={c.id} active={categoryId === c.id} color={catColor(c.color)} onClick={() => { setCategoryId(c.id); setManualCat(true); }}>
-                    {c.emoji} {c.name}
+                    <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 3, flexShrink: 0, background: catColor(c.color) }} /> {c.name}
                   </Chip>
                 ))}
                 <Chip onClick={() => inlineCreate("kategori")} title="Buat kategori baru">
@@ -321,7 +321,7 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
                 {fin.sources.map((s) => (
                   <Chip key={s.id} active={sourceId === s.id} color={catColor(s.color)} onClick={() => setSourceId(s.id)}>
-                    {s.emoji} {s.name}
+                    <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 3, flexShrink: 0, background: catColor(s.color) }} /> {s.name}
                   </Chip>
                 ))}
                 <Chip onClick={() => inlineCreate("sumber")} title="Buat sumber baru">
@@ -346,7 +346,7 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
                   const c = fin.categories.find((x) => x.id === t.categoryId);
                   return (
                     <Chip key={t.id} small onClick={() => applyRepeat(t)} title="Ulangi transaksi ini (isi otomatis)">
-                      {c?.emoji ?? "🏷️"} {t.note || c?.name || "?"} · {fmtCompact(t.amount, cur)}
+                      <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 3, flexShrink: 0, background: catColor(c?.color ?? "muted") }} /> {t.note || c?.name || "?"} · {fmtCompact(t.amount, cur)}
                     </Chip>
                   );
                 })}

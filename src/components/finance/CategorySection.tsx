@@ -78,8 +78,8 @@ export function CategorySection({ fin, month, categoryFilter, setCategoryFilter 
                 }}
               >
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 13.5, color: "var(--color-text)", fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {s.emoji} {s.name}
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13.5, color: "var(--color-text)", fontWeight: 600, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 3, background: color, flexShrink: 0 }} /> {s.name}
                   </span>
                   <span className="num" style={{ fontSize: 10.5, color: "var(--color-dim)" }}>{pct}%</span>
                   <div style={{ flex: 1 }} />

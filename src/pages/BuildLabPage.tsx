@@ -2,6 +2,7 @@
 // Status board, Kanban, income target, focus tracker. Institutional "terminal"
 // restructure — flat panels + hairline seams, mono tabular numerals, CSS-var
 // colors (light + dark). Every tab, handler, kanban op & feature preserved.
+import { stripEmoji } from "./DashboardPage";
 import { useState } from "react";
 import { AppData } from "@/lib/store";
 import { CheckList } from "@/components/CheckList";
@@ -11,7 +12,7 @@ import {
   Slab, SeamGrid, Panel, PanelHead, Divider, Stat, Badge, PageTitle,
   tLabelStyle, tNumStyle,
 } from "@/components/terminal";
-import { Zap, TrendingUp, Target, Plus, Trash2, CheckCircle, Circle, Loader } from "lucide-react";
+import { Zap, TrendingUp, Target, Plus, Trash2, CheckCircle, Circle, Loader, BarChart2, Kanban, DollarSign } from "lucide-react";
 
 interface Props {
   data: AppData;
@@ -99,7 +100,7 @@ export function BuildLabPage({ data, update }: Props) {
   // Status board chip → semantic theme vars
   const statusColor = (s: string) => {
     if (s.includes("AKTIF"))    return { bg: "var(--rail-active-bg)", color: "var(--color-primary)" };
-    if (s.includes("✅"))       return { bg: "var(--gain-soft)",       color: "var(--gain)" };
+    if (s.includes("✅") || /\b(live|deploy)\b/i.test(s)) return { bg: "var(--gain-soft)",       color: "var(--gain)" };
     if (s.includes("CRITICAL")) return { bg: "var(--loss-soft)",       color: "var(--loss)" };
     if (s.includes("pending"))  return { bg: "rgba(224,162,49,0.12)",  color: "var(--warning)" };
     return { bg: "var(--color-surface)", color: "var(--color-muted)" };
@@ -171,9 +172,9 @@ export function BuildLabPage({ data, update }: Props) {
 
       {/* Tab Navigation */}
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-        <button style={tabStyle("status")} onClick={() => setActiveTab("status")}>📊 Status Board</button>
-        <button style={tabStyle("kanban")} onClick={() => setActiveTab("kanban")}>🗂️ Kanban</button>
-        <button style={tabStyle("income")} onClick={() => setActiveTab("income")}>💰 Income Target</button>
+        <button style={{ ...tabStyle("status"), display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setActiveTab("status")}><BarChart2 size={12} /> Status Board</button>
+        <button style={{ ...tabStyle("kanban"), display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setActiveTab("kanban")}><Kanban size={12} /> Kanban</button>
+        <button style={{ ...tabStyle("income"), display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setActiveTab("income")}><DollarSign size={12} /> Income Target</button>
       </div>
 
       {/* ── STATUS BOARD TAB ── */}
@@ -213,7 +214,7 @@ export function BuildLabPage({ data, update }: Props) {
                             background: sc.bg,
                             color: sc.color,
                           }}>
-                            {s.status}
+                            {stripEmoji(s.status)}
                           </span>
                         </td>
                         <td style={{ padding: "9px 14px", textAlign: "right" }}>

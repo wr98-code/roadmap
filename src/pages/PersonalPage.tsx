@@ -2,14 +2,14 @@
 // Institutional restructure: floating cards → flat paneled slabs joined by
 // hairline seams, dense rows, mono micro-labels, tabular numerals. All habit /
 // mood localStorage logic, the keyed Fragment heatmap, getDateKey, and the mood
-// emoji scale are preserved verbatim — only structure + color-var hygiene change.
+// scale are preserved verbatim — only structure + color-var hygiene change.
 import { useState, useEffect, Fragment } from "react";
 import { AppData } from "@/lib/store";
 import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
 import { Slab, Panel, PanelHead, SeamGrid, Badge, Stat, SEAM, tLabelStyle } from "@/components/terminal";
-import { Flame, Shield, Brain, Target, Calendar, CheckCircle2, Circle, TrendingUp } from "lucide-react";
+import { Flame, Shield, Brain, Target, Calendar, CheckCircle2, Circle, TrendingUp, BarChart3, Code2, Wallet, Scale, Send, Search, Angry, Frown, Meh, Smile, type LucideIcon } from "lucide-react";
 
 interface Props {
   data: AppData;
@@ -22,13 +22,13 @@ interface HabitLog {
 }
 
 const HABITS_KEY = "zero-habits-v2";
-const HABIT_DEFINITIONS = [
-  { id: "market-study",    label: "Market study 2 jam",           icon: "📊" },
-  { id: "coding",          label: "Coding / skill upgrade",        icon: "💻" },
-  { id: "finance-track",   label: "Financial tracking update",     icon: "💰" },
-  { id: "no-emotion",      label: "Zero emotional decisions",      icon: "🧘" },
-  { id: "outreach",        label: "1+ outreach / apply job",       icon: "📨" },
-  { id: "review",          label: "Daily review (10 menit)",       icon: "🔍" },
+const HABIT_DEFINITIONS: { id: string; label: string; icon: LucideIcon }[] = [
+  { id: "market-study",    label: "Market study 2 jam",           icon: BarChart3 },
+  { id: "coding",          label: "Coding / skill upgrade",        icon: Code2 },
+  { id: "finance-track",   label: "Financial tracking update",     icon: Wallet },
+  { id: "no-emotion",      label: "Zero emotional decisions",      icon: Scale },
+  { id: "outreach",        label: "1+ outreach / apply job",       icon: Send },
+  { id: "review",          label: "Daily review (10 menit)",       icon: Search },
 ];
 
 function loadHabits(): HabitLog {
@@ -58,14 +58,14 @@ function getLast7Days() {
 }
 
 // ─── MOOD TRACKER ─────────────────────────────────────────────────────────────
-// Emoji scale preserved; colors mapped to theme vars so the scale reads in both
+// Lucide icon scale; colors mapped to theme vars so the scale reads in both
 // light & dark (loss → warning → neutral → gain → gold prestige).
-const MOODS = [
-  { value: 1, label: "Hancur",   emoji: "😵", color: "var(--loss)" },
-  { value: 2, label: "Berat",    emoji: "😔", color: "var(--warning)" },
-  { value: 3, label: "Oke",      emoji: "😐", color: "var(--color-muted)" },
-  { value: 4, label: "Bagus",    emoji: "😊", color: "var(--gain)" },
-  { value: 5, label: "Fired Up", emoji: "🔥", color: "var(--gold)" },
+const MOODS: { value: number; label: string; icon: LucideIcon; color: string }[] = [
+  { value: 1, label: "Hancur",   icon: Angry, color: "var(--loss)" },
+  { value: 2, label: "Berat",    icon: Frown, color: "var(--warning)" },
+  { value: 3, label: "Oke",      icon: Meh,   color: "var(--color-muted)" },
+  { value: 4, label: "Bagus",    icon: Smile, color: "var(--gain)" },
+  { value: 5, label: "Fired Up", icon: Flame, color: "var(--gold)" },
 ];
 
 const MOOD_KEY = "zero-mood-log-v1";
@@ -137,10 +137,10 @@ export function PersonalPage({ data, update }: Props) {
   const totalHabits = HABIT_DEFINITIONS.length;
   const completionPct = Math.round((todayDoneCount / totalHabits) * 100);
 
-  const TABS: { key: "habits" | "rules" | "mindset"; label: string; icon: string }[] = [
-    { key: "habits",  label: "Daily Habits",       icon: "🔥" },
-    { key: "rules",   label: "Rules & Discipline",  icon: "🛡️" },
-    { key: "mindset", label: "Mindset",            icon: "🧠" },
+  const TABS: { key: "habits" | "rules" | "mindset"; label: string; icon: LucideIcon }[] = [
+    { key: "habits",  label: "Daily Habits",       icon: Flame },
+    { key: "rules",   label: "Rules & Discipline",  icon: Shield },
+    { key: "mindset", label: "Mindset",            icon: Brain },
   ];
 
   const tabStyle = (t: string): React.CSSProperties => ({
@@ -169,7 +169,7 @@ export function PersonalPage({ data, update }: Props) {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {TABS.map((t) => (
           <button key={t.key} style={tabStyle(t.key)} onClick={() => setActiveTab(t.key)}>
-            <span style={{ fontSize: 13 }}>{t.icon}</span>{t.label}
+            <t.icon size={13} />{t.label}
           </button>
         ))}
       </div>
@@ -198,7 +198,9 @@ export function PersonalPage({ data, update }: Props) {
               />
               <Stat
                 label="Mood"
-                value={<span style={{ fontSize: 24 }}>{todayMoodDef ? todayMoodDef.emoji : "—"}</span>}
+                value={todayMoodDef
+                  ? <todayMoodDef.icon size={24} color={todayMoodDef.color} />
+                  : <span style={{ fontSize: 24 }}>—</span>}
                 sub={todayMoodDef ? todayMoodDef.label : "Belum di-log"}
               />
             </SeamGrid>
@@ -234,7 +236,7 @@ export function PersonalPage({ data, update }: Props) {
                         transition: "all 0.15s",
                       }}
                     >
-                      <span style={{ fontSize: 22 }}>{m.emoji}</span>
+                      <m.icon size={22} color={m.color} />
                       <span style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 9,
@@ -278,7 +280,7 @@ export function PersonalPage({ data, update }: Props) {
                       transition: "background 0.15s",
                     }}
                   >
-                    <span style={{ fontSize: 16, flexShrink: 0 }}>{habit.icon}</span>
+                    <habit.icon size={16} color="var(--color-muted)" style={{ flexShrink: 0 }} />
                     <span style={{
                       flex: 1,
                       fontFamily: "var(--font-sans)",
@@ -290,7 +292,7 @@ export function PersonalPage({ data, update }: Props) {
                     </span>
                     {streak > 0 && (
                       <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700, color: "var(--warning)", display: "flex", alignItems: "center", gap: 3, flexShrink: 0 }}>
-                        🔥 {streak}d
+                        <Flame size={11} /> {streak}d
                       </span>
                     )}
                     <div style={{ flexShrink: 0, display: "flex", color: done ? "var(--color-primary)" : "var(--color-muted)" }}>
@@ -325,7 +327,7 @@ export function PersonalPage({ data, update }: Props) {
                   {HABIT_DEFINITIONS.map((habit) => (
                     <Fragment key={habit.id}>
                       <div style={{ fontSize: 12, color: "var(--color-muted)", display: "flex", alignItems: "center", paddingRight: 8, whiteSpace: "nowrap" }}>
-                        {habit.icon}
+                        <habit.icon size={13} />
                       </div>
                       {last7.map((d) => {
                         const key = getDateKey(d);
@@ -355,7 +357,7 @@ export function PersonalPage({ data, update }: Props) {
       {activeTab === "rules" && (
         <>
           <Slab>
-            <PanelHead title="🛡️ Rules Survival Mode" />
+            <PanelHead title="Rules Survival Mode" />
             <Panel>
               <EditableText
                 value={p.rulesSurvival}
@@ -365,7 +367,7 @@ export function PersonalPage({ data, update }: Props) {
           </Slab>
 
           <Slab>
-            <PanelHead title="✅ Daily Discipline Checklist" />
+            <PanelHead title="Daily Discipline Checklist" />
             <Panel>
               <CheckList
                 items={p.dailyDiscipline}
@@ -375,7 +377,7 @@ export function PersonalPage({ data, update }: Props) {
           </Slab>
 
           <Slab>
-            <PanelHead title="🔄 Checklist Rebuild" />
+            <PanelHead title="Checklist Rebuild" />
             <Panel>
               <CheckList
                 items={p.checklistRebuild}
@@ -392,7 +394,7 @@ export function PersonalPage({ data, update }: Props) {
           {/* Affirmation — flat, no gradient */}
           <Slab>
             <Panel style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, textAlign: "center", padding: "24px 20px" }}>
-              <span style={{ fontSize: 30 }}>🧠</span>
+              <Brain size={30} color="var(--color-primary)" />
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 17, fontWeight: 500, color: "var(--color-text)", lineHeight: 1.5, margin: 0 }}>
                 "Ini bukan kegagalan — ini rebuild."
               </p>

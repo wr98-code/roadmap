@@ -7,7 +7,7 @@ import { useState } from 'react';
 import {
   Calculator, TrendingUp, TrendingDown, BookOpen, Target,
   AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
-  Plus, Trash2, PieChart,
+  Plus, Trash2, PieChart, X, Calendar,
 } from 'lucide-react';
 import { cloudSet } from '@/lib/cloudStorage';
 import { Slab, SeamGrid, Panel, Badge, tLabelStyle, tNumStyle, SEAM } from '@/components/terminal';
@@ -184,7 +184,7 @@ function FourSlotSystem() {
               ))}
             </div>
             <div style={{ fontSize: 12, color: 'var(--color-muted)', lineHeight: 1.6 }}>
-              💡 {slot.strategy}
+              {slot.strategy}
             </div>
           </div>
         ))}
@@ -192,7 +192,9 @@ function FourSlotSystem() {
 
       {/* Rules */}
       <div style={{ padding: '14px 16px', borderTop: `1px solid ${SEAM}`, background: 'var(--color-surface)' }}>
-        <SubLabel>⚠️ ATURAN WAJIB</SubLabel>
+        <SubLabel style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <AlertTriangle size={11} style={{ color: 'var(--warning)', flexShrink: 0 }} /> ATURAN WAJIB
+        </SubLabel>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
           {[
             'Jangan open lebih dari 2 slot/hari',
@@ -203,7 +205,7 @@ function FourSlotSystem() {
             'Liquidation price harus > SL',
           ].map(rule => (
             <div key={rule} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 12, color: 'var(--color-text)' }}>
-              <span style={{ color: 'var(--loss)', fontWeight: 700, flexShrink: 0 }}>✗</span>
+              <X size={13} style={{ color: 'var(--loss)', flexShrink: 0, marginTop: 1 }} />
               {rule}
             </div>
           ))}
@@ -465,7 +467,7 @@ function CompoundingTracker() {
                       {row.hidup > 0 ? `-Rp${row.hidup}jt` : '—'}
                     </td>
                     <td className="num" style={{ padding: '8px 12px', border: `1px solid ${SEAM}`, fontWeight: 700, color: row.bulan === 12 ? 'var(--gold)' : 'var(--color-text)', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      Rp{row.akhir}jt {row.bulan === 12 ? '🏆' : ''}
+                      Rp{row.akhir}jt
                     </td>
                   </tr>
                 );
@@ -477,7 +479,9 @@ function CompoundingTracker() {
 
       {/* Profit Split Rule */}
       <Block>
-        <SubLabel>💰 PROFIT SPLIT RULE (WAJIB)</SubLabel>
+        <SubLabel style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <PieChart size={11} style={{ color: 'var(--color-muted)', flexShrink: 0 }} /> PROFIT SPLIT RULE (WAJIB)
+        </SubLabel>
         <SeamGrid cols="1fr 1fr 1fr" style={{ border: `1px solid ${SEAM}` }}>
           {[
             { pct: '50%', label: 'Compound ke modal trading', tint: 'var(--color-primary)', bg: 'var(--rail-active-bg)' },
@@ -763,14 +767,16 @@ function FourPilarEngine() {
                 <div style={{ fontSize: 10, color: 'var(--color-muted)' }}>Risk: {p.risk}</div>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>📌 {p.strategy}</div>
+            <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{p.strategy}</div>
           </div>
         ))}
       </div>
 
       {/* Fase Eksekusi */}
       <Block>
-        <SubLabel>📅 FASE EKSEKUSI 12 BULAN</SubLabel>
+        <SubLabel style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <Calendar size={11} style={{ color: 'var(--color-muted)', flexShrink: 0 }} /> FASE EKSEKUSI 12 BULAN
+        </SubLabel>
         <SeamGrid cols="1fr 1fr 1fr" style={{ border: `1px solid ${SEAM}` }}>
           {[
             { fase: 'BLITZ LAUNCH', waktu: 'Bulan 1–3', target: '$2K → $10K', desc: 'Fokus Alpha + Core, compound agresif', tint: 'var(--color-primary)' },

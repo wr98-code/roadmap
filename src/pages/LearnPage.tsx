@@ -19,7 +19,6 @@ const TOPICS = [
   {
     id: 'coinglass-expert',
     category: 'trading',
-    emoji: '🔥',
     title: 'Coinglass Expert Guide',
     desc: 'Baca data seperti market maker — Liquidation Heatmap, Funding Rate, Open Interest',
     icon: BarChart2, color: '#f59e0b',
@@ -28,7 +27,6 @@ const TOPICS = [
   {
     id: 'nupl-onchain',
     category: 'trading',
-    emoji: '⛓️',
     title: 'NUPL & On-Chain Mastery',
     desc: 'NUPL, SOPR, Exchange Netflow, Glassnode indicators untuk timing market',
     icon: TrendingUp, color: '#7c3aed',
@@ -37,7 +35,6 @@ const TOPICS = [
   {
     id: 'funding-arbitrage',
     category: 'trading',
-    emoji: '💸',
     title: 'Funding Rate Arbitrage',
     desc: 'Cash & carry trade, funding arbitrage strategy untuk passive income dari crypto',
     icon: DollarSign, color: '#059669',
@@ -46,7 +43,6 @@ const TOPICS = [
   {
     id: 'risk-management',
     category: 'trading',
-    emoji: '🛡️',
     title: 'Risk Management Institusi',
     desc: 'VaR, Max Drawdown, Sharpe Ratio, hedging tools — level hedge fund',
     icon: Shield, color: '#dc2626',
@@ -56,7 +52,6 @@ const TOPICS = [
   {
     id: 'kosmos-keuangan',
     category: 'finance',
-    emoji: '🌍',
     title: 'Kosmos Keuangan Global',
     desc: 'Infrastruktur keuangan dunia — NYSE, Fed, hedge funds, tokenisasi aset',
     icon: Globe, color: '#2563eb',
@@ -65,7 +60,6 @@ const TOPICS = [
   {
     id: 'dalio-framework',
     category: 'finance',
-    emoji: '🔄',
     title: "Ray Dalio's Principles",
     desc: 'Big Debt Cycle, How the Economic Machine Works, All Weather Portfolio',
     icon: TrendingUp, color: '#d97706',
@@ -74,7 +68,6 @@ const TOPICS = [
   {
     id: 'naval-wealth',
     category: 'finance',
-    emoji: '⚡',
     title: "Naval Ravikant's Wealth Playbook",
     desc: 'Get rich without getting lucky — specific knowledge, leverage, permissionless',
     icon: Zap, color: '#059669',
@@ -84,7 +77,6 @@ const TOPICS = [
   {
     id: 'btc-cycle',
     category: 'crypto',
-    emoji: '₿',
     title: 'Bitcoin Market Cycles',
     desc: 'Halving cycle, NUPL fases, accumulation vs distribution, timing entry exit',
     icon: TrendingUp, color: '#f59e0b',
@@ -93,7 +85,6 @@ const TOPICS = [
   {
     id: 'altcoin-strategy',
     category: 'crypto',
-    emoji: '🌊',
     title: 'Altcoin Strategy Expert',
     desc: 'Alpha vs BTC, sector rotation, narrative trading, how to find 10x coins',
     icon: BarChart2, color: '#2563eb',
@@ -103,7 +94,6 @@ const TOPICS = [
   {
     id: 'macro-trading',
     category: 'macro',
-    emoji: '🏛️',
     title: 'Macro Trading Framework',
     desc: 'Fed, DXY, yield curve, inflasi — cara trade macro events seperti hedge fund',
     icon: Globe, color: '#7c3aed',
@@ -112,7 +102,6 @@ const TOPICS = [
   {
     id: 'stablecoin-yield',
     category: 'macro',
-    emoji: '💰',
     title: 'Stablecoin Yield Strategy',
     desc: 'USDC/USDT yield, Bybit Earn, T-Bills exposure, compound shield strategy',
     icon: Lock, color: '#059669',
@@ -122,7 +111,6 @@ const TOPICS = [
   {
     id: 'ai-finance',
     category: 'ai',
-    emoji: '🤖',
     title: 'AI Tools for Finance & Trading',
     desc: 'AlphaSense, Numerai, Perplexity, AI-powered research workflow untuk trader',
     icon: Cpu, color: '#7c3aed',
@@ -131,7 +119,6 @@ const TOPICS = [
   {
     id: 'fintech-builder',
     category: 'ai',
-    emoji: '⚡',
     title: 'Fintech Builder Playbook',
     desc: 'Stripe Atlas, LLC setup, Web3 klien hunting, Zero Build Labs roadmap',
     icon: Zap, color: '#2563eb',
@@ -140,12 +127,12 @@ const TOPICS = [
 ];
 
 const CATEGORIES = [
-  { key: 'all', label: 'Semua', emoji: '📚' },
-  { key: 'trading', label: 'Trading', emoji: '📈' },
-  { key: 'finance', label: 'Finance', emoji: '💼' },
-  { key: 'crypto', label: 'Crypto', emoji: '₿' },
-  { key: 'macro', label: 'Macro', emoji: '🌍' },
-  { key: 'ai', label: 'AI & Build', emoji: '🤖' },
+  { key: 'all', label: 'Semua' },
+  { key: 'trading', label: 'Trading' },
+  { key: 'finance', label: 'Finance' },
+  { key: 'crypto', label: 'Crypto' },
+  { key: 'macro', label: 'Macro' },
+  { key: 'ai', label: 'AI & Build' },
 ];
 
 interface Lesson { topicId: string; content: string; timestamp: string; }
@@ -176,9 +163,8 @@ function TopicCard({
           width: 34, height: 34, borderRadius: 7, flexShrink: 0,
           background: 'var(--color-surface)', border: '1px solid var(--color-border)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 17,
         }}>
-          {topic.emoji}
+          <topic.icon size={16} color={topic.color} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3 }}>
@@ -194,7 +180,7 @@ function TopicCard({
           {lesson && (
             <div style={{ marginTop: 6 }}>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--gain)', background: 'var(--gain-soft)', padding: '2px 7px', borderRadius: 4, fontVariantNumeric: 'tabular-nums' }}>
-                ✓ LEARNED · {lesson.timestamp}
+                LEARNED · {lesson.timestamp}
               </span>
             </div>
           )}
@@ -272,7 +258,7 @@ export function LearnPage() {
       const content = await callClaude(topic.prompt, {
         search: true,
         maxTokens: 2500,
-        systemPrompt: 'You are an expert finance and crypto educator. Teach clearly, use specific examples, real numbers, and concrete action steps. Write in clear paragraphs with headers using emojis. Be direct and practical — no fluff.',
+        systemPrompt: 'You are an expert finance and crypto educator. Teach clearly, use specific examples, real numbers, and concrete action steps. Write in clear paragraphs with plain text headers (no emojis). Be direct and practical — no fluff.',
       });
       const lesson: Lesson = { topicId: topic.id, content, timestamp: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) };
       const updated = { ...lessons, [topic.id]: lesson };
@@ -367,7 +353,7 @@ export function LearnPage() {
                 display: 'flex', alignItems: 'center', gap: 5, transition: 'all .15s',
               }}
             >
-              {cat.emoji} {cat.label}
+              {cat.label}
               <span className="num" style={{
                 fontSize: 10, fontWeight: 700, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums',
                 background: isActive ? 'var(--rail-active-bg)' : 'var(--color-border)',
@@ -531,7 +517,7 @@ function GlossarySection() {
             />
           </div>
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-            {([{ key: 'all' as const, label: 'Semua', emoji: '📚' }, ...GLOSSARY_CATEGORIES]).map(c => {
+            {([{ key: 'all' as const, label: 'Semua' }, ...GLOSSARY_CATEGORIES]).map(c => {
               const count = c.key === 'all' ? GLOSSARY.length : GLOSSARY.filter(t => t.category === c.key).length;
               const on = cat === c.key;
               return (
@@ -547,7 +533,7 @@ function GlossarySection() {
                     display: 'inline-flex', alignItems: 'center', gap: 4,
                   }}
                 >
-                  {c.emoji} {c.label} <span className="num" style={{ fontSize: 10, opacity: 0.7 }}>{count}</span>
+                  {c.label} <span className="num" style={{ fontSize: 10, opacity: 0.7 }}>{count}</span>
                 </button>
               );
             })}
@@ -594,7 +580,7 @@ function GlossarySection() {
                     </span>
                   )}
                   <span style={{ fontSize: 10.5, color: 'var(--color-dim)', whiteSpace: 'nowrap' }}>
-                    {catInfo?.emoji} {catInfo?.label}
+                    {catInfo?.label}
                   </span>
                   <ChevronDown size={13} color="var(--color-dim)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform var(--dur-med) var(--ease-out)', flexShrink: 0 }} />
                 </button>

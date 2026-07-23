@@ -19,7 +19,9 @@ import {
   GraduationCap, FolderGit2, Lightbulb, Cloud, Loader2,
   LayoutDashboard, Rss, Search, Languages,
   TrendingDown, Minus, Radio, RefreshCw, Wallet, Menu,
+  Sun, Moon, Briefcase, CloudRain, Snowflake, Droplets, Wind,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { PWAInstall } from "@/components/PWAInstall";
 import { ApiKeySettings } from "@/components/ApiKeySettings";
@@ -79,11 +81,17 @@ function useWeather(): WeatherData | null {
   }, []);
   return w;
 }
-function weatherEmoji(code: number): string {
-  if (code === 0) return "☀️"; if (code <= 2) return "🌤"; if (code <= 3) return "☁️";
-  if (code <= 48) return "🌫"; if (code <= 55) return "🌦"; if (code <= 67) return "🌧";
-  if (code <= 77) return "❄️"; if (code <= 82) return "🌦"; return "⛈";
+function weatherIcon(code: number): LucideIcon {
+  if (code === 0) return Sun; if (code <= 3) return Cloud;
+  if (code <= 48) return Cloud; if (code <= 67) return CloudRain;
+  if (code <= 77) return Snowflake; if (code <= 82) return CloudRain;
+  return Zap;
 }
+
+// Vibe/tema aktif → ikon lucide (label & warna tetap dari theme)
+const VIBE_ICONS: Record<keyof typeof VIBES, LucideIcon> = {
+  morning: Sun, afternoon: Briefcase, night: Moon,
+};
 
 // BTC + F&G
 interface BtcInfo { price: string; change: string; up: boolean }
@@ -293,6 +301,7 @@ function LiveIntelPanel({ active, onNavigate }: { active: string; onNavigate: (k
   const weather                                        = useWeather();
   const [, forceRefresh]                               = useState(0); // trigger manual refresh
   const reloadRef = useRef<(() => void) | null>(null);
+  const WeatherIcon = weather ? weatherIcon(weather.code) : null;
 
   const fgColor = !fg ? "#94a3b8"
     : fg.value <= 25 ? "#ef4444" : fg.value <= 45 ? "#f59e0b"
@@ -316,7 +325,7 @@ function LiveIntelPanel({ active, onNavigate }: { active: string; onNavigate: (k
           <span style={{ fontFamily:"var(--font-mono)", fontSize:10, fontWeight:700, letterSpacing:"0.14em", color:"#10b981" }}>LIVE INTEL</span>
           {hasBreaking && (
             <span style={{ fontSize:8, fontWeight:800, color:"#ef4444", background:"#ef444415", padding:"1px 5px", borderRadius:3, fontFamily:"var(--font-mono)", letterSpacing:0.5, animation:"rpulse 1.5s infinite" }}>
-              🔴 BREAKING
+              BREAKING
             </span>
           )}
         </div>
@@ -435,18 +444,18 @@ function LiveIntelPanel({ active, onNavigate }: { active: string; onNavigate: (k
             <p style={{ fontFamily:"var(--font-sans)", fontSize:11, color:"var(--panel-muted)", marginTop:1 }}>Surabaya, ID</p>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            {weather ? (
+            {weather && WeatherIcon ? (
               <>
                 <span style={{ fontFamily:"var(--font-mono)", fontSize:14, fontWeight:600, color:"var(--panel-text)" }}>{weather.temp}°F</span>
-                <span style={{ fontSize:17 }}>{weatherEmoji(weather.code)}</span>
+                <WeatherIcon size={15} color="var(--panel-muted)" />
               </>
             ) : <span style={{ fontFamily:"var(--font-mono)", fontSize:12, color:"var(--panel-muted)" }}>—°F</span>}
           </div>
         </div>
         {weather && (
           <div style={{ display:"flex", gap:12, marginTop:6 }}>
-            <span style={{ fontFamily:"var(--font-mono)", fontSize:9, color:"var(--panel-dim)" }}>💧 {weather.humidity}%</span>
-            <span style={{ fontFamily:"var(--font-mono)", fontSize:9, color:"var(--panel-dim)" }}>💨 {weather.windspeed}mph</span>
+            <span style={{ display:"flex", alignItems:"center", gap:3, fontFamily:"var(--font-mono)", fontSize:9, color:"var(--panel-dim)" }}><Droplets size={9} /> {weather.humidity}%</span>
+            <span style={{ display:"flex", alignItems:"center", gap:3, fontFamily:"var(--font-mono)", fontSize:9, color:"var(--panel-dim)" }}><Wind size={9} /> {weather.windspeed}mph</span>
           </div>
         )}
       </div>
@@ -513,6 +522,7 @@ const Index = () => {
 
   const hasNotes = ["build-lab","trading","crypto","roadmap","keuangan","personal"].includes(active);
   const vibeInfo = VIBES[vibe];
+  const VibeIcon = VIBE_ICONS[vibe];
   const clockStr = now.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false });
 
   return (
@@ -577,10 +587,10 @@ const Index = () => {
 
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, padding:"0 8px", width:"100%" }}>
           <ApiKeySettings />
-          <button onClick={cycleVibe} title={`Theme: ${vibeInfo.label}`} style={{ width:36, height:36, borderRadius:9, background:"var(--rail-btn-bg)", border:"1px solid var(--rail-btn-border)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, transition:"all 0.15s" }}
+          <button onClick={cycleVibe} title={`Theme: ${vibeInfo.label}`} style={{ width:36, height:36, borderRadius:9, background:"var(--rail-btn-bg)", border:"1px solid var(--rail-btn-border)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.15s" }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--rail-btn-hover)"; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--rail-btn-bg)"; }}>
-            {vibeInfo.emoji}
+            <VibeIcon size={15} color="var(--rail-icon)" />
           </button>
           <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg, #3b82f6, #6366f1)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"var(--font-mono)", fontSize:12, fontWeight:700, color:"var(--on-primary)", border:"2px solid var(--rail-btn-border)", boxShadow:"0 0 10px rgba(59,130,246,0.28)" }}>W</div>
         </div>

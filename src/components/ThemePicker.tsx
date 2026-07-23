@@ -1,9 +1,13 @@
 // ─── ZERØ COMMAND — ThemePicker.tsx ──────────────────────────────────────────
-import { useTheme, VIBES } from "@/lib/theme";
+import { Sun, Briefcase, Moon, LucideIcon } from "lucide-react";
+import { useTheme, VIBES, Vibe } from "@/lib/theme";
+
+const VIBE_ICONS: Record<Vibe, LucideIcon> = { morning: Sun, afternoon: Briefcase, night: Moon };
 
 export function ThemePicker() {
   const { vibe, isAuto, cycleVibe, resetToAuto } = useTheme();
   const info = VIBES[vibe];
+  const VibeIcon = VIBE_ICONS[vibe];
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -17,7 +21,7 @@ export function ThemePicker() {
         className="vibe-badge"
         title="Click to cycle vibe"
       >
-        <span style={{ fontSize: 11 }}>{info.emoji}</span>
+        <VibeIcon size={11} />
         {info.label}
       </button>
       {!isAuto && (

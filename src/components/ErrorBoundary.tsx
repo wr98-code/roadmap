@@ -4,6 +4,7 @@
 // localStorage; reload biasanya memulihkan.
 
 import { Component, ErrorInfo, ReactNode } from "react";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface Props { children: ReactNode; }
 interface State { hasError: boolean; message: string; }
@@ -33,8 +34,8 @@ export class ErrorBoundary extends Component<Props, State> {
           background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)",
           boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
         }}>
-          <div style={{ fontSize: 11, fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.14em", color: "#ef4444", marginBottom: 10 }}>
-            ⚠ ADA MASALAH RENDER
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontFamily: "ui-monospace, monospace", fontWeight: 700, letterSpacing: "0.14em", color: "#ef4444", marginBottom: 10 }}>
+            <AlertTriangle size={12} /> ADA MASALAH RENDER
           </div>
           <h1 style={{ fontSize: 17, fontWeight: 700, color: "#f1f5f9", margin: "0 0 10px" }}>
             Aplikasi berhenti sesaat
@@ -54,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
               background: "rgba(59,130,246,0.18)", color: "#3b82f6", fontSize: 13, fontWeight: 600,
             }}
           >
-            ↻ Muat ulang
+            <RefreshCw size={13} /> Muat ulang
           </button>
         </div>
       </div>

@@ -12,11 +12,11 @@
 
 export type GlossaryCategory = "metrik" | "rasio" | "jabatan" | "pasar";
 
-export const GLOSSARY_CATEGORIES: { key: GlossaryCategory; label: string; emoji: string }[] = [
-  { key: "metrik", label: "Metrik Finansial", emoji: "📊" },
-  { key: "rasio", label: "Rasio & Akuntansi", emoji: "🧮" },
-  { key: "jabatan", label: "Jabatan Korporat", emoji: "🏢" },
-  { key: "pasar", label: "Pasar & Investasi", emoji: "📈" },
+export const GLOSSARY_CATEGORIES: { key: GlossaryCategory; label: string }[] = [
+  { key: "metrik", label: "Metrik Finansial" },
+  { key: "rasio", label: "Rasio & Akuntansi" },
+  { key: "jabatan", label: "Jabatan Korporat" },
+  { key: "pasar", label: "Pasar & Investasi" },
 ];
 
 export interface GlossaryTerm {

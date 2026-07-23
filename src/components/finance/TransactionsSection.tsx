@@ -82,8 +82,8 @@ export function TransactionsSection({
 
   const rowIcon = (t: FinanceTransaction) => {
     if (t.type === "transfer") return <ArrowLeftRight size={14} color="var(--color-primary)" />;
-    if (t.type === "masuk") return <span style={{ fontSize: 15 }}>{srcOf(t.sourceId)?.emoji ?? "❔"}</span>;
-    return <span style={{ fontSize: 15 }}>{catOf(t.categoryId)?.emoji ?? "🏷️"}</span>;
+    const key = t.type === "masuk" ? srcOf(t.sourceId)?.color : catOf(t.categoryId)?.color;
+    return <span style={{ width: 9, height: 9, borderRadius: 3, background: catColor(key ?? "muted") }} />;
   };
 
   const rowTitle = (t: FinanceTransaction) => {
@@ -135,7 +135,7 @@ export function TransactionsSection({
           )}
           {categoryFilter && (
             <Chip small active color={catColor(catOf(categoryFilter)?.color ?? "muted")} onClick={() => setCategoryFilter(null)}>
-              {catOf(categoryFilter)?.emoji} {catOf(categoryFilter)?.name ?? "kategori"} <X size={10} />
+              {catOf(categoryFilter)?.name ?? "kategori"} <X size={10} />
             </Chip>
           )}
           {typeFilter && (
@@ -345,7 +345,7 @@ function EditTxModal({
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {fin.sources.map((s) => (
                 <Chip key={s.id} active={sourceId === s.id} color={catColor(s.color)} onClick={() => setSourceId(s.id)} small>
-                  {s.emoji} {s.name}
+                  {s.name}
                 </Chip>
               ))}
             </div>
@@ -357,7 +357,7 @@ function EditTxModal({
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {fin.categories.map((c) => (
                 <Chip key={c.id} active={categoryId === c.id} color={catColor(c.color)} onClick={() => setCategoryId(c.id)} small>
-                  {c.emoji} {c.name}
+                  {c.name}
                 </Chip>
               ))}
             </div>
