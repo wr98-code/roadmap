@@ -31,12 +31,12 @@ const ThemeContext = createContext<Ctx>({ vibe: "morning", isAuto: true, setVibe
 const KEY = "zero-vibe";
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Default identity = premium dark ("night"). The clock-based auto-vibe is
-  // still available via resetToAuto(); we just don't force a light theme by
-  // day. Any saved preference wins.
+  // Default identity = the warm light "atelier" lane. 2026 luxury digital is
+  // light-dominant; dark is an equal partner, not the default costume.
+  // Clock-based auto-vibe still available via resetToAuto(). Saved pref wins.
   const [vibe, setVibeState] = useState<Vibe>(() => {
     const s = localStorage.getItem(KEY) as Vibe | null;
-    return s && ORDER.includes(s) ? s : "night";
+    return s && ORDER.includes(s) ? s : "morning";
   });
   const [isAuto, setIsAuto] = useState(false);
 
