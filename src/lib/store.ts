@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { hasSyncToken, syncHeaders } from "@/lib/cloudStorage";
+import { FinanceData, defaultFinance, migrateFinance } from "@/lib/finance";
 
 export interface CheckItem {
   id: string;
@@ -99,6 +100,8 @@ export interface AppData {
     pengeluaran: ExpenseEntry[];
     goals: CheckItem[];
     notes: Note[];
+    /** sistem pencatatan keuangan v2: kantong / sumber / kategori / transaksi */
+    finance: FinanceData;
   };
   personal: {
     rulesSurvival: string;
@@ -207,6 +210,7 @@ export const defaultData: AppData = {
       { id: uid(), text: "Formalisasi Zero Build Lab", checked: false },
     ],
     notes: [],
+    finance: defaultFinance(),
   },
   personal: {
     rulesSurvival: "❌ JANGAN trade di bawah tekanan emosional\n❌ Jangan pakai living funds untuk trading\n❌ Jangan ambil debt untuk spekulasi\n✅ Fokus income generation dulu\n✅ Kurangi lifestyle expenses sementara\n✅ Shift dari growth ke cashflow",
@@ -267,6 +271,9 @@ function mergeWithDefaults(partial: unknown): AppData {
       base[section] = { ...base[section], ...(val as Record<string, unknown>) };
     }
   }
+  // finance perlu migrasi dalam (field baru diisi, warna/tipe dinormalisasi)
+  (base.keuangan as Record<string, unknown>).finance =
+    migrateFinance((src.keuangan as Record<string, unknown> | undefined)?.finance as never);
   return base as unknown as AppData;
 }
 
