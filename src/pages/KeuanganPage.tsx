@@ -1,14 +1,29 @@
-// ─── ZERØ COMMAND — KeuanganPage.tsx ─────────────────────────────────────────
-// Finance ledger: status markdown, income log CRUD, monthly expenses (edit-only),
-// goals checklist, notes. Institutional "terminal" restructure — flat panels +
-// hairline seams, mono tabular numerals, CSS-var colors (light + dark).
-// Every update() call, field, handler & feature preserved.
+// ─── ZERØ COMMAND — KeuanganPage.tsx v2 "ATELIER" ─────────────────────────────
+// Sistem pencatatan keuangan penuh:
+//   Ringkasan bulanan (SURPLUS / BONCOS) → Quick-add → Kantong (per tipe:
+//   Bank / E-Wallet / Crypto / Cash) → Pemasukan per Sumber (Trading / Bisnis /
+//   Personal + chart gabungan + P&L harian trading) → Kategori → Tren bulanan →
+//   Riwayat transaksi (filter / edit / hapus+undo).
+// Seksi lama dipertahankan: Status, Goals, Notes tetap tampil; ledger manual
+// lama (income log + pengeluaran bulanan) pindah ke "Arsip Catatan Lama" —
+// datanya tidak dihapus dan tetap bisa diedit.
+
+import { useCallback, useState } from "react";
 import { AppData, IncomeEntry, ExpenseEntry } from "@/lib/store";
+import { FinanceData, currentMonth } from "@/lib/finance";
 import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
-import { Slab, SeamGrid, PanelHead, Divider, Stat, Badge, PageTitle } from "@/components/terminal";
+import { Slab, PanelHead, Divider, Badge, PageTitle } from "@/components/terminal";
 import { Plus, Trash2 } from "lucide-react";
+import { SummaryHero } from "@/components/finance/SummaryHero";
+import { QuickAddCard } from "@/components/finance/QuickAddCard";
+import { AccountsSection } from "@/components/finance/AccountsSection";
+import { SourcesSection } from "@/components/finance/SourcesSection";
+import { CategorySection } from "@/components/finance/CategorySection";
+import { TrendSection } from "@/components/finance/TrendSection";
+import { TransactionsSection } from "@/components/finance/TransactionsSection";
+import { ManageModal } from "@/components/finance/ManageModal";
 
 interface Props {
   data: AppData;
@@ -17,95 +32,71 @@ interface Props {
 
 export function KeuanganPage({ data, update }: Props) {
   const k = data.keuangan;
+  const fin = k.finance;
+
+  const [month, setMonth] = useState(currentMonth());
+  const [manageOpen, setManageOpen] = useState(false);
+  const [accountFilter, setAccountFilter] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [showLegacy, setShowLegacy] = useState(false);
+
+  const setFin = useCallback(
+    (fn: (f: FinanceData) => FinanceData) =>
+      update((d) => ({ ...d, keuangan: { ...d.keuangan, finance: fn(d.keuangan.finance) } })),
+    [update]
+  );
+
+  const goalsDone = k.goals.filter((g) => g.checked).length;
+  const goalsTotal = k.goals.length;
+
+  // ── Legacy ledger (pra-sistem transaksi) — dipertahankan, tidak dihapus ──
+  const legacyCount = k.incomeLog.length + k.pengeluaran.filter((e) => e.jumlah).length;
 
   const addIncome = () => {
     const entry: IncomeEntry = {
       id: Math.random().toString(36).slice(2, 9),
-      tanggal: "",
-      sumber: "",
-      jumlah: "",
-      mataUang: "USD",
+      tanggal: "", sumber: "", jumlah: "", mataUang: "USD",
     };
+    update((d) => ({ ...d, keuangan: { ...d.keuangan, incomeLog: [...d.keuangan.incomeLog, entry] } }));
+  };
+  const updateIncome = (id: string, patch: Partial<IncomeEntry>) =>
     update((d) => ({
       ...d,
-      keuangan: { ...d.keuangan, incomeLog: [...d.keuangan.incomeLog, entry] },
+      keuangan: { ...d.keuangan, incomeLog: d.keuangan.incomeLog.map((e) => (e.id === id ? { ...e, ...patch } : e)) },
     }));
-  };
-
-  const updateIncome = (id: string, patch: Partial<IncomeEntry>) => {
+  const deleteIncome = (id: string) =>
+    update((d) => ({ ...d, keuangan: { ...d.keuangan, incomeLog: d.keuangan.incomeLog.filter((e) => e.id !== id) } }));
+  const updateExpense = (id: string, patch: Partial<ExpenseEntry>) =>
     update((d) => ({
       ...d,
-      keuangan: {
-        ...d.keuangan,
-        incomeLog: d.keuangan.incomeLog.map((e) =>
-          e.id === id ? { ...e, ...patch } : e
-        ),
-      },
+      keuangan: { ...d.keuangan, pengeluaran: d.keuangan.pengeluaran.map((e) => (e.id === id ? { ...e, ...patch } : e)) },
     }));
-  };
-
-  const deleteIncome = (id: string) => {
-    update((d) => ({
-      ...d,
-      keuangan: {
-        ...d.keuangan,
-        incomeLog: d.keuangan.incomeLog.filter((e) => e.id !== id),
-      },
-    }));
-  };
-
-  const updateExpense = (id: string, patch: Partial<ExpenseEntry>) => {
-    update((d) => ({
-      ...d,
-      keuangan: {
-        ...d.keuangan,
-        pengeluaran: d.keuangan.pengeluaran.map((e) =>
-          e.id === id ? { ...e, ...patch } : e
-        ),
-      },
-    }));
-  };
-
-  // ── Derived readout counts (truthful, no fabrication) ──
-  const goalsTotal = k.goals.length;
-  const goalsDone = k.goals.filter((g) => g.checked).length;
-  const goalsPct = goalsTotal ? Math.round((goalsDone / goalsTotal) * 100) : 0;
-
-  // ── Institutional table header cell ──
-  const th = (label: string, opts?: { right?: boolean; width?: number }): React.CSSProperties => ({
-    textAlign: opts?.right ? "right" : "left",
-    padding: "9px 14px",
-    fontFamily: "var(--font-mono)",
-    fontSize: 9,
-    fontWeight: 700,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    color: "var(--color-muted)",
-    width: opts?.width,
-    whiteSpace: "nowrap",
-  });
 
   return (
     <div className="space-y-5">
       <PageTitle
         title="Keuangan"
-        subtitle="CASH FLOW · LEDGER"
-        right={<Badge tone="accent">LEDGER</Badge>}
+        subtitle="KANTONG · TRANSAKSI · SURPLUS VS BONCOS"
+        right={<Badge tone="accent">TRACKER</Badge>}
       />
 
-      {/* ── KPI readout spine ── */}
-      <Slab>
-        <SeamGrid cols="1fr 1fr 1fr">
-          <Stat label="Income Log" value={k.incomeLog.length} sub="entries logged" />
-          <Stat label="Expense Lines" value={k.pengeluaran.length} sub="monthly posts" />
-          <Stat
-            label="Goals"
-            value={`${goalsDone}/${goalsTotal}`}
-            sub={`${goalsPct}% complete`}
-            tint={goalsTotal > 0 && goalsDone === goalsTotal ? "var(--gain)" : "var(--color-text)"}
-          />
-        </SeamGrid>
-      </Slab>
+      <SummaryHero fin={fin} month={month} setMonth={setMonth} onOpenManage={() => setManageOpen(true)} />
+      <QuickAddCard fin={fin} setFin={setFin} />
+      <AccountsSection fin={fin} setFin={setFin} accountFilter={accountFilter} setAccountFilter={setAccountFilter} />
+      <SourcesSection fin={fin} month={month} />
+      <CategorySection fin={fin} month={month} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
+      <TrendSection fin={fin} />
+      <TransactionsSection
+        fin={fin}
+        setFin={setFin}
+        month={month}
+        accountFilter={accountFilter}
+        setAccountFilter={setAccountFilter}
+        categoryFilter={categoryFilter}
+        setCategoryFilter={setCategoryFilter}
+      />
+
+      {manageOpen && <ManageModal fin={fin} setFin={setFin} onClose={() => setManageOpen(false)} />}
 
       {/* ── Status Keuangan ── */}
       <Slab>
@@ -118,134 +109,6 @@ export function KeuanganPage({ data, update }: Props) {
             }
           />
         </div>
-      </Slab>
-
-      {/* ── Income Log (CRUD) ── */}
-      <Slab>
-        <PanelHead
-          title="Income Log"
-          right={k.incomeLog.length > 0 ? <Badge>{k.incomeLog.length} ENTRIES</Badge> : undefined}
-        />
-        {k.incomeLog.length === 0 ? (
-          <div style={{ padding: "22px 16px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
-            Belum ada income entry. Tap Add Entry untuk mulai.
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                  <th style={th("Tanggal")}>Tanggal</th>
-                  <th style={th("Sumber")}>Sumber</th>
-                  <th style={th("Jumlah", { right: true })}>Jumlah</th>
-                  <th style={th("Mata Uang")}>Mata Uang</th>
-                  <th style={th("", { width: 44 })}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {k.incomeLog.map((entry, i) => (
-                  <tr key={entry.id} style={{ borderTop: i === 0 ? "none" : "1px solid var(--color-border)" }}>
-                    <td style={{ padding: "3px 8px" }}>
-                      <input
-                        value={entry.tanggal}
-                        onChange={(e) => updateIncome(entry.id, { tanggal: e.target.value })}
-                        placeholder="DD/MM/YYYY"
-                        className="kg-in num"
-                      />
-                    </td>
-                    <td style={{ padding: "3px 8px" }}>
-                      <input
-                        value={entry.sumber}
-                        onChange={(e) => updateIncome(entry.id, { sumber: e.target.value })}
-                        placeholder="Source"
-                        className="kg-in"
-                      />
-                    </td>
-                    <td style={{ padding: "3px 8px" }}>
-                      <input
-                        value={entry.jumlah}
-                        onChange={(e) => updateIncome(entry.id, { jumlah: e.target.value })}
-                        placeholder="0"
-                        className="kg-in num right"
-                      />
-                    </td>
-                    <td style={{ padding: "3px 8px" }}>
-                      <input
-                        value={entry.mataUang}
-                        onChange={(e) => updateIncome(entry.id, { mataUang: e.target.value })}
-                        className="kg-in num"
-                      />
-                    </td>
-                    <td style={{ padding: "3px 8px", textAlign: "right" }}>
-                      <button
-                        onClick={() => deleteIncome(entry.id)}
-                        className="kg-del"
-                        title="Hapus entry"
-                      >
-                        <Trash2 style={{ width: 14, height: 14 }} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <Divider />
-        <div style={{ padding: "12px 16px" }}>
-          <button
-            onClick={addIncome}
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "7px 12px", borderRadius: 7,
-              background: "var(--rail-active-bg)", color: "var(--color-primary)",
-              border: "1px solid var(--rail-active-border)",
-              fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 700,
-              letterSpacing: "0.06em", cursor: "pointer",
-            }}
-          >
-            <Plus style={{ width: 14, height: 14 }} /> ADD ENTRY
-          </button>
-        </div>
-      </Slab>
-
-      {/* ── Pengeluaran Bulanan (edit-only) ── */}
-      <Slab>
-        <PanelHead
-          title="Pengeluaran Bulanan"
-          right={k.pengeluaran.length > 0 ? <Badge>{k.pengeluaran.length} POS</Badge> : undefined}
-        />
-        {k.pengeluaran.length === 0 ? (
-          <div style={{ padding: "22px 16px", textAlign: "center", fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-muted)", letterSpacing: "0.04em" }}>
-            Belum ada pos pengeluaran.
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
-                  <th style={th("Kategori")}>Kategori</th>
-                  <th style={th("Jumlah", { right: true })}>Jumlah</th>
-                </tr>
-              </thead>
-              <tbody>
-                {k.pengeluaran.map((entry, i) => (
-                  <tr key={entry.id} style={{ borderTop: i === 0 ? "none" : "1px solid var(--color-border)" }}>
-                    <td style={{ padding: "10px 14px", color: "var(--color-text)", fontWeight: 500 }}>{entry.kategori}</td>
-                    <td style={{ padding: "3px 8px" }}>
-                      <input
-                        value={entry.jumlah}
-                        onChange={(e) => updateExpense(entry.id, { jumlah: e.target.value })}
-                        placeholder="0"
-                        className="kg-in num right"
-                      />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </Slab>
 
       {/* ── Goals Keuangan ── */}
@@ -277,6 +140,113 @@ export function KeuanganPage({ data, update }: Props) {
         </div>
       </Slab>
 
+      {/* ── Arsip ledger manual lama (pra-sistem transaksi) ── */}
+      {legacyCount > 0 && (
+        <Slab>
+          <PanelHead
+            title="Arsip Catatan Lama"
+            right={
+              <button
+                onClick={() => setShowLegacy(!showLegacy)}
+                style={{
+                  background: "var(--color-surface)", border: "1px solid var(--color-border)",
+                  borderRadius: 999, padding: "5px 13px", fontSize: 11.5, fontWeight: 600,
+                  color: "var(--color-muted)", cursor: "pointer", fontFamily: "var(--font-sans)",
+                }}
+              >
+                {showLegacy ? "Sembunyikan" : `Buka (${legacyCount})`}
+              </button>
+            }
+          />
+          {showLegacy && (
+            <>
+              <div style={{ padding: "0 16px 8px" }}>
+                <p style={{ fontSize: 12, color: "var(--color-muted)", lineHeight: 1.55, margin: 0 }}>
+                  Ledger manual sebelum sistem transaksi — tetap tersimpan & bisa diedit.
+                  Catatan baru sebaiknya lewat form transaksi di atas.
+                </p>
+              </div>
+              {k.incomeLog.length > 0 && (
+                <div style={{ overflowX: "auto", padding: "0 8px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                        {["Tanggal", "Sumber", "Jumlah", "Mata Uang", ""].map((h) => (
+                          <th key={h} style={{ textAlign: "left", padding: "8px 10px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-muted)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {k.incomeLog.map((entry) => (
+                        <tr key={entry.id} style={{ borderTop: "1px solid var(--color-border)" }}>
+                          <td style={{ padding: "3px 6px" }}>
+                            <input value={entry.tanggal} onChange={(e) => updateIncome(entry.id, { tanggal: e.target.value })} placeholder="DD/MM/YYYY" className="kg-in num" />
+                          </td>
+                          <td style={{ padding: "3px 6px" }}>
+                            <input value={entry.sumber} onChange={(e) => updateIncome(entry.id, { sumber: e.target.value })} placeholder="Source" className="kg-in" />
+                          </td>
+                          <td style={{ padding: "3px 6px" }}>
+                            <input value={entry.jumlah} onChange={(e) => updateIncome(entry.id, { jumlah: e.target.value })} placeholder="0" className="kg-in num right" />
+                          </td>
+                          <td style={{ padding: "3px 6px" }}>
+                            <input value={entry.mataUang} onChange={(e) => updateIncome(entry.id, { mataUang: e.target.value })} className="kg-in num" />
+                          </td>
+                          <td style={{ padding: "3px 6px", textAlign: "right" }}>
+                            <button onClick={() => deleteIncome(entry.id)} className="kg-del" title="Hapus entry">
+                              <Trash2 style={{ width: 14, height: 14 }} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div style={{ padding: "10px 16px" }}>
+                <button
+                  onClick={addIncome}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    padding: "7px 13px", borderRadius: 999,
+                    background: "var(--color-surface)", color: "var(--color-muted)",
+                    border: "1px solid var(--color-border)",
+                    fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  <Plus style={{ width: 13, height: 13 }} /> Add entry lama
+                </button>
+              </div>
+              {k.pengeluaran.length > 0 && (
+                <>
+                  <Divider />
+                  <div style={{ overflowX: "auto", padding: "8px 8px 12px" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid var(--color-border)" }}>
+                          {["Kategori (pos bulanan lama)", "Jumlah"].map((h) => (
+                            <th key={h} style={{ textAlign: "left", padding: "8px 10px", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-muted)" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {k.pengeluaran.map((entry) => (
+                          <tr key={entry.id} style={{ borderTop: "1px solid var(--color-border)" }}>
+                            <td style={{ padding: "9px 10px", color: "var(--color-text)", fontWeight: 500 }}>{entry.kategori}</td>
+                            <td style={{ padding: "3px 6px" }}>
+                              <input value={entry.jumlah} onChange={(e) => updateExpense(entry.id, { jumlah: e.target.value })} placeholder="0" className="kg-in num right" />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </Slab>
+      )}
+
       {/* Dense ledger input styling — all theme vars, works light + dark */}
       <style>{`
         .kg-in {
@@ -288,7 +258,7 @@ export function KeuanganPage({ data, update }: Props) {
         }
         .kg-in::placeholder { color: var(--color-muted); }
         .kg-in:focus { background: var(--color-surface); }
-        .kg-in.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+        .kg-in.num { font-variant-numeric: tabular-nums; }
         .kg-in.right { text-align: right; }
         .kg-del {
           display: inline-flex; align-items: center; justify-content: center;

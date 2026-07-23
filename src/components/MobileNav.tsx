@@ -11,7 +11,7 @@ import { X } from "lucide-react";
 
 export interface NavSection {
   key: string;
-  Icon: React.ComponentType<{ size?: number; color?: string }>;
+  Icon: React.ComponentType<{ size?: number | string; color?: string }>;
   title: string;
   group: string;
 }
