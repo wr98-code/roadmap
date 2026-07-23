@@ -9,16 +9,23 @@ import { useTheme } from "@/lib/theme";
 import { CAT_KEYS, CatKey, catColor } from "@/lib/finance";
 
 // ── Hook: resolve CSS var → literal (untuk atribut SVG Recharts) ──────────────
+// Baca sinkron + re-baca via setTimeout(0): TANPA requestAnimationFrame,
+// supaya tetap jalan di tab background / pane yang tidak compositing
+// (rAF bisa tidak pernah fire di sana). setTimeout menutup kasus kelas tema
+// yang baru terpasang oleh effect ThemeProvider setelah effect anak.
+function readVar(name: string, fallback: string): string {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
 export function useCssVar(name: string, fallback = "#888"): string {
   const { vibe } = useTheme();
   const [val, setVal] = useState(fallback);
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-      if (v) setVal(v);
-    });
-    return () => cancelAnimationFrame(id);
-  }, [name, vibe]);
+    setVal(readVar(name, fallback));
+    const id = setTimeout(() => setVal(readVar(name, fallback)), 0);
+    return () => clearTimeout(id);
+  }, [name, fallback, vibe]);
   return val;
 }
 
@@ -27,13 +34,14 @@ export function useCssVars(names: string[]): Record<string, string> {
   const { vibe } = useTheme();
   const [vals, setVals] = useState<Record<string, string>>({});
   useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      const cs = getComputedStyle(document.documentElement);
+    const read = () => {
       const next: Record<string, string> = {};
-      for (const n of names) next[n] = cs.getPropertyValue(n).trim() || "#888";
+      for (const n of names) next[n] = readVar(n, "#888");
       setVals(next);
-    });
-    return () => cancelAnimationFrame(id);
+    };
+    read();
+    const id = setTimeout(read, 0);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vibe, names.join("|")]);
   return vals;

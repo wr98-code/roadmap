@@ -86,7 +86,7 @@ export function TrendSection({ fin }: Props) {
               <YAxis tick={axisTick} tickFormatter={(v: number) => fmtCompact(v, cur)} axisLine={false} tickLine={false} width={50} />
               <Tooltip content={<TrendTooltip />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
               <ReferenceLine y={0} stroke="currentColor" strokeOpacity={0.35} />
-              <Bar dataKey="net" maxBarSize={30}>
+              <Bar dataKey="net" maxBarSize={30} isAnimationActive={false}>
                 {series.map((p) => (
                   <Cell
                     key={p.month}

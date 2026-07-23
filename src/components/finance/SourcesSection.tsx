@@ -216,6 +216,7 @@ export function SourcesSection({ fin, month }: Props) {
                         stroke={surface}
                         strokeWidth={1.5}
                         maxBarSize={26}
+                        isAnimationActive={false}
                       />
                     ))}
                   </BarChart>
@@ -233,6 +234,7 @@ export function SourcesSection({ fin, month }: Props) {
                         strokeWidth={2}
                         dot={{ r: 3, fill: colorOf(s.id), stroke: surface, strokeWidth: 2 }}
                         connectNulls={false}
+                        isAnimationActive={false}
                       />
                     ))}
                   </LineChart>
@@ -287,12 +289,12 @@ export function SourcesSection({ fin, month }: Props) {
                   <YAxis tick={axisTick} tickFormatter={(v: number) => fmtCompact(v, cur)} axisLine={false} tickLine={false} width={50} />
                   <Tooltip content={<DailyTooltip />} cursor={{ fill: "currentColor", opacity: 0.06 }} />
                   <ReferenceLine y={0} stroke="currentColor" strokeOpacity={0.3} />
-                  <Bar dataKey="net" maxBarSize={14} radius={[3, 3, 0, 0]}>
+                  <Bar dataKey="net" maxBarSize={14} radius={[3, 3, 0, 0]} isAnimationActive={false}>
                     {daily.map((d) => (
                       <Cell key={d.date} fill={(d.net ?? 0) >= 0 ? GAIN : LOSS} />
                     ))}
                   </Bar>
-                  <Line dataKey="cum" stroke={tradingColor} strokeWidth={2} dot={false} strokeOpacity={0.8} />
+                  <Line dataKey="cum" stroke={tradingColor} strokeWidth={2} dot={false} strokeOpacity={0.8} isAnimationActive={false} />
                 </ComposedChart>
               </ResponsiveContainer>
               <div style={{ display: "flex", gap: 13, flexWrap: "wrap", marginTop: 5, paddingLeft: 4 }}>
