@@ -10,8 +10,10 @@ import { EditableText } from "@/components/EditableText";
 import { getSimplePrice } from "@/lib/prices";
 import {
   Zap, TrendingUp, Globe, Calendar, DollarSign, User,
-  ArrowUpRight, ArrowDownRight, Eye, EyeOff, Check,
+  ArrowUpRight, ArrowDownRight, Eye, EyeOff, Check, BookMarked,
 } from "lucide-react";
+import { termOfDay, GLOSSARY_CATEGORIES } from "@/lib/glossary";
+import { monthTotals, currentMonth, fmtMoney, monthLabel } from "@/lib/finance";
 
 interface Props {
   data: AppData;
@@ -273,14 +275,23 @@ function Signal() {
    ══════════════════════════════════════════════════════════════════════════ */
 function NetWorth({ data }: { data: AppData }) {
   const [show, setShow] = useState(false);
-  const total = (data.keuangan?.incomeLog ?? []).reduce(
+  const fin = data.keuangan?.finance;
+  const hasFinance = (fin?.transactions?.length ?? 0) > 0;
+  // sistem transaksi baru → total masuk bulan berjalan; fallback: ledger lama
+  const finTotals = hasFinance && fin ? monthTotals(fin, currentMonth()) : null;
+  const legacyTotal = (data.keuangan?.incomeLog ?? []).reduce(
     (s, e) => s + (parseFloat((e.jumlah || "").replace(/[^0-9.]/g, "")) || 0), 0);
+  const total = finTotals ? finTotals.masuk : legacyTotal;
   const shown = useCountUp(show ? Math.round(total) : 0, 1200);
-  const count = data.keuangan?.incomeLog?.length ?? 0;
+  const sub = finTotals
+    ? `${finTotals.txCount} transaksi · ${monthLabel(currentMonth(), true)}`
+    : (data.keuangan?.incomeLog?.length ?? 0) === 0
+      ? "Belum ada catatan — isi di Keuangan"
+      : `${data.keuangan.incomeLog.length} entry ledger lama`;
   return (
     <div className="rise rise-4" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-        <span style={eyebrow}>Income tercatat</span>
+        <span style={eyebrow}>{finTotals ? "Masuk bulan ini" : "Income tercatat"}</span>
         <button
           onClick={() => setShow(v => !v)}
           aria-label={show ? "Sembunyikan angka" : "Tampilkan angka"}
@@ -290,12 +301,50 @@ function NetWorth({ data }: { data: AppData }) {
         </button>
       </div>
       <span className="num" style={{ ...displayFace, fontSize: 34, fontWeight: 600, color: "var(--color-text)", filter: show ? "none" : "blur(11px)", transition: "filter 260ms var(--ease-out)", userSelect: show ? "auto" : "none" }}>
-        Rp {shown.toLocaleString("id-ID")}
+        {finTotals && fin ? fmtMoney(shown, fin.currency) : `Rp ${shown.toLocaleString("id-ID")}`}
       </span>
-      <span style={{ fontSize: 13, color: "var(--color-muted)" }}>
-        {count === 0 ? "Belum ada entry — isi di Keuangan" : `${count} entry dari Keuangan`}
-      </span>
+      <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{sub}</span>
     </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ISTILAH HARI INI — belajar pasif dari kamus (deterministik per tanggal)
+   ══════════════════════════════════════════════════════════════════════════ */
+function TermOfDay({ onNavigate }: { onNavigate: (k: string) => void }) {
+  const t = termOfDay();
+  const catInfo = GLOSSARY_CATEGORIES.find(c => c.key === t.category);
+  return (
+    <section className="rise rise-5" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ ...eyebrow, display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <BookMarked size={12} /> Istilah hari ini
+        </span>
+        <span style={{ fontSize: 11, color: "var(--color-dim)" }}>{catInfo?.emoji} {catInfo?.label}</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+        <span style={{ ...displayFace, fontSize: 27, fontWeight: 600, color: "var(--color-text)" }}>{t.term}</span>
+        {t.full && <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{t.full}</span>}
+      </div>
+      <p style={{ fontSize: 14, color: "var(--color-muted)", lineHeight: 1.65, margin: 0 }}>
+        {t.def}
+      </p>
+      {t.formula && (
+        <p className="num" style={{ fontSize: 12.5, margin: 0, padding: "7px 11px", borderRadius: 9, background: "var(--color-surface)", color: "var(--color-text)", overflowX: "auto", whiteSpace: "nowrap", alignSelf: "flex-start", maxWidth: "100%" }}>
+          {t.formula}
+        </p>
+      )}
+      <button
+        onClick={() => onNavigate("learn")}
+        style={{
+          alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6,
+          background: "transparent", border: "none", cursor: "pointer", padding: 0,
+          fontSize: 13, fontWeight: 600, color: "var(--color-primary)", fontFamily: "var(--font-sans)",
+        }}
+      >
+        Buka Kamus Istilah <ArrowUpRight size={13} />
+      </button>
+    </section>
   );
 }
 
@@ -471,6 +520,7 @@ export function DashboardPage({ data, update, onNavigate }: Props) {
       </div>
 
       <Vision />
+      <TermOfDay onNavigate={onNavigate} />
       <Modules onNavigate={onNavigate} />
 
       <p style={{ fontSize: 12, color: "var(--color-dim)", textAlign: "right", paddingTop: 2 }}>

@@ -2,14 +2,15 @@
 // AI Tutor Finance/Crypto/Investing — semua topik dari Obsidian Windu
 // Terminal restructure: flat hairline-seam panels (Slab), theme-aware CSS-var
 // color hygiene (light + dark). All logic, callClaude usage & topic data preserved.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  GraduationCap, Zap, RefreshCw,
+  GraduationCap, Zap, RefreshCw, Search, ChevronDown, BookMarked,
   TrendingUp, Globe, Cpu, Shield, DollarSign, BarChart2, Lock,
 } from 'lucide-react';
 import { callClaude, hasApiKey } from '@/lib/api';
 import { cloudSet } from '@/lib/cloudStorage';
 import { Slab, Panel, SeamGrid, PanelHead, Divider, Badge, tLabelStyle } from '@/components/terminal';
+import { GLOSSARY, GLOSSARY_CATEGORIES, GlossaryCategory, searchGlossary } from '@/lib/glossary';
 
 // ─── TOPIC CATALOG ────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -344,6 +345,9 @@ export function LearnPage() {
         </div>
       )}
 
+      {/* ── KAMUS ISTILAH — bisnis / ekonomi / akuntansi ── */}
+      <GlossarySection />
+
       {/* Category Filter — terminal tabs */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {CATEGORIES.map(cat => {
@@ -455,5 +459,146 @@ export function LearnPage() {
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
+  );
+}
+
+// ─── KAMUS ISTILAH — bisnis / ekonomi / akuntansi ─────────────────────────────
+// Satu sumber kebenaran: src/lib/glossary.ts (juga dipakai semua tooltip
+// <MetricInfo> di halaman Keuangan & Wealth, dan "Istilah Hari Ini" di Home).
+function GlossarySection() {
+  const [q, setQ] = useState('');
+  const [cat, setCat] = useState<GlossaryCategory | 'all'>('all');
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const results = useMemo(() => searchGlossary(q, cat), [q, cat]);
+
+  return (
+    <Slab>
+      <PanelHead
+        title={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+            <BookMarked size={13} /> KAMUS ISTILAH · BISNIS & EKONOMI
+          </span>
+        }
+        right={<Badge tone="muted">{GLOSSARY.length} ISTILAH</Badge>}
+      />
+      <div style={{ padding: '0 16px 6px' }}>
+        <p style={{ fontSize: 12.5, color: 'var(--color-muted)', lineHeight: 1.55, margin: '0 0 12px' }}>
+          Biar nyambung waktu dengar CAGR, EBITDA, ARA/ARB, atau bedanya COO vs CFO —
+          bahasa santai, bukan textbook. Istilah yang sama muncul sebagai tooltip "?"
+          di halaman Keuangan & Wealth.
+        </p>
+
+        {/* search + category filter */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+          <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 180 }}>
+            <Search size={13} color="var(--color-dim)" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }} />
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="Cari istilah… (cth: CAGR, dividen, runway)"
+              style={{
+                width: '100%', padding: '8px 12px 8px 32px',
+                border: '1px solid var(--color-border)', borderRadius: 10,
+                background: 'var(--color-surface)', color: 'var(--color-text)',
+                fontSize: 13, outline: 'none', fontFamily: 'var(--font-sans)',
+              }}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+            {([{ key: 'all' as const, label: 'Semua', emoji: '📚' }, ...GLOSSARY_CATEGORIES]).map(c => {
+              const count = c.key === 'all' ? GLOSSARY.length : GLOSSARY.filter(t => t.category === c.key).length;
+              const on = cat === c.key;
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => setCat(c.key as GlossaryCategory | 'all')}
+                  style={{
+                    padding: '5px 11px', borderRadius: 999, fontSize: 12,
+                    border: `1px solid ${on ? 'var(--rail-active-border)' : 'var(--color-border)'}`,
+                    background: on ? 'var(--rail-active-bg)' : 'var(--color-surface)',
+                    color: on ? 'var(--color-primary)' : 'var(--color-muted)',
+                    fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                  }}
+                >
+                  {c.emoji} {c.label} <span className="num" style={{ fontSize: 10, opacity: 0.7 }}>{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* term rows */}
+      {results.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '28px 16px' }}>
+          <p style={{ color: 'var(--color-muted)', fontSize: 13, margin: 0 }}>
+            Tidak ada istilah yang cocok dengan "{q}".
+          </p>
+        </div>
+      ) : (
+        <div style={{ maxHeight: 460, overflowY: 'auto' }}>
+          {results.map((t, i) => {
+            const open = openId === t.id;
+            const catInfo = GLOSSARY_CATEGORIES.find(c => c.key === t.category);
+            return (
+              <div key={t.id} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--color-border)' }}>
+                <button
+                  onClick={() => setOpenId(open ? null : t.id)}
+                  aria-expanded={open}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '11px 16px', background: open ? 'var(--color-surface)' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    transition: 'background var(--dur-fast) var(--ease-out)',
+                  }}
+                >
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text)', fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap' }}>
+                    {t.term}
+                  </span>
+                  {t.full && (
+                    <span style={{ fontSize: 12, color: 'var(--color-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                      {t.full}
+                    </span>
+                  )}
+                  {!t.full && <span style={{ flex: 1 }} />}
+                  {t.priority && (
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--color-primary)', background: 'var(--ember-soft)', padding: '2px 7px', borderRadius: 999, whiteSpace: 'nowrap' }}>
+                      SERING MUNCUL
+                    </span>
+                  )}
+                  <span style={{ fontSize: 10.5, color: 'var(--color-dim)', whiteSpace: 'nowrap' }}>
+                    {catInfo?.emoji} {catInfo?.label}
+                  </span>
+                  <ChevronDown size={13} color="var(--color-dim)" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform var(--dur-med) var(--ease-out)', flexShrink: 0 }} />
+                </button>
+                {open && (
+                  <div style={{ padding: '2px 16px 15px', background: 'var(--color-surface)' }}>
+                    <p style={{ fontSize: 13.5, color: 'var(--color-text)', lineHeight: 1.7, margin: 0 }}>
+                      {t.def}
+                    </p>
+                    {t.formula && (
+                      <p className="num" style={{
+                        fontSize: 12.5, margin: '9px 0 0', padding: '8px 12px', borderRadius: 9,
+                        background: 'var(--raised)', border: '1px solid var(--color-border)',
+                        color: 'var(--color-text)', overflowX: 'auto', whiteSpace: 'nowrap',
+                      }}>
+                        {t.formula}
+                      </p>
+                    )}
+                    {t.example && (
+                      <p style={{ fontSize: 12.5, color: 'var(--color-muted)', lineHeight: 1.6, margin: '9px 0 0', fontStyle: 'italic' }}>
+                        Contoh: {t.example}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </Slab>
   );
 }

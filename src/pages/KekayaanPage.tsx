@@ -11,9 +11,10 @@
 
 import { useMemo, useState, useEffect, useRef } from "react";
 import { AppData, AssetEntry, LiabilityEntry } from "@/lib/store";
-import { InfoTip } from "@/components/InfoTip";
+import { MetricInfo } from "@/components/MetricInfo";
 import { NotesList } from "@/components/NotesList";
 import { useUsdIdr, parseAmount, toIDR, formatIDR } from "@/lib/fx";
+import { monthTotals, currentMonth, monthLabel } from "@/lib/finance";
 import { Slab, SeamGrid, PanelHead, Stat, Field, Badge, PageTitle, tLabelStyle, tNumStyle } from "@/components/terminal";
 import { Plus, Trash2, Eye, EyeOff, Wallet, TrendingDown, Droplet, Timer } from "lucide-react";
 
@@ -67,16 +68,27 @@ export function KekayaanPage({ data, update }: Props) {
       if (v == null) { missing = true; continue; }
       liabIDR += v;
     }
-    // Cash flow from Keuangan (income log + monthly expenses)
-    const incomeIDR = (data.keuangan?.incomeLog ?? []).reduce((s, e) => {
-      const v = toIDR(parseAmount(e.jumlah), e.mataUang || "IDR", usdIdr);
-      return s + (v ?? 0);
-    }, 0);
-    const expenseIDR = (data.keuangan?.pengeluaran ?? []).reduce((s, e) => s + parseAmount(e.jumlah), 0);
+    // Cash flow dari Keuangan: sistem transaksi baru (bulan berjalan) bila ada,
+    // fallback ke ledger manual lama bila belum ada transaksi.
+    const fin = data.keuangan?.finance;
+    const finHasTx = (fin?.transactions?.length ?? 0) > 0;
+    let incomeIDR: number;
+    let expenseIDR: number;
+    if (fin && finHasTx) {
+      const t = monthTotals(fin, currentMonth());
+      incomeIDR = toIDR(t.masuk, fin.currency, usdIdr) ?? t.masuk;
+      expenseIDR = toIDR(t.keluar, fin.currency, usdIdr) ?? t.keluar;
+    } else {
+      incomeIDR = (data.keuangan?.incomeLog ?? []).reduce((s, e) => {
+        const v = toIDR(parseAmount(e.jumlah), e.mataUang || "IDR", usdIdr);
+        return s + (v ?? 0);
+      }, 0);
+      expenseIDR = (data.keuangan?.pengeluaran ?? []).reduce((s, e) => s + parseAmount(e.jumlah), 0);
+    }
     const net = assetIDR - liabIDR;
     const runwayMonths = expenseIDR > 0 ? liqIDR / expenseIDR : null;
     const savingsRate = incomeIDR > 0 ? (incomeIDR - expenseIDR) / incomeIDR : null;
-    return { assetIDR, liabIDR, liqIDR, net, byCat, missing, incomeIDR, expenseIDR, runwayMonths, savingsRate };
+    return { assetIDR, liabIDR, liqIDR, net, byCat, missing, incomeIDR, expenseIDR, runwayMonths, savingsRate, finHasTx };
   }, [w, data.keuangan, usdIdr]);
 
   const hasAssets = w.assets.length > 0;
@@ -147,7 +159,7 @@ export function KekayaanPage({ data, update }: Props) {
       {/* Net Worth hero */}
       <Slab style={{ overflow: "visible" }}>
         <PanelHead
-          title={<span style={{ display: "inline-flex", alignItems: "center" }}>Net Worth<InfoTip term="Net Worth (Kekayaan Bersih)">Total semua aset dikurangi total utang. Ini angka "berapa kekayaanmu sebenarnya" — fondasi utama kesehatan finansial. Naik dari waktu ke waktu = arah yang benar.</InfoTip></span>}
+          title={<span style={{ display: "inline-flex", alignItems: "center" }}>Net Worth<MetricInfo termId="net-worth" /></span>}
           right={<Badge tone={hasAny ? (calc.net >= 0 ? "gain" : "loss") : "muted"}>{hasAny ? (calc.net >= 0 ? "SURPLUS" : "DEFISIT") : "KOSONG"}</Badge>}
         />
         <div style={{ padding: "20px 18px" }}>
@@ -185,24 +197,24 @@ export function KekayaanPage({ data, update }: Props) {
       <Slab style={{ overflow: "visible" }}>
         <SeamGrid cols="1fr 1fr 1fr 1fr">
           <Stat
-            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Total Aset<InfoTip term="Aset">Semua yang kamu miliki dan bernilai: kas, kripto, saham, properti, piutang, nilai bisnis.</InfoTip></span>}
+            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Total Aset<MetricInfo termId="aset" /></span>}
             value={money(calc.assetIDR, hidden)}
             right={<IconBox Icon={Wallet} tint="var(--gain)" />}
           />
           <Stat
-            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Total Utang<InfoTip term="Liabilitas / Utang">Semua kewajiban yang harus dibayar: pinjaman, cicilan, tagihan tertunggak.</InfoTip></span>}
+            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Total Utang<MetricInfo termId="liabilitas" /></span>}
             value={money(calc.liabIDR, hidden)}
             right={<IconBox Icon={TrendingDown} tint="var(--loss)" />}
           />
           <Stat
-            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Aset Likuid<InfoTip term="Likuiditas">Aset yang cepat dicairkan jadi kas tanpa kehilangan nilai (kas, stablecoin). Penopang saat darurat.</InfoTip></span>}
+            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Aset Likuid<MetricInfo termId="likuiditas" /></span>}
             value={money(calc.liqIDR, hidden)}
             right={<IconBox Icon={Droplet} tint="var(--color-primary)" />}
           />
           <Stat
-            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Runway<InfoTip term="Runway">Berapa bulan kamu bisa bertahan tanpa income baru = aset likuid ÷ pengeluaran bulanan. Makin panjang makin aman.</InfoTip></span>}
+            label={<span style={{ display: "inline-flex", alignItems: "center" }}>Runway<MetricInfo termId="runway">Di sini: aset likuid ÷ pengeluaran bulanan{calc.finHasTx ? ` (transaksi ${monthLabel(currentMonth(), true)})` : " (ledger Keuangan)"}.</MetricInfo></span>}
             value={calc.runwayMonths != null ? (hidden ? "•• bln" : `${calc.runwayMonths.toFixed(1)} bln`) : "—"}
-            sub={calc.runwayMonths == null ? "isi pengeluaran di Keuangan" : "aset likuid ÷ biaya/bln"}
+            sub={calc.runwayMonths == null ? "catat pengeluaran di Keuangan" : "aset likuid ÷ biaya/bln"}
             right={<IconBox Icon={Timer} tint="var(--gold)" />}
           />
         </SeamGrid>
@@ -217,7 +229,7 @@ export function KekayaanPage({ data, update }: Props) {
         return (
           <Slab style={{ overflow: "visible" }}>
             <PanelHead
-              title={<span style={{ display: "inline-flex", alignItems: "center" }}>Tren Net Worth<InfoTip term="Pertumbuhan Kekayaan">Arah net worth dari waktu ke waktu. Yang penting bukan angka satu hari, tapi garisnya naik konsisten. Snapshot direkam otomatis tiap hari kamu buka halaman ini.</InfoTip></span>}
+              title={<span style={{ display: "inline-flex", alignItems: "center" }}>Tren Net Worth<MetricInfo termId="net-worth">Yang penting bukan angka satu hari, tapi garisnya naik konsisten. Snapshot direkam otomatis tiap hari kamu buka halaman ini.</MetricInfo></span>}
               right={
                 <span className="num" style={{ ...num, fontSize: 12, fontWeight: 700, color: up ? "var(--gain)" : "var(--loss)", background: up ? "var(--gain-soft)" : "var(--loss-soft)", padding: "3px 9px", borderRadius: 6 }}>
                   {up ? "▲" : "▼"} {hidden ? "••" : `${up ? "+" : "−"}${formatIDR(Math.abs(delta))}`} · {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
@@ -243,7 +255,7 @@ export function KekayaanPage({ data, update }: Props) {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderBottom: SEAM_LINE, gap: 8 }}>
               <span style={{ display: "inline-flex", alignItems: "center" }}>
                 <span style={label}>Aset</span>
-                <InfoTip term="Neraca (Balance Sheet)">Daftar aset & utang pada satu titik waktu. Dasar menghitung net worth.</InfoTip>
+                <MetricInfo termId="neraca" />
               </span>
               <button onClick={addAsset} style={addBtn("accent")}>
                 <Plus size={12} /> Tambah
@@ -317,7 +329,7 @@ export function KekayaanPage({ data, update }: Props) {
           <div style={{ background: "var(--glass-bg)", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", padding: "11px 14px", borderBottom: SEAM_LINE }}>
               <span style={label}>Alokasi Aset</span>
-              <InfoTip term="Alokasi Aset (Diversifikasi)">Sebaran kekayaan antar jenis aset. Terlalu terkonsentrasi di satu jenis = risiko tinggi. Diversifikasi menstabilkan.</InfoTip>
+              <MetricInfo termId="alokasi-aset" />
             </div>
             <div style={{ padding: "14px" }}>
               {hasAssets && allocRows.length ? (
@@ -347,7 +359,9 @@ export function KekayaanPage({ data, update }: Props) {
           <div style={{ background: "var(--glass-bg)", minWidth: 0 }}>
             <div style={{ display: "flex", alignItems: "center", padding: "11px 14px", borderBottom: SEAM_LINE }}>
               <span style={label}>Arus Kas Bulanan</span>
-              <InfoTip term="Arus Kas (Cash Flow)">Selisih uang masuk (income) dan keluar (pengeluaran) per bulan. Positif = menabung; negatif = "membakar" tabungan.</InfoTip>
+              <MetricInfo termId="arus-kas">
+                {calc.finHasTx ? `Dari transaksi ${monthLabel(currentMonth(), true)} di halaman Keuangan.` : "Dari ledger manual halaman Keuangan."}
+              </MetricInfo>
             </div>
             <div style={{ padding: "6px 14px 14px" }}>
               {calc.incomeIDR > 0 || calc.expenseIDR > 0 ? (
@@ -357,7 +371,7 @@ export function KekayaanPage({ data, update }: Props) {
                   <Field label="Net / bulan" value={money(calc.incomeIDR - calc.expenseIDR, hidden)} valueColor={calc.incomeIDR - calc.expenseIDR >= 0 ? "var(--gain)" : "var(--loss)"} />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10 }}>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--color-muted)", display: "flex", alignItems: "center" }}>
-                      Savings Rate<InfoTip term="Savings Rate">Persentase income yang berhasil ditabung: (income − pengeluaran) ÷ income. Target sehat umumnya ≥ 20%.</InfoTip>
+                      Savings Rate<MetricInfo termId="savings-rate" />
                     </span>
                     <span className="num" style={{ ...num, fontSize: 13, fontWeight: 600, color: calc.savingsRate != null && calc.savingsRate >= 0.2 ? "var(--gain)" : calc.savingsRate != null && calc.savingsRate >= 0 ? "var(--warning)" : "var(--loss)" }}>
                       {calc.savingsRate != null ? (hidden ? "••%" : `${(calc.savingsRate * 100).toFixed(0)}%`) : "—"}
@@ -365,7 +379,7 @@ export function KekayaanPage({ data, update }: Props) {
                   </div>
                 </>
               ) : (
-                <Empty text="Isi Income Log & Pengeluaran di halaman Keuangan — arus kas dihitung otomatis dari sana." />
+                <Empty text="Catat transaksi di halaman Keuangan — arus kas dihitung otomatis dari sana." />
               )}
             </div>
           </div>
