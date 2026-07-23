@@ -16,6 +16,7 @@ import {
   CatKey, catColor, CAT_KEYS, accountBalance, totalBalance, accountTxCount,
   fmtMoney, newId,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { MetricInfo } from "@/components/MetricInfo";
 import { Card, Label, Btn, Modal, Field, inputStyle, ColorSwatches, EmptyState } from "./ui";
 
@@ -35,6 +36,8 @@ interface Props {
   setFin: (fn: (f: FinanceData) => FinanceData) => void;
   accountFilter: string | null;
   setAccountFilter: (id: string | null) => void;
+  /** mobile: rail horizontal snap (kartu peek) alih-alih grid per tipe */
+  rail?: boolean;
 }
 
 interface Draft {
@@ -45,8 +48,9 @@ interface Draft {
   initialBalance: string;
 }
 
-export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter }: Props) {
+export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, rail }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const [draft, setDraft] = useState<Draft | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -171,14 +175,14 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter }
   };
 
   return (
-    <Card className="rise rise-3">
+    <Card className="rise rise-3" style={rail ? { padding: "16px 16px" } : undefined}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
         <Label>Kantong</Label>
-        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>di mana uang disimpan</span>
+        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>{t("acc.sub")}</span>
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", color: "var(--color-muted)" }}>
-            TOTAL SALDO
+            {t("acc.total")}
           </span>
           <span className="num" style={{ fontSize: 21, fontWeight: 700, color: "var(--color-text)" }}>
             {fmtMoney(total, cur)}
@@ -197,6 +201,37 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter }
           hint="Buat kantong pertama — misal BCA (Bank), GoPay (E-Wallet), Phantom (Crypto), atau dompet tunai."
           cta={<Btn onClick={openNew}><Plus size={14} /> Buat Kantong</Btn>}
         />
+      ) : rail ? (
+        /* ── Mobile: rail horizontal snap — kartu berikutnya selalu "peek"
+              (riset: konten carousel di luar layar diabaikan tanpa peek) ── */
+        <div
+          style={{
+            display: "flex", gap: 10, overflowX: "auto",
+            scrollSnapType: "x mandatory", scrollPaddingInline: 4,
+            WebkitOverflowScrolling: "touch", scrollbarWidth: "none",
+            margin: "0 -16px", padding: "0 16px 4px",
+          }}
+        >
+          {active.map((a) => (
+            <div key={a.id} style={{ flex: "0 0 auto", width: "clamp(150px, 44vw, 200px)", scrollSnapAlign: "start" }}>
+              <AccountCard a={a} />
+            </div>
+          ))}
+          <button
+            onClick={openNew}
+            aria-label="Tambah kantong"
+            style={{
+              flex: "0 0 auto", width: 96, scrollSnapAlign: "start",
+              borderRadius: 16, cursor: "pointer",
+              border: "1.5px dashed var(--color-border)", background: "transparent",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6,
+              color: "var(--color-muted)", fontSize: 11.5, fontWeight: 600, fontFamily: "var(--font-sans)",
+              WebkitTapHighlightColor: "transparent",
+            }}
+          >
+            <Plus size={17} /> Tambah
+          </button>
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {groups.map(({ type, accounts }) => {

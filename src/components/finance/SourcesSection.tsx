@@ -18,6 +18,7 @@ import {
   FinanceData, sourceBreakdown, monthlySeries, sourceDailySeries,
   fmtMoney, fmtCompact, monthLabel, catVarName, catColor,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { MetricInfo } from "@/components/MetricInfo";
 import { Card, Label, EmptyState, TooltipBox, TooltipRow, useCssVars, displayFace } from "./ui";
 
@@ -28,6 +29,7 @@ interface Props {
 
 export function SourcesSection({ fin, month }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const [view, setView] = useState<"stack" | "line">("stack");
 
   const slices = sourceBreakdown(fin, month);
@@ -94,7 +96,7 @@ export function SourcesSection({ fin, month }: Props) {
           <TooltipRow key={p.dataKey} color={colorOf(p.dataKey)} label={nameOf(p.dataKey)} value={fmtMoney(p.value, cur)} />
         ))}
         <div style={{ borderTop: "1px solid var(--tooltip-border)", marginTop: 5, paddingTop: 4 }}>
-          <TooltipRow label="Total Masuk" value={fmtMoney(total, cur)} bold />
+          <TooltipRow label={`Total ${t("masuk")}`} value={fmtMoney(total, cur)} bold />
         </div>
       </TooltipBox>
     );
@@ -108,7 +110,7 @@ export function SourcesSection({ fin, month }: Props) {
       <TooltipBox>
         <div style={{ fontWeight: 700, marginBottom: 4 }}>{d.day} {monthLabel(month)}</div>
         {d.net !== null ? (
-          <TooltipRow color={d.net >= 0 ? GAIN : LOSS} label={d.net >= 0 ? "Untung" : "Rugi"} value={fmtMoney(d.net, cur, true)} />
+          <TooltipRow color={d.net >= 0 ? GAIN : LOSS} label={d.net >= 0 ? t("src.untung") : t("src.rugi")} value={fmtMoney(d.net, cur, true)} />
         ) : (
           <TooltipRow label="Tidak ada transaksi" value="—" />
         )}
@@ -123,7 +125,7 @@ export function SourcesSection({ fin, month }: Props) {
     <Card className="rise rise-4">
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
         <Label>Pemasukan per sumber</Label>
-        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>dari mana uang datang · {monthLabel(month, true)}</span>
+        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>{t("src.sub")} · {monthLabel(month, true)}</span>
       </div>
 
       <div style={{ display: "flex", gap: 26, flexWrap: "wrap", marginTop: 14 }}>
@@ -133,7 +135,7 @@ export function SourcesSection({ fin, month }: Props) {
             {fmtMoney(totalMasuk, cur)}
           </div>
           <p style={{ fontSize: 11.5, color: "var(--color-muted)", margin: "3px 0 14px" }}>
-            total masuk bulan ini — breakdown per sumber:
+            {t("src.totalCaption")}
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {slices.map((s) => {
@@ -154,7 +156,7 @@ export function SourcesSection({ fin, month }: Props) {
                       </span>
                     </>
                   ) : (
-                    <span style={{ fontSize: 11.5, color: "var(--color-dim)", fontStyle: "italic" }}>belum ada</span>
+                    <span style={{ fontSize: 11.5, color: "var(--color-dim)", fontStyle: "italic" }}>{t("src.belumAda")}</span>
                   )}
                 </div>
               );
@@ -270,7 +272,7 @@ export function SourcesSection({ fin, month }: Props) {
                   {fmtMoney(tradingTotal, cur, true)}
                 </span>
                 <span style={{ fontSize: 11, color: "var(--color-muted)" }}>
-                  <span className="num">{winDays}</span> hari untung · <span className="num">{lossDays}</span> hari rugi
+                  <span className="num">{winDays}</span> {t("src.hariUntung")} · <span className="num">{lossDays}</span> {t("src.hariRugi")}
                 </span>
               </>
             )}
@@ -299,13 +301,13 @@ export function SourcesSection({ fin, month }: Props) {
               </ResponsiveContainer>
               <div style={{ display: "flex", gap: 13, flexWrap: "wrap", marginTop: 5, paddingLeft: 4 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--color-muted)" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--gain)" }} /> hari untung
+                  <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--gain)" }} /> {t("src.hariUntung")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--color-muted)" }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--loss)" }} /> hari rugi
+                  <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--loss)" }} /> {t("src.hariRugi")}
                 </span>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--color-muted)" }}>
-                  <span style={{ width: 13, height: 2, background: catColor(tradingSource.color), borderRadius: 1 }} /> kumulatif bulan
+                  <span style={{ width: 13, height: 2, background: catColor(tradingSource.color), borderRadius: 1 }} /> {t("src.kumulatif")}
                 </span>
               </div>
             </div>

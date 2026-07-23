@@ -1,16 +1,24 @@
-// ─── ZERØ COMMAND — KeuanganPage.tsx v2 "ATELIER" ─────────────────────────────
-// Sistem pencatatan keuangan penuh:
-//   Ringkasan bulanan (SURPLUS / BONCOS) → Quick-add → Kantong (per tipe:
-//   Bank / E-Wallet / Crypto / Cash) → Pemasukan per Sumber (Trading / Bisnis /
-//   Personal + chart gabungan + P&L harian trading) → Kategori → Tren bulanan →
-//   Riwayat transaksi (filter / edit / hapus+undo).
-// Seksi lama dipertahankan: Status, Goals, Notes tetap tampil; ledger manual
-// lama (income log + pengeluaran bulanan) pindah ke "Arsip Catatan Lama" —
-// datanya tidak dihapus dan tetap bisa diedit.
+// ─── ZERØ COMMAND — KeuanganPage.tsx v3 "ATELIER" ─────────────────────────────
+// Dua tata letak yang benar-benar berbeda (riset layout 2025-2026):
+//
+// DESKTOP — pola dominan finance web app (Monarch/Copilot/YNAB): kolom utama
+//   LEBAR (~2/3: hero + chart aliran + riwayat — konten time-series) +
+//   kolom samping SEMPIT yang STICKY (form entri selalu terlihat — "never a
+//   modal for routine entry" — dan daftar kantong/saldo tetap tampak saat
+//   riwayat panjang di-scroll). Span sengaja tidak seragam; tiap kolom
+//   mengalir independen (tanpa shared row heights).
+//
+// MOBILE — bukan desktop yang dipadatkan: SATU hero single-glance → rail
+//   kantong horizontal (kartu peek) → chart → riwayat, dan quick-add menjadi
+//   FAB ember di zona jempol yang membuka bottom sheet (Back menutup sheet).
+//
+// Seksi lama dipertahankan: Status, Goals, Notes; ledger manual lama di
+// "Arsip Catatan Lama" — data tidak dihapus dan tetap bisa diedit.
 
 import { useCallback, useState } from "react";
 import { AppData, IncomeEntry, ExpenseEntry } from "@/lib/store";
 import { FinanceData, currentMonth } from "@/lib/finance";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CheckList } from "@/components/CheckList";
 import { EditableText } from "@/components/EditableText";
 import { NotesList } from "@/components/NotesList";
@@ -18,6 +26,7 @@ import { Slab, PanelHead, Divider, Badge, PageTitle } from "@/components/termina
 import { Plus, Trash2 } from "lucide-react";
 import { SummaryHero } from "@/components/finance/SummaryHero";
 import { QuickAddCard } from "@/components/finance/QuickAddCard";
+import { QuickAddSheet } from "@/components/finance/QuickAddSheet";
 import { AccountsSection } from "@/components/finance/AccountsSection";
 import { SourcesSection } from "@/components/finance/SourcesSection";
 import { CategorySection } from "@/components/finance/CategorySection";
@@ -33,6 +42,7 @@ interface Props {
 export function KeuanganPage({ data, update }: Props) {
   const k = data.keuangan;
   const fin = k.finance;
+  const isMobile = useIsMobile();
 
   const [month, setMonth] = useState(currentMonth());
   const [manageOpen, setManageOpen] = useState(false);
@@ -72,6 +82,18 @@ export function KeuanganPage({ data, update }: Props) {
       keuangan: { ...d.keuangan, pengeluaran: d.keuangan.pengeluaran.map((e) => (e.id === id ? { ...e, ...patch } : e)) },
     }));
 
+  const transactions = (
+    <TransactionsSection
+      fin={fin}
+      setFin={setFin}
+      month={month}
+      accountFilter={accountFilter}
+      setAccountFilter={setAccountFilter}
+      categoryFilter={categoryFilter}
+      setCategoryFilter={setCategoryFilter}
+    />
+  );
+
   return (
     <div className="space-y-5">
       <PageTitle
@@ -80,21 +102,45 @@ export function KeuanganPage({ data, update }: Props) {
         right={<Badge tone="accent">TRACKER</Badge>}
       />
 
-      <SummaryHero fin={fin} month={month} setMonth={setMonth} onOpenManage={() => setManageOpen(true)} />
-      <QuickAddCard fin={fin} setFin={setFin} />
-      <AccountsSection fin={fin} setFin={setFin} accountFilter={accountFilter} setAccountFilter={setAccountFilter} />
-      <SourcesSection fin={fin} month={month} />
-      <CategorySection fin={fin} month={month} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
-      <TrendSection fin={fin} />
-      <TransactionsSection
-        fin={fin}
-        setFin={setFin}
-        month={month}
-        accountFilter={accountFilter}
-        setAccountFilter={setAccountFilter}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-      />
+      {isMobile ? (
+        /* ── MOBILE: single-glance scroll + FAB bottom sheet ── */
+        <>
+          <SummaryHero compact fin={fin} month={month} setMonth={setMonth} onOpenManage={() => setManageOpen(true)} />
+          <AccountsSection rail fin={fin} setFin={setFin} accountFilter={accountFilter} setAccountFilter={setAccountFilter} />
+          <SourcesSection fin={fin} month={month} />
+          <CategorySection fin={fin} month={month} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
+          <TrendSection fin={fin} />
+          {transactions}
+          <QuickAddSheet fin={fin} setFin={setFin} />
+        </>
+      ) : (
+        /* ── DESKTOP: kolom utama lebar + kolom samping sticky ── */
+        <div
+          className="keep-grid"
+          style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.85fr) minmax(0, 1fr)", gap: 18, alignItems: "start" }}
+        >
+          {/* Kolom utama — hero, chart aliran, riwayat */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
+            <SummaryHero fin={fin} month={month} setMonth={setMonth} onOpenManage={() => setManageOpen(true)} />
+            <SourcesSection fin={fin} month={month} />
+            <CategorySection fin={fin} month={month} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
+            <TrendSection fin={fin} />
+            {transactions}
+          </div>
+          {/* Kolom samping — sticky: entri cepat + posisi saldo selalu terlihat */}
+          <div
+            style={{
+              display: "flex", flexDirection: "column", gap: 18, minWidth: 0,
+              position: "sticky", top: 76,
+              maxHeight: "calc(100vh - 92px)", overflowY: "auto",
+              scrollbarWidth: "thin", paddingBottom: 2,
+            }}
+          >
+            <QuickAddCard fin={fin} setFin={setFin} />
+            <AccountsSection fin={fin} setFin={setFin} accountFilter={accountFilter} setAccountFilter={setAccountFilter} />
+          </div>
+        </div>
+      )}
 
       {manageOpen && <ManageModal fin={fin} setFin={setFin} onClose={() => setManageOpen(false)} />}
 

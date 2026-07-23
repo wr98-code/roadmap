@@ -8,6 +8,7 @@ import { ShoppingBag } from "lucide-react";
 import {
   FinanceData, categoryBreakdown, fmtMoney, monthLabel, catColor,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { MetricInfo } from "@/components/MetricInfo";
 import { Card, Label, EmptyState } from "./ui";
 
@@ -22,6 +23,7 @@ const MAX_ROWS = 7;
 
 export function CategorySection({ fin, month, categoryFilter, setCategoryFilter }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const slices = categoryBreakdown(fin, month);
   const total = slices.reduce((s, x) => s + x.total, 0);
 
@@ -108,8 +110,8 @@ export function CategorySection({ fin, month, categoryFilter, setCategoryFilter 
                 </div>
                 {s.limit && (
                   <p className="num" style={{ fontSize: 10.5, marginTop: 4, color: overLimit ? "var(--loss)" : "var(--color-muted)" }}>
-                    {Math.round((s.total / s.limit) * 100)}% dari limit {fmtMoney(s.limit, cur)}
-                    {overLimit && " — di atas limit"}
+                    {Math.round((s.total / s.limit) * 100)}% {t("cat.limit")} {fmtMoney(s.limit, cur)}
+                    {overLimit && ` ${t("cat.overLimit")}`}
                   </p>
                 )}
               </div>

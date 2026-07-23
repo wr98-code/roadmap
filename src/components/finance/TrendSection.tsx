@@ -13,6 +13,7 @@ import { CalendarRange } from "lucide-react";
 import {
   FinanceData, monthlySeries, currentMonth, fmtMoney, fmtCompact,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { Card, Label, EmptyState, TooltipBox, TooltipRow, useCssVars } from "./ui";
 
 interface Props {
@@ -21,6 +22,7 @@ interface Props {
 
 export function TrendSection({ fin }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const series = useMemo(() => monthlySeries(fin, 12), [fin]);
   const withData = series.filter((p) => p.hasData);
   const colors = useCssVars(["--gain", "--loss"]);
@@ -39,12 +41,12 @@ export function TrendSection({ fin }: Props) {
         </div>
         {p.hasData ? (
           <>
-            <TooltipRow color={GAIN} label="Masuk" value={fmtMoney(p.masuk, cur)} />
-            <TooltipRow color={LOSS} label="Keluar" value={fmtMoney(p.keluar, cur)} />
+            <TooltipRow color={GAIN} label={t("masuk")} value={fmtMoney(p.masuk, cur)} />
+            <TooltipRow color={LOSS} label={t("keluar")} value={fmtMoney(p.keluar, cur)} />
             <div style={{ borderTop: "1px solid var(--tooltip-border)", marginTop: 5, paddingTop: 4 }}>
               <TooltipRow
                 color={p.net >= 0 ? GAIN : LOSS}
-                label={p.net > 0 ? "Surplus" : p.net < 0 ? "Boncos" : "Impas"}
+                label={p.net > 0 ? "Surplus" : p.net < 0 ? t("trend.tooltipBoncos") : "Impas"}
                 value={fmtMoney(p.net, cur, true)}
                 bold
               />
@@ -63,7 +65,7 @@ export function TrendSection({ fin }: Props) {
     <Card className="rise rise-6">
       <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap", marginBottom: 8 }}>
         <Label>Tren bulanan</Label>
-        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>surplus vs boncos antar bulan</span>
+        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>{t("trend.sub")}</span>
       </div>
 
       {withData.length < 2 ? (
@@ -103,10 +105,10 @@ export function TrendSection({ fin }: Props) {
               <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--gain)" }} /> surplus
             </span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--color-muted)" }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--loss)" }} /> boncos
+              <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--loss)" }} /> {t("trend.legendBoncos")}
             </span>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--color-muted)" }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--gain)", opacity: 0.5 }} /> bulan berjalan (belum final)
+              <span style={{ width: 8, height: 8, borderRadius: 2.5, background: "var(--gain)", opacity: 0.5 }} /> {t("trend.berjalan")}
             </span>
           </div>
         </div>

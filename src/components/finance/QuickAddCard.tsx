@@ -16,12 +16,15 @@ import {
   todayStr, toDateStr, newId, categoriesByUsage, noteCategoryMemory,
   CAT_KEYS, catColor,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { TYPE_ICONS } from "./AccountsSection";
 import { Card, Label, Chip, Btn, inputStyle } from "./ui";
 
 interface Props {
   fin: FinanceData;
   setFin: (fn: (f: FinanceData) => FinanceData) => void;
+  /** tanpa Card wrapper — dipakai di dalam bottom sheet mobile */
+  bare?: boolean;
 }
 
 const TYPE_CFG: Record<TxType, { label: string; color: string; soft: string; Icon: typeof ArrowUpRight }> = {
@@ -30,8 +33,9 @@ const TYPE_CFG: Record<TxType, { label: string; color: string; soft: string; Ico
   transfer: { label: "Transfer", color: "var(--color-primary)", soft: "var(--ember-soft)", Icon: ArrowLeftRight },
 };
 
-export function QuickAddCard({ fin, setFin }: Props) {
+export function QuickAddCard({ fin, setFin, bare }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const activeAccounts = fin.accounts.filter((a) => !a.archived);
   const amountRef = useRef<HTMLInputElement>(null);
 
@@ -171,10 +175,17 @@ export function QuickAddCard({ fin, setFin }: Props) {
   };
 
   return (
-    <Card className="rise rise-2">
+    <Card
+      className={bare ? "" : "rise rise-2"}
+      style={bare ? { background: "transparent", border: "none", boxShadow: "none", padding: 0, borderRadius: 0 } : undefined}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 15, flexWrap: "wrap" }}>
-        <Label>Catat transaksi</Label>
-        <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>harian · cepat · Enter untuk simpan</span>
+        {!bare && (
+          <>
+            <Label>{t("qa.title")}</Label>
+            <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>{t("qa.sub")}</span>
+          </>
+        )}
         <div style={{ flex: 1 }} />
         {/* segmented type */}
         <div style={{ display: "flex", gap: 4, background: "var(--color-surface)", borderRadius: 999, padding: 4 }}>
@@ -242,7 +253,7 @@ export function QuickAddCard({ fin, setFin }: Props) {
             onChange={(e) => onNoteChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             list="zc-note-suggestions"
-            placeholder={type === "keluar" ? "Catatan — beli apa? (opsional)" : type === "masuk" ? "Catatan (opsional)" : "Catatan transfer (opsional)"}
+            placeholder={type === "keluar" ? t("qa.noteKeluar") : type === "masuk" ? "Catatan (opsional)" : "Catatan transfer (opsional)"}
             style={{ ...inputStyle, marginTop: 10 }}
           />
           <datalist id="zc-note-suggestions">
@@ -269,7 +280,7 @@ export function QuickAddCard({ fin, setFin }: Props) {
           {/* kantong asal/tujuan */}
           <div>
             <Label style={{ fontSize: 10 }}>
-              {type === "masuk" ? "Masuk ke kantong" : "Dari kantong"}
+              {type === "masuk" ? t("qa.masukKeKantong") : t("qa.dariKantong")}
             </Label>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
               {activeAccounts.map((a) => accountChip(a, accountId === a.id, () => setAccountId(a.id)))}
@@ -278,7 +289,7 @@ export function QuickAddCard({ fin, setFin }: Props) {
 
           {type === "transfer" && (
             <div>
-              <Label style={{ fontSize: 10 }}>Ke kantong</Label>
+              <Label style={{ fontSize: 10 }}>{t("qa.keKantong")}</Label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
                 {activeAccounts.filter((a) => a.id !== accountId).map((a) => accountChip(a, toAccountId === a.id, () => setToAccountId(a.id)))}
                 {activeAccounts.length < 2 && (
@@ -306,7 +317,7 @@ export function QuickAddCard({ fin, setFin }: Props) {
 
           {type === "masuk" && (
             <div>
-              <Label style={{ fontSize: 10, color: "var(--gain)" }}>Sumber — wajib, jangan tercampur</Label>
+              <Label style={{ fontSize: 10, color: "var(--gain)" }}>{t("qa.sumberLabel")}</Label>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
                 {fin.sources.map((s) => (
                   <Chip key={s.id} active={sourceId === s.id} color={catColor(s.color)} onClick={() => setSourceId(s.id)}>

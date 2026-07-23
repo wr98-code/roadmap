@@ -10,6 +10,7 @@ import {
   FinanceData, FinanceTransaction, TxType, parseAmountInput, fmtMoney,
   monthLabel, monthOf, todayStr, catColor,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { Card, Label, Chip, Btn, Modal, Field, inputStyle, EmptyState } from "./ui";
 
 interface Props {
@@ -33,6 +34,7 @@ export function TransactionsSection({
   fin, setFin, month, accountFilter, setAccountFilter, categoryFilter, setCategoryFilter,
 }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const [typeFilter, setTypeFilter] = useState<TxType | null>(null);
   const [allMonths, setAllMonths] = useState(false);
   const [limit, setLimit] = useState(PAGE);
@@ -116,8 +118,8 @@ export function TransactionsSection({
           <Chip small active={!allMonths} onClick={() => setAllMonths(false)}>{monthLabel(month)}</Chip>
           <Chip small active={allMonths} onClick={() => setAllMonths(true)}>Semua bulan</Chip>
           <span style={{ width: 1, alignSelf: "stretch", background: "var(--color-border)", margin: "0 4px" }} />
-          <Chip small active={typeFilter === "keluar"} color="var(--loss)" onClick={() => setTypeFilter(typeFilter === "keluar" ? null : "keluar")}>Keluar</Chip>
-          <Chip small active={typeFilter === "masuk"} color="var(--gain)" onClick={() => setTypeFilter(typeFilter === "masuk" ? null : "masuk")}>Masuk</Chip>
+          <Chip small active={typeFilter === "keluar"} color="var(--loss)" onClick={() => setTypeFilter(typeFilter === "keluar" ? null : "keluar")}>{t("keluar")}</Chip>
+          <Chip small active={typeFilter === "masuk"} color="var(--gain)" onClick={() => setTypeFilter(typeFilter === "masuk" ? null : "masuk")}>{t("masuk")}</Chip>
           <Chip small active={typeFilter === "transfer"} color="var(--color-primary)" onClick={() => setTypeFilter(typeFilter === "transfer" ? null : "transfer")}>Transfer</Chip>
         </div>
       </div>

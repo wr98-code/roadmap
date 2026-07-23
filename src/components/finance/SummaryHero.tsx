@@ -1,14 +1,17 @@
 // ─── ZERØ COMMAND — finance/SummaryHero.tsx ───────────────────────────────────
-// Ringkasan bulanan: satu angka net dominan (SURPLUS sage / BONCOS terracotta),
+// Ringkasan bulanan: SATU angka net dominan (SURPLUS sage / BONCOS terracotta),
 // tanda dikodekan rangkap (warna + tanda +/− + kata verdict — aman grayscale),
-// pasangan bar masuk vs keluar untuk pembacaan spasial, savings rate, runway.
-// Angka hero memakai Fraunces (display face) — bahasa Atelier.
+// pasangan bar masuk vs keluar untuk pembacaan spasial, savings rate, runway,
+// plus satu kalimat insight naratif (tren "post-dashboard" 2026 — dihitung
+// jujur dari data, disembunyikan bila data belum cukup).
+// compact = mode mobile single-glance. Semua teks lewat register bahasa (useT).
 
 import { ChevronLeft, ChevronRight, ArrowUpRight, ArrowDownRight, Settings2, Scale } from "lucide-react";
 import {
   FinanceData, monthTotals, monthLabel, shiftMonth, currentMonth,
   fmtMoney, runwayMonths, daysInMonth, todayStr,
 } from "@/lib/finance";
+import { useT } from "@/lib/lang";
 import { MetricInfo } from "@/components/MetricInfo";
 import { Card, Label, displayFace } from "./ui";
 
@@ -17,16 +20,45 @@ interface Props {
   month: string;
   setMonth: (m: string) => void;
   onOpenManage: () => void;
+  /** mobile: padding rapat, hero single-glance */
+  compact?: boolean;
 }
 
-export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
+/**
+ * Insight naratif jujur: laju pengeluaran harian bulan berjalan vs rata-rata
+ * harian bulan-bulan penuh sebelumnya (maks 3 yang punya pengeluaran).
+ * null bila data pembanding belum ada — tidak mengarang.
+ */
+function spendingPaceInsight(fin: FinanceData, month: string): { pct: number; below: boolean } | null {
+  if (month !== currentMonth()) return null;
+  const dayNow = Number(todayStr().slice(8, 10));
+  if (dayNow < 3) return null; // terlalu dini untuk laju yang bermakna
+  const { keluar } = monthTotals(fin, month);
+  const dailyNow = keluar / dayNow;
+  const prevDaily: number[] = [];
+  for (let i = 1; i <= 6 && prevDaily.length < 3; i++) {
+    const m = shiftMonth(month, -i);
+    const t = monthTotals(fin, m);
+    if (t.keluar > 0) prevDaily.push(t.keluar / daysInMonth(m));
+  }
+  if (!prevDaily.length) return null;
+  const avg = prevDaily.reduce((a, b) => a + b, 0) / prevDaily.length;
+  if (avg <= 0) return null;
+  const pct = Math.round(Math.abs(dailyNow / avg - 1) * 100);
+  if (pct < 5) return null; // beda tipis = tidak layak jadi "insight"
+  return { pct, below: dailyNow < avg };
+}
+
+export function SummaryHero({ fin, month, setMonth, onOpenManage, compact }: Props) {
   const cur = fin.currency;
+  const t = useT();
   const { masuk, keluar, net, txCount } = monthTotals(fin, month);
   const isCurrent = month === currentMonth();
   const hasData = txCount > 0;
   const runway = runwayMonths(fin);
+  const insight = spendingPaceInsight(fin, month);
 
-  const verdict = !hasData ? null : net > 0 ? "SURPLUS" : net < 0 ? "BONCOS" : "IMPAS";
+  const verdict = !hasData ? null : net > 0 ? t("verdict.surplus") : net < 0 ? t("verdict.boncos") : t("verdict.impas");
   const verdictColor = net > 0 ? "var(--gain)" : net < 0 ? "var(--loss)" : "var(--color-muted)";
   const verdictBg = net > 0 ? "var(--gain-soft)" : net < 0 ? "var(--loss-soft)" : "var(--color-surface)";
 
@@ -52,11 +84,11 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
   );
 
   return (
-    <Card className="rise rise-1">
+    <Card className="rise rise-1" style={compact ? { padding: "16px 16px" } : undefined}>
       {/* Header: label + navigasi bulan + kelola */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
         <Label>Ringkasan bulanan</Label>
-        {isCurrent && (
+        {isCurrent && !compact && (
           <span style={{
             fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em",
             padding: "3px 10px", borderRadius: 999,
@@ -68,13 +100,14 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
         <div style={{ flex: 1 }} />
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {navBtn(-1, false)}
-          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", minWidth: 96, textAlign: "center" }}>
-            {monthLabel(month, true)}
+          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", minWidth: compact ? 78 : 96, textAlign: "center" }}>
+            {monthLabel(month, !compact)}
           </span>
           {navBtn(1, month >= currentMonth())}
           <button
             onClick={onOpenManage}
             title="Kelola sumber, kategori & preferensi"
+            aria-label="Kelola"
             style={{
               display: "flex", alignItems: "center", gap: 6, padding: "7px 13px", borderRadius: 11,
               background: "var(--color-surface)", border: "1px solid var(--color-border)",
@@ -82,7 +115,7 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
               fontFamily: "var(--font-sans)",
             }}
           >
-            <Settings2 size={13} /> Kelola
+            <Settings2 size={13} /> {!compact && "Kelola"}
           </button>
         </div>
       </div>
@@ -90,16 +123,15 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
       {!hasData ? (
         <div style={{ padding: "26px 0 8px" }}>
           <p style={{ ...displayFace, fontSize: 23, fontWeight: 500, color: "var(--color-text)", margin: 0 }}>
-            Belum ada transaksi di {monthLabel(month, true)}.
+            {t("hero.empty.title")} {monthLabel(month, true)}.
           </p>
           <p style={{ fontSize: 13, color: "var(--color-muted)", marginTop: 8, maxWidth: 480, lineHeight: 1.6 }}>
-            Catat pemasukan atau pengeluaran pertama lewat form di bawah — ringkasan
-            surplus vs boncos tersusun otomatis dari catatanmu sendiri, tidak pernah dikarang.
+            {t("hero.empty.hint")}
           </p>
         </div>
       ) : (
-        <div style={{ display: "flex", gap: 30, flexWrap: "wrap", alignItems: "flex-end", marginTop: 18 }}>
-          {/* Hero number — Fraunces, boleh cantik */}
+        <div style={{ display: "flex", gap: compact ? 16 : 30, flexWrap: "wrap", alignItems: "flex-end", marginTop: compact ? 12 : 18 }}>
+          {/* Hero number — SATU angka dominan (Fraunces, boleh cantik) */}
           <div style={{ minWidth: 240, flex: "1.2 1 260px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <span style={{
@@ -114,7 +146,7 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
               <MetricInfo termId="surplus-defisit" />
               {savingsRate !== null && net > 0 && (
                 <span style={{ fontSize: 12, color: "var(--color-muted)", display: "inline-flex", alignItems: "center" }}>
-                  <span className="num">{savingsRate}%</span>&nbsp;tersimpan
+                  <span className="num">{savingsRate}%</span>&nbsp;{t("hero.tersimpan")}
                   <MetricInfo termId="savings-rate" />
                 </span>
               )}
@@ -123,25 +155,31 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
               className="num"
               style={{
                 ...displayFace,
-                fontSize: "clamp(34px, 5.4vw, 52px)",
+                fontSize: compact ? "clamp(32px, 10vw, 42px)" : "clamp(34px, 5.4vw, 52px)",
                 fontWeight: 600,
                 color: verdictColor,
                 marginTop: 10,
               }}
-              title={`Masuk ${fmtMoney(masuk, cur)} − Keluar ${fmtMoney(keluar, cur)}`}
+              title={`${t("masuk")} ${fmtMoney(masuk, cur)} − ${t("keluar")} ${fmtMoney(keluar, cur)}`}
             >
               {fmtMoney(net, cur, true)}
             </div>
             <p style={{ fontSize: 12.5, color: "var(--color-muted)", marginTop: 6 }}>
-              Total Masuk − Total Keluar · {monthLabel(month, true)}{isCurrent && " (berjalan)"}
+              {t("hero.caption")} · {monthLabel(month, true)}{isCurrent && ` ${t("hero.berjalan")}`}
             </p>
+            {/* insight naratif — hanya bila pembanding nyata ada */}
+            {insight && (
+              <p style={{ fontSize: 12.5, color: insight.below ? "var(--gain)" : "var(--warning)", marginTop: 7, fontWeight: 600, lineHeight: 1.5 }}>
+                Laju {t("keluar").toLowerCase()} bulan ini <span className="num">{insight.pct}%</span> di {insight.below ? "bawah" : "atas"} rata-rata bulan sebelumnya.
+              </p>
+            )}
           </div>
 
           {/* Pasangan bar masuk vs keluar */}
-          <div style={{ flex: "1 1 300px", minWidth: 260, display: "flex", flexDirection: "column", gap: 14, paddingBottom: 6 }}>
+          <div style={{ flex: "1 1 260px", minWidth: 240, display: "flex", flexDirection: "column", gap: compact ? 10 : 14, paddingBottom: 6 }}>
             {([
-              { label: "Masuk", val: masuk, color: "var(--gain)", Icon: ArrowUpRight },
-              { label: "Keluar", val: keluar, color: "var(--loss)", Icon: ArrowDownRight },
+              { label: t("masuk"), val: masuk, color: "var(--gain)", Icon: ArrowUpRight },
+              { label: t("keluar"), val: keluar, color: "var(--loss)", Icon: ArrowDownRight },
             ] as const).map(({ label, val, color, Icon }) => (
               <div key={label}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
@@ -177,7 +215,7 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
               <span style={{ fontSize: 11.5, color: "var(--color-muted)" }}>
                 <span className="num">{txCount}</span> transaksi
               </span>
-              {monthProgress !== null && (
+              {monthProgress !== null && !compact && (
                 <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>| = posisi hari ini</span>
               )}
               {runway !== null && (
@@ -189,10 +227,7 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage }: Props) {
                   }}
                 >
                   RUNWAY ≈ <span className="num">&nbsp;{runway >= 24 ? "24+" : runway.toFixed(1).replace(".", ",")}</span>&nbsp;BULAN
-                  <MetricInfo termId="runway">
-                    Di sini: total saldo semua kantong ÷ rata-rata pengeluaran bulanan
-                    (maks 3 bulan penuh terakhir yang tercatat).
-                  </MetricInfo>
+                  <MetricInfo termId="runway">{t("runway.caption")}</MetricInfo>
                 </span>
               )}
             </div>
