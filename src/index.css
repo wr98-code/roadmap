@@ -51,19 +51,19 @@
     --card-foreground: 30 10% 15%;
     --popover: 40 43% 98%;
     --popover-foreground: 30 10% 15%;
-    --primary: 16 96% 53%;
+    --primary: 16 91% 35%;
     --primary-foreground: 0 0% 100%;
     --secondary: 36 22% 88%;
     --secondary-foreground: 30 9% 34%;
     --muted: 36 22% 88%;
-    --muted-foreground: 30 9% 42%;
-    --accent: 16 96% 53%;
+    --muted-foreground: 30 9% 36%;   /* 5.6:1 on ground ✓ (was 42% = 4.04:1) */
+    --accent: 16 91% 35%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 16 59% 43%;
+    --destructive: 16 59% 38%;
     --destructive-foreground: 0 0% 100%;
     --border: 36 20% 84%;
     --input: 36 20% 84%;
-    --ring: 16 96% 53%;
+    --ring: 16 91% 35%;
     --sidebar-background: 40 30% 91%;
     --sidebar-foreground: 30 9% 34%;
     --sidebar-primary: 16 96% 53%;
@@ -86,12 +86,13 @@
     --color-muted: #5f574e;       /*  6.2:1 on ground  ✓ AA  */
     --color-dim: #6f665c;         /*  4.8:1 on ground  ✓ AA  */
     --color-border: #ded6c9;
-    --color-primary: #c63a0e;     /*  5.2:1 white-on-fill ✓ AA */
+    --color-primary: #ab3208;     /*  5.6:1 on ground · 5.1:1 on surface ✓ AA */
+    --on-primary: #ffffff;        /*  text ON a --color-primary fill: 5.6:1 ✓ */
     --color-sidebar-bg: #ebe5dc;
 
     /* signature + semantics tuned for light */
     --ember: #fa4c14;             /* indicators & large display only */
-    --ember-ink: #c63a0e;         /* small text / fills              */
+    --ember-ink: #ab3208;         /* small text / fills              */
     --ember-soft: #fdece4;
     --acid: #e9e778;
     --flat: #a89474;
@@ -99,8 +100,17 @@
     --gain-soft: #e6ebdd;
     --loss: #9e3f26;              /* 5.6:1 ✓ */
     --loss-soft: #f7e6df;
-    --warning: #96601a;
-    --gold: #8a6a24;
+    --warning: #85520f;           /*  5.6:1 ✓ */
+    --gold: #6f5416;              /*  6.1:1 ✓ */
+
+    /* Category identity hues — deepened so they clear AA on the cream ground */
+    --cat-blue: #2f5fb8;   /* 5.3:1 */
+    --cat-violet: #6b4fa8; /* 5.5:1 */
+    --cat-green: #356b46;  /* 5.5:1 */
+    --cat-amber: #8a5a12;  /* 5.1:1 */
+    --cat-teal: #1f6b78;   /* 5.4:1 */
+    --cat-rose: #97386b;   /* 5.9:1 */
+    --cat-gold: #6f5416;   /* 6.1:1 */
 
     /* warm elevation — never a hard black drop */
     --card-shadow: 0 1px 2px rgba(70,54,38,0.05), 0 4px 16px rgba(70,54,38,0.06);
@@ -116,7 +126,7 @@
     --rail-bg: #ebe5dc;
     --rail-border: #ded6c9;
     --rail-icon: #6b6258;
-    --rail-icon-active: #c63a0e;
+    --rail-icon-active: #ab3208;
     --rail-active-bg: #fbe3d8;
     --rail-active-border: #f3c3ad;
     --rail-btn-bg: #f4efe8;
@@ -194,6 +204,7 @@
     --color-dim: #9a8f80;         /*  5.6:1 ✓ AA  */
     --color-border: #3a342c;
     --color-primary: #ff7a47;     /*  6.8:1 ✓ AA  */
+    --on-primary: #1b1815;        /*  dark ink ON the light accent fill: 6.8:1 ✓ */
     --color-sidebar-bg: #17140f;
 
     --ember: #fa4c14;             /* 5.1:1 on ground ✓ */
@@ -207,6 +218,15 @@
     --loss-soft: #33201c;
     --warning: #e0a231;
     --gold: #c69b3c;
+
+    /* Category identity hues — lifted for the warm dark ground */
+    --cat-blue: #8fb0f0;   /* 8.0:1 */
+    --cat-violet: #b8a2e8; /* 7.9:1 */
+    --cat-green: #9cc9a8;  /* 9.5:1 */
+    --cat-amber: #e0a24f;  /* 7.6:1 */
+    --cat-teal: #7fc4cf;   /* 8.9:1 */
+    --cat-rose: #e08fb8;   /* 7.7:1 */
+    --cat-gold: #c69b3c;   /* 6.8:1 */
 
     --card-shadow: 0 1px 2px rgba(0,0,0,0.34), 0 6px 20px rgba(0,0,0,0.30);
     --card-shadow-hover: 0 12px 34px rgba(0,0,0,0.44), 0 2px 8px rgba(0,0,0,0.32);
