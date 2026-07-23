@@ -1,14 +1,17 @@
-// ─── ZERØ COMMAND — DashboardPage.tsx v9.0 "Terminal Slab" ───────────────────
-// Structural redesign: from floating-bento to an institutional terminal —
-// full-bleed paneled grid, hairline seams (no radius/shadow/glow/gaps), one
-// dominant hero + a stacked readout spine, dense triad, module function bar,
-// and a footer status line. All live data, features & wiring preserved.
+// ─── ZERØ COMMAND — DashboardPage.tsx v10 "ATELIER" ──────────────────────────
+// Post-dashboard, narrative Home. Opens with a human line, then one big
+// beautiful number, then the day's intent — generous, asymmetric, warm.
+// Not a widget grid, not a terminal. See DESIGN_DIRECTION.md.
+// Every live feed, feature, handler and data binding is preserved.
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AppData } from "@/lib/store";
 import { EditableText } from "@/components/EditableText";
 import { getSimplePrice } from "@/lib/prices";
-import { Zap, TrendingUp, Globe, Calendar, DollarSign, User, ArrowUpRight, ArrowDownRight, RefreshCw } from "lucide-react";
+import {
+  Zap, TrendingUp, Globe, Calendar, DollarSign, User,
+  ArrowUpRight, ArrowDownRight, Eye, EyeOff, Check,
+} from "lucide-react";
 
 interface Props {
   data: AppData;
@@ -16,11 +19,25 @@ interface Props {
   onNavigate: (section: string) => void;
 }
 
-const SEAM = "var(--color-border)";
-const LBL: React.CSSProperties = { fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.14em", color: "var(--color-muted)", textTransform: "uppercase" };
-const PANEL: React.CSSProperties = { padding: "14px 16px", display: "flex", flexDirection: "column", gap: 11, height: "100%", background: "var(--glass-bg)", minWidth: 0 };
+/* ── shared atoms ───────────────────────────────────────────────────────── */
+const card: React.CSSProperties = {
+  background: "var(--glass-bg)",
+  border: "1px solid var(--glass-border)",
+  borderRadius: 22,
+  boxShadow: "var(--card-shadow), var(--card-inset)",
+  padding: "22px 24px",
+  minWidth: 0,
+};
+const eyebrow: React.CSSProperties = {
+  fontFamily: "var(--font-sans)", fontSize: 11, fontWeight: 600,
+  letterSpacing: "0.13em", textTransform: "uppercase", color: "var(--color-muted)",
+};
+const displayFace: React.CSSProperties = {
+  fontFamily: "var(--font-display)", fontOpticalSizing: "auto",
+  fontVariationSettings: "'SOFT' 32, 'WONK' 1", letterSpacing: "-0.03em", lineHeight: 1.02,
+};
 
-// ── Kinetic count-up hook ───────────────────────────────────────────────────
+/* ── kinetic count-up (unchanged behaviour) ─────────────────────────────── */
 function useCountUp(target: number, duration = 1400) {
   const [display, setDisplay] = useState(0);
   const raf = useRef<number>(0);
@@ -43,28 +60,28 @@ function useCountUp(target: number, duration = 1400) {
   return display;
 }
 
-// ── Mini sparkline SVG ──────────────────────────────────────────────────────
-function Sparkline({ values, color, width = 120, height = 34 }: { values: number[]; color: string; width?: number; height?: number }) {
-  if (!values.length) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const pts = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * width;
-    const y = height - ((v - min) / range) * (height - 4) - 2;
-    return `${x},${y}`;
-  }).join(" ");
-  const last = values[values.length - 1];
-  const lastY = height - ((last - min) / range) * (height - 4) - 2;
+/* ── soft area sparkline ────────────────────────────────────────────────── */
+function Spark({ values, tone }: { values: number[]; tone: string }) {
+  if (values.length < 2) return null;
+  const W = 100, H = 32;
+  const min = Math.min(...values), max = Math.max(...values), range = max - min || 1;
+  const pts = values.map((v, i) => [(i / (values.length - 1)) * W, H - ((v - min) / range) * (H - 5) - 2.5] as const);
+  const line = pts.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
   return (
-    <svg width={width} height={height} style={{ overflow: "visible" }}>
-      <polyline points={pts} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={width} cy={lastY} r="2.5" fill={color} />
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: "100%", height: 46, display: "block", overflow: "visible" }}>
+      <defs>
+        <linearGradient id="sp-g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={tone} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={tone} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,${H} ${line} ${W},${H}`} fill="url(#sp-g)" />
+      <polyline points={line} fill="none" stroke={tone} strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );
 }
 
-// ── Vision slides ───────────────────────────────────────────────────────────
+/* ── vision slides (unchanged data) ─────────────────────────────────────── */
 const SLIDES = [
   { photo: "photo-1486406146926-c627a92ad1ab", tag: "Vision",     quote: "Financial freedom is built in the hours others waste." },
   { photo: "photo-1568992687947-868a62a9f521", tag: "Excellence", quote: "Precision is the language of the elite." },
@@ -73,370 +90,392 @@ const SLIDES = [
   { photo: "photo-1497366216548-37526070297c", tag: "Clarity",    quote: "Clarity is the most underrated form of wealth." },
 ];
 
-// ── Module config (dense function bar) ───────────────────────────────────────
 const MODULES = [
-  { key: "build-lab", label: "Build Lab",  sub: "Projects & sprints",  Icon: Zap,        color: "#c9a96a" },
-  { key: "trading",   label: "Trading",    sub: "Signals & plan",      Icon: TrendingUp, color: "#5b8def" },
-  { key: "crypto",    label: "Crypto",     sub: "Portfolio & chain",   Icon: Globe,      color: "#d99a4e" },
-  { key: "roadmap",   label: "Roadmap",    sub: "Milestones",          Icon: Calendar,   color: "#9a86d4" },
-  { key: "keuangan",  label: "Keuangan",   sub: "Cash flow",           Icon: DollarSign, color: "#45c07f" },
-  { key: "personal",  label: "Personal",   sub: "Mindset & habits",    Icon: User,       color: "#cf7ba6" },
+  { key: "wealth",    label: "Wealth",    sub: "Neraca & runway",      Icon: DollarSign },
+  { key: "build-lab", label: "Build Lab", sub: "Proyek & sprint",      Icon: Zap },
+  { key: "trading",   label: "Trading",   sub: "Sinyal & game plan",   Icon: TrendingUp },
+  { key: "crypto",    label: "Crypto",    sub: "Portfolio & on-chain", Icon: Globe },
+  { key: "roadmap",   label: "Roadmap",   sub: "Milestone & goals",    Icon: Calendar },
+  { key: "personal",  label: "Personal",  sub: "Mindset & habits",     Icon: User },
 ];
 
-function statusStyle(s: string) {
-  if (s.includes("AKTIF"))    return { dot: "var(--gain)", bg: "var(--gain-soft)",  text: "var(--gain)" };
-  if (s.includes("✅"))       return { dot: "#5b8def",     bg: "rgba(91,141,239,0.12)", text: "#5b8def" };
-  if (s.includes("CRITICAL")) return { dot: "var(--loss)", bg: "var(--loss-soft)",  text: "var(--loss)" };
-  return                             { dot: "var(--color-muted)", bg: "var(--color-surface)", text: "var(--color-muted)" };
+function statusTone(s: string) {
+  if (s.includes("AKTIF")) return { c: "var(--gain)", bg: "var(--gain-soft)" };
+  if (s.includes("✅")) return { c: "var(--color-primary)", bg: "var(--ember-soft)" };
+  if (s.includes("CRITICAL")) return { c: "var(--loss)", bg: "var(--loss-soft)" };
+  return { c: "var(--color-muted)", bg: "var(--color-surface)" };
 }
 
-// ── ZONE 1: Ticker strip (flat, full-width) ──────────────────────────────────
-function TickerStrip() {
-  const [prices, setPrices] = useState<{ btc: string; eth: string; sol: string; btcUp: boolean; ethUp: boolean; solUp: boolean; btcC: string; ethC: string; solC: string } | null>(null);
-  const [ts, setTs] = useState("");
-  useEffect(() => {
-    const load = () => {
-      getSimplePrice(["bitcoin", "ethereum", "solana"]).then(d => {
-        if (!d.bitcoin && !d.ethereum && !d.solana) return;
-        const fmt = (n: number) => n >= 1000 ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : n.toFixed(2);
-        setPrices(prev => ({
-          btc: d.bitcoin ? fmt(d.bitcoin.usd) : prev?.btc ?? "—", btcUp: (d.bitcoin?.usd_24h_change ?? 0) >= 0, btcC: Math.abs(d.bitcoin?.usd_24h_change ?? 0).toFixed(2),
-          eth: d.ethereum ? fmt(d.ethereum.usd) : prev?.eth ?? "—", ethUp: (d.ethereum?.usd_24h_change ?? 0) >= 0, ethC: Math.abs(d.ethereum?.usd_24h_change ?? 0).toFixed(2),
-          sol: d.solana ? fmt(d.solana.usd) : prev?.sol ?? "—", solUp: (d.solana?.usd_24h_change ?? 0) >= 0, solC: Math.abs(d.solana?.usd_24h_change ?? 0).toFixed(2),
-        }));
-        setTs(new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }));
-      });
-    };
-    load();
-    const id = setInterval(load, 60000);
-    return () => clearInterval(id);
-  }, []);
-  const coins = prices ? [
-    { sym: "BTC", price: prices.btc, up: prices.btcUp, change: prices.btcC },
-    { sym: "ETH", price: prices.eth, up: prices.ethUp, change: prices.ethC },
-    { sym: "SOL", price: prices.sol, up: prices.solUp, change: prices.solC },
-  ] : [];
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 11) return "Selamat pagi";
+  if (h < 15) return "Selamat siang";
+  if (h < 19) return "Selamat sore";
+  return "Selamat malam";
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   OPENING — the human line. Not a widget.
+   ══════════════════════════════════════════════════════════════════════════ */
+function Opening() {
+  const now = new Date();
+  const date = now.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" });
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 0, height: 38, background: "var(--glass-bg)" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 16px", borderRight: `1px solid ${SEAM}`, height: "100%" }}>
-        <div style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--gain)", boxShadow: "0 0 6px var(--gain)", animation: "zpulse 2s infinite" }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.14em" }}>LIVE</span>
-      </div>
-      {prices ? coins.map((c) => (
-        <div key={c.sym} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "0 16px", borderRight: `1px solid ${SEAM}`, height: "100%", alignSelf: "center", lineHeight: "38px" }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.1em" }}>{c.sym}</span>
-          <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 13, fontWeight: 700, color: "var(--color-text)" }}>${c.price}</span>
-          <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: c.up ? "var(--gain)" : "var(--loss)" }}>{c.up ? "↑" : "↓"}{c.change}%</span>
-        </div>
-      )) : <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted)", padding: "0 16px" }}>Fetching prices…</span>}
-      {ts && <span className="num" style={{ marginLeft: "auto", fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", padding: "0 16px" }}>{ts}</span>}
-      <style>{`@keyframes zpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.85)}}`}</style>
-    </div>
+    <header className="rise rise-1" style={{ padding: "4px 2px 2px" }}>
+      <p style={{ ...eyebrow, marginBottom: 10 }}>{date}</p>
+      <h1 style={{ ...displayFace, fontSize: "clamp(30px, 4.6vw, 50px)", fontWeight: 600, color: "var(--color-text)", margin: 0 }}>
+        {greeting()}, Windu.
+      </h1>
+    </header>
   );
 }
 
-// ── ZONE 2a: BTC hero (dominant, flat) ───────────────────────────────────────
-function BtcHero({ onNavigate }: { onNavigate: (k: string) => void }) {
+/* ══════════════════════════════════════════════════════════════════════════
+   MARKET PULSE — the one big beautiful number (BTC), + ETH/SOL rail.
+   Live: getSimplePrice, alternative.me F&G, CoinGecko 7d chart.
+   ══════════════════════════════════════════════════════════════════════════ */
+function MarketPulse({ onNavigate }: { onNavigate: (k: string) => void }) {
   const [price, setPrice] = useState<number | null>(null);
   const [change, setChange] = useState(0);
   const [fg, setFg] = useState<{ value: number; label: string } | null>(null);
   const [history, setHistory] = useState<number[]>([]);
-  const displayPrice = useCountUp(price ?? 0, 1500);
+  const [alts, setAlts] = useState<{ sym: string; price: string; up: boolean; chg: string }[]>([]);
+  const shown = useCountUp(price ?? 0, 1500);
+
   useEffect(() => {
-    const loadBtc = () => {
-      getSimplePrice(["bitcoin"]).then(d => {
-        if (typeof d?.bitcoin?.usd === "number") { setPrice(d.bitcoin.usd); setChange(d.bitcoin.usd_24h_change ?? 0); }
+    const load = () => {
+      getSimplePrice(["bitcoin", "ethereum", "solana"]).then(d => {
+        if (typeof d?.bitcoin?.usd === "number") {
+          setPrice(d.bitcoin.usd);
+          setChange(d.bitcoin.usd_24h_change ?? 0);
+        }
+        const fmt = (n: number) => n >= 1000 ? n.toLocaleString("en-US", { maximumFractionDigits: 0 }) : n.toFixed(2);
+        const rows: { sym: string; price: string; up: boolean; chg: string }[] = [];
+        if (d?.ethereum) rows.push({ sym: "ETH", price: fmt(d.ethereum.usd), up: (d.ethereum.usd_24h_change ?? 0) >= 0, chg: Math.abs(d.ethereum.usd_24h_change ?? 0).toFixed(2) });
+        if (d?.solana) rows.push({ sym: "SOL", price: fmt(d.solana.usd), up: (d.solana.usd_24h_change ?? 0) >= 0, chg: Math.abs(d.solana.usd_24h_change ?? 0).toFixed(2) });
+        if (rows.length) setAlts(rows);
       });
       fetch("https://api.alternative.me/fng/?limit=1").then(r => r.json()).then(d => {
         setFg({ value: parseInt(d?.data?.[0]?.value || "50"), label: d?.data?.[0]?.value_classification || "Neutral" });
       }).catch(() => {});
       fetch("https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=7&interval=daily")
-        .then(r => r.json()).then(d => { const pts = (d?.prices ?? []).map((p: number[]) => p[1]); if (pts.length) setHistory(pts); }).catch(() => {});
+        .then(r => r.json()).then(d => {
+          const pts = (d?.prices ?? []).map((p: number[]) => p[1]);
+          if (pts.length) setHistory(pts);
+        }).catch(() => {});
     };
-    loadBtc();
-    const id = setInterval(loadBtc, 5 * 60 * 1000);
+    load();
+    const id = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
+
   const up = change >= 0;
-  const fgColor = !fg ? "var(--color-muted)" : fg.value <= 25 ? "var(--loss)" : fg.value <= 45 ? "var(--warning)" : fg.value <= 55 ? "var(--color-muted)" : "var(--gain)";
+  const tone = up ? "var(--gain)" : "var(--loss)";
+  const fgPct = fg ? fg.value : 0;
+
   return (
-    <div onClick={() => onNavigate("markets")} style={{ ...PANEL, padding: "20px 22px", gap: 16, cursor: "pointer", justifyContent: "space-between" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <p style={{ ...LBL, marginBottom: 8 }}>BTC / USD · 7D</p>
-          {price != null ? (
-            <p className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 40, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.03em", lineHeight: 1 }}>${displayPrice.toLocaleString()}</p>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, height: 40 }}>
-              <RefreshCw size={15} color="var(--color-muted)" style={{ animation: "zspin 1s linear infinite" }} />
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--color-muted)" }}>Loading…</span>
-            </div>
-          )}
+    <section
+      onClick={() => onNavigate("markets")}
+      className="rise rise-2 z-card-hover"
+      style={{ ...card, padding: "26px 28px", cursor: "pointer", display: "flex", flexDirection: "column", gap: 18 }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={eyebrow}>Bitcoin · USD</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 999, background: up ? "var(--gain-soft)" : "var(--loss-soft)", color: tone, fontSize: 13, fontWeight: 700 }}>
+          {up ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+          <span className="num">{Math.abs(change).toFixed(2)}%</span>
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 16, flexWrap: "wrap" }}>
+        <span className="num" style={{ ...displayFace, fontSize: "clamp(42px, 6vw, 68px)", fontWeight: 600, color: "var(--color-text)" }}>
+          {price == null ? "—" : `$${shown.toLocaleString("en-US")}`}
+        </span>
+        <span style={{ fontSize: 13, color: "var(--color-muted)", paddingBottom: 10 }}>7 hari terakhir</span>
+      </div>
+
+      <Spark values={history} tone={tone} />
+
+      {/* Fear & Greed — a quiet, honest gauge */}
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
+          <span style={eyebrow}>Fear &amp; Greed</span>
+          {fg && <span style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{fg.label} · <span className="num">{fg.value}</span></span>}
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 10 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", borderRadius: 6, background: up ? "var(--gain-soft)" : "var(--loss-soft)" }}>
-            {up ? <ArrowUpRight size={13} color="var(--gain)" /> : <ArrowDownRight size={13} color="var(--loss)" />}
-            <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 12, fontWeight: 700, color: up ? "var(--gain)" : "var(--loss)" }}>{Math.abs(change).toFixed(2)}%</span>
-          </div>
-          {history.length > 0 && <Sparkline values={history} color={up ? "var(--gain)" : "var(--loss)"} width={140} height={40} />}
+        <div style={{ height: 8, borderRadius: 999, background: "var(--color-surface)", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${fgPct}%`, borderRadius: 999, background: "linear-gradient(90deg, var(--loss), var(--warning), var(--gain))", transition: "width 900ms var(--ease-soft)" }} />
         </div>
       </div>
-      {fg && (
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-            <span style={LBL}>FEAR & GREED INDEX</span>
-            <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: fgColor, letterSpacing: "0.06em" }}>{fg.label.toUpperCase()} · {fg.value}</span>
-          </div>
-          <div style={{ height: 4, background: "var(--color-surface)", borderRadius: 2, overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${fg.value}%`, background: `linear-gradient(90deg, var(--loss) 0%, var(--warning) 45%, ${fgColor} 100%)`, borderRadius: 2, transition: "width 1.2s var(--ease-out)" }} />
-          </div>
+
+      {/* ETH / SOL — small companions, never competing with the hero */}
+      {alts.length > 0 && (
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", borderTop: "1px solid var(--color-border)", paddingTop: 14 }}>
+          {alts.map(a => (
+            <div key={a.sym} style={{ display: "flex", alignItems: "baseline", gap: 7, padding: "7px 13px", borderRadius: 14, background: "var(--color-surface)" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "var(--color-muted)", letterSpacing: "0.06em" }}>{a.sym}</span>
+              <span className="num" style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text)" }}>${a.price}</span>
+              <span className="num" style={{ fontSize: 12, fontWeight: 600, color: a.up ? "var(--gain)" : "var(--loss)" }}>{a.up ? "+" : "−"}{a.chg}%</span>
+            </div>
+          ))}
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--gain)" }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.06em" }}>LIVE · COINGECKO</span>
-        <ArrowUpRight size={10} color="var(--color-muted)" style={{ marginLeft: "auto" }} />
-      </div>
-    </div>
+    </section>
   );
 }
 
-// ── ZONE 2b: Signal readout (flat) ───────────────────────────────────────────
-function SignalReadout() {
-  const [signal, setSignal] = useState<{ text: string; color: string; sub: string; icon: string } | null>(null);
+/* ══════════════════════════════════════════════════════════════════════════
+   SIGNAL — adaptive read from BTC 24h + F&G (same rules, warmer voice)
+   ══════════════════════════════════════════════════════════════════════════ */
+function Signal() {
+  const [sig, setSig] = useState<{ text: string; sub: string; tone: string } | null>(null);
   useEffect(() => {
-    const loadSignal = () => {
+    const load = () => {
       Promise.all([
         getSimplePrice(["bitcoin"]),
         fetch("https://api.alternative.me/fng/?limit=1").then(r => r.json()),
       ]).then(([btcD, fgD]) => {
         const c = btcD?.bitcoin?.usd_24h_change ?? 0;
-        const fgVal = parseInt(fgD?.data?.[0]?.value || "50");
-        let text = "HOLD", color = "var(--color-muted)", sub = "Market neutral", icon = "⚖️";
-        if (c > 4 && fgVal > 65)       { text = "ACCUMULATE"; color = "var(--gain)"; sub = "Strong bullish + greed"; icon = "🟢"; }
-        else if (c > 2 && fgVal > 50)  { text = "WATCH";      color = "#5b8def";     sub = "Uptrend — monitor entry"; icon = "👁"; }
-        else if (c < -4 && fgVal < 30) { text = "BUY DIP";    color = "var(--warning)"; sub = "Fear + dip = opportunity"; icon = "💡"; }
-        else if (c < -6)               { text = "DEFENSIVE";  color = "var(--loss)"; sub = "High volatility — reduce risk"; icon = "🛡"; }
-        else if (fgVal > 80)           { text = "TAKE PROFIT"; color = "#9a86d4";    sub = "Extreme greed — consider exit"; icon = "💰"; }
-        setSignal({ text, color, sub, icon });
-      }).catch(() => setSignal({ text: "WATCH", color: "#5b8def", sub: "Data loading", icon: "👁" }));
+        const v = parseInt(fgD?.data?.[0]?.value || "50");
+        let text = "HOLD", sub = "Market netral", tone = "var(--color-muted)";
+        if (c > 4 && v > 65) { text = "ACCUMULATE"; sub = "Bullish kuat + greed"; tone = "var(--gain)"; }
+        else if (c > 2 && v > 50) { text = "WATCH"; sub = "Uptrend — pantau entry"; tone = "var(--color-primary)"; }
+        else if (c < -4 && v < 30) { text = "BUY DIP"; sub = "Fear + dip = peluang"; tone = "var(--warning)"; }
+        else if (c < -6) { text = "DEFENSIVE"; sub = "Volatil — kurangi risiko"; tone = "var(--loss)"; }
+        else if (v > 80) { text = "TAKE PROFIT"; sub = "Extreme greed"; tone = "var(--gold)"; }
+        setSig({ text, sub, tone });
+      }).catch(() => setSig({ text: "WATCH", sub: "Data dimuat", tone: "var(--color-primary)" }));
     };
-    loadSignal();
-    const id = setInterval(loadSignal, 5 * 60 * 1000);
+    load();
+    const id = setInterval(load, 5 * 60 * 1000);
     return () => clearInterval(id);
   }, []);
   return (
-    <div style={{ ...PANEL, gap: 8, justifyContent: "space-between" }}>
-      <span style={{ ...LBL, color: signal?.color ?? "var(--color-muted)" }}>Today Signal</span>
-      {signal ? (
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-            <span style={{ fontSize: 17 }}>{signal.icon}</span>
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: 19, fontWeight: 700, color: signal.color, letterSpacing: "0.03em", lineHeight: 1 }}>{signal.text}</p>
-          </div>
-          <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--color-muted)", lineHeight: 1.4 }}>{signal.sub}</p>
-        </div>
-      ) : <div style={{ display: "flex", alignItems: "center", gap: 8 }}><RefreshCw size={13} color="var(--color-muted)" style={{ animation: "zspin 1s linear infinite" }} /><span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--color-muted)" }}>Analyzing…</span></div>}
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 4, height: 4, borderRadius: "50%", background: signal?.color ?? "var(--color-muted)" }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.04em" }}>BTC 24H + F&G INDEX</span>
-      </div>
+    <div className="rise rise-3" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
+      <span style={eyebrow}>Sinyal hari ini</span>
+      {sig ? (
+        <>
+          <span style={{ ...displayFace, fontSize: 30, fontWeight: 600, color: sig.tone }}>{sig.text}</span>
+          <span style={{ fontSize: 14, color: "var(--color-muted)", lineHeight: 1.5 }}>{sig.sub}</span>
+        </>
+      ) : (
+        <span style={{ fontSize: 14, color: "var(--color-muted)" }}>Membaca pasar…</span>
+      )}
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: "auto", paddingTop: 8, fontSize: 12, color: "var(--color-dim)" }}>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--ember)", animation: "emberPulse 2.4s infinite" }} />
+        BTC 24h + Fear &amp; Greed
+      </span>
     </div>
   );
 }
 
-// ── ZONE 2b: Net worth readout (flat) ────────────────────────────────────────
-function NetWorthReadout({ data }: { data: AppData }) {
+/* ══════════════════════════════════════════════════════════════════════════
+   NET WORTH — derived from the real Keuangan income log. Blur by default.
+   ══════════════════════════════════════════════════════════════════════════ */
+function NetWorth({ data }: { data: AppData }) {
   const [show, setShow] = useState(false);
-  const totalIncome = (data.keuangan?.incomeLog ?? []).reduce((sum, e) => sum + (parseFloat((e.jumlah || "").replace(/[^0-9.]/g, "")) || 0), 0);
-  const displayVal = useCountUp(show ? Math.round(totalIncome) : 0, 1200);
+  const total = (data.keuangan?.incomeLog ?? []).reduce(
+    (s, e) => s + (parseFloat((e.jumlah || "").replace(/[^0-9.]/g, "")) || 0), 0);
+  const shown = useCountUp(show ? Math.round(total) : 0, 1200);
+  const count = data.keuangan?.incomeLog?.length ?? 0;
   return (
-    <div style={{ ...PANEL, gap: 8, justifyContent: "space-between" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={LBL}>Net Income Log</span>
-        <button onClick={() => setShow(v => !v)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 2, fontSize: 13 }}>{show ? "🙈" : "👁"}</button>
+    <div className="rise rise-4" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+        <span style={eyebrow}>Income tercatat</span>
+        <button
+          onClick={() => setShow(v => !v)}
+          aria-label={show ? "Sembunyikan angka" : "Tampilkan angka"}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 12, cursor: "pointer", background: "var(--color-surface)", border: "1px solid var(--color-border)", color: "var(--color-muted)" }}
+        >
+          {show ? <EyeOff size={15} /> : <Eye size={15} />}
+        </button>
       </div>
-      <div>
-        <p className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 24, fontWeight: 700, color: "var(--gain)", letterSpacing: "-0.03em", filter: show ? "none" : "blur(8px)", transition: "filter 0.3s", userSelect: show ? "auto" : "none" }}>
-          {show ? `Rp ${displayVal.toLocaleString("id-ID")}` : "Rp ••••••••"}
-        </p>
-        <p style={{ fontFamily: "var(--font-sans)", fontSize: 11, color: "var(--color-muted)", marginTop: 4 }}>{data.keuangan?.incomeLog?.length ?? 0} entries logged</p>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <div style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--gain)" }} />
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.04em" }}>FROM KEUANGAN LOG</span>
-      </div>
+      <span className="num" style={{ ...displayFace, fontSize: 34, fontWeight: 600, color: "var(--color-text)", filter: show ? "none" : "blur(11px)", transition: "filter 260ms var(--ease-out)", userSelect: show ? "auto" : "none" }}>
+        Rp {shown.toLocaleString("id-ID")}
+      </span>
+      <span style={{ fontSize: 13, color: "var(--color-muted)" }}>
+        {count === 0 ? "Belum ada entry — isi di Keuangan" : `${count} entry dari Keuangan`}
+      </span>
     </div>
   );
 }
 
-// ── ZONE 3a: Status board (dense table, flat) ────────────────────────────────
-function StatusBoard({ data }: { data: AppData }) {
-  const statuses = data.buildLab.statusBoard;
-  const active = statuses.filter(s => s.status.includes("AKTIF")).length;
+/* ══════════════════════════════════════════════════════════════════════════
+   TODAY — the day's intent. Editable focus (persists) + intentions.
+   ══════════════════════════════════════════════════════════════════════════ */
+function Today({ data, update }: { data: AppData; update: (fn: (p: AppData) => AppData) => void }) {
+  const DEFAULT = ["Morning review & planning", "Execute top priority task", "Evening reflection journal"];
+  const [done, setDone] = useState([false, false, false]);
+  const count = done.filter(Boolean).length;
   return (
-    <div style={{ ...PANEL, gap: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={LBL}>Status Board</span>
-        <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--gain)", background: "var(--gain-soft)", padding: "2px 7px", borderRadius: 4 }}>{active} AKTIF</span>
+    <section className="rise rise-3" style={{ ...card, padding: "26px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={eyebrow}>Fokus hari ini</span>
+        <span style={{ fontSize: 13, color: "var(--color-muted)" }}><span className="num">{count}</span>/3 niat</span>
+      </div>
+
+      {/* editable, persisted to AppData.dashboard.todayFocus */}
+      <div style={{ ...displayFace, fontSize: "clamp(19px, 2.1vw, 25px)", fontWeight: 500, color: "var(--color-text)", lineHeight: 1.3 }}>
+        <EditableText
+          value={data.dashboard.todayFocus}
+          onChange={val => update(d => ({ ...d, dashboard: { ...d.dashboard, todayFocus: val } }))}
+        />
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, borderTop: "1px solid var(--color-border)", paddingTop: 16 }}>
+        {DEFAULT.map((t, i) => (
+          <button
+            key={i}
+            onClick={() => setDone(p => { const n = [...p]; n[i] = !n[i]; return n; })}
+            style={{ display: "flex", alignItems: "center", gap: 13, padding: "11px 8px", background: "transparent", border: "none", borderRadius: 12, cursor: "pointer", textAlign: "left", transition: "background var(--dur-fast) var(--ease-out)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+          >
+            <span style={{
+              width: 22, height: 22, borderRadius: 8, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+              background: done[i] ? "var(--ember)" : "transparent",
+              border: done[i] ? "1px solid var(--ember)" : "1.5px solid var(--color-border)",
+              transition: "all var(--dur-fast) var(--ease-spring)",
+            }}>
+              {done[i] && <Check size={13} color="#fff" strokeWidth={3} />}
+            </span>
+            <span style={{ fontSize: 15, color: done[i] ? "var(--color-muted)" : "var(--color-text)", textDecoration: done[i] ? "line-through" : "none" }}>{t}</span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STATUS — what is actually live in the business (from AppData.buildLab)
+   ══════════════════════════════════════════════════════════════════════════ */
+function Status({ data }: { data: AppData }) {
+  const rows = data.buildLab.statusBoard;
+  const active = rows.filter(s => s.status.includes("AKTIF")).length;
+  return (
+    <section className="rise rise-4" style={{ ...card, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+        <span style={eyebrow}>Status proyek</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "var(--gain)", background: "var(--gain-soft)", padding: "4px 11px", borderRadius: 999 }}>
+          <span className="num">{active}</span> aktif
+        </span>
       </div>
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {statuses.slice(0, 4).map((s, i) => {
-          const st = statusStyle(s.status);
+        {rows.slice(0, 4).map((s, i) => {
+          const t = statusTone(s.status);
           return (
-            <div key={s.id} style={{ display: "flex", alignItems: "center", padding: "9px 2px", borderBottom: i < Math.min(statuses.length, 4) - 1 ? `1px solid ${SEAM}` : "none", gap: 9 }}>
-              <div style={{ width: 5, height: 5, borderRadius: "50%", background: st.dot, flexShrink: 0 }} />
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-text)", flex: 1, letterSpacing: "-0.01em", minWidth: 0 }}>{s.area}</span>
-              <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, fontWeight: 600, color: st.text, background: st.bg, padding: "2px 7px", borderRadius: 4, whiteSpace: "nowrap" }}>{s.status}</span>
+            <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 0", borderTop: i === 0 ? "none" : "1px solid var(--color-border)" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: t.c, flexShrink: 0 }} />
+              <span style={{ flex: 1, fontSize: 15, color: "var(--color-text)", minWidth: 0 }}>{s.area}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.c, background: t.bg, padding: "4px 10px", borderRadius: 999, whiteSpace: "nowrap" }}>{s.status}</span>
             </div>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
-// ── ZONE 3b: Daily intentions (checklist rows, flat) ─────────────────────────
-function IntentionsPanel() {
-  const DEFAULT = ["Morning review & planning", "Execute top priority task", "Evening reflection journal"];
-  const [done, setDone] = useState([false, false, false]);
-  const pct = (done.filter(Boolean).length / 3) * 100;
-  return (
-    <div style={{ ...PANEL, gap: 10 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={LBL}>Daily Intentions</span>
-        <span className="num" style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)" }}>{done.filter(Boolean).length}/3</span>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-        {DEFAULT.map((text, i) => (
-          <button key={i} onClick={() => setDone(p => { const n = [...p]; n[i] = !n[i]; return n; })} style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderBottom: i < DEFAULT.length - 1 ? `1px solid ${SEAM}` : "none", cursor: "pointer", padding: "9px 2px", textAlign: "left" }}>
-            <div style={{ width: 16, height: 16, borderRadius: 4, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: done[i] ? "var(--gain-soft)" : "transparent", border: `1.5px solid ${done[i] ? "var(--gain)" : "var(--color-border)"}` }}>
-              {done[i] && <span style={{ fontSize: 10, color: "var(--gain)" }}>✓</span>}
-            </div>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: done[i] ? "var(--color-muted)" : "var(--color-text)", textDecoration: done[i] ? "line-through" : "none", lineHeight: 1.3 }}>{text}</span>
-          </button>
-        ))}
-      </div>
-      <div style={{ height: 2, background: "var(--color-surface)", borderRadius: 1, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${pct}%`, background: "var(--color-primary)", transition: "width 0.5s var(--ease-out)" }} />
-      </div>
-    </div>
-  );
-}
-
-// ── ZONE 3c: Today's focus (editable, flat) ──────────────────────────────────
-function FocusPanel({ data, update }: { data: AppData; update: (fn: (p: AppData) => AppData) => void }) {
-  return (
-    <div style={{ ...PANEL, gap: 10 }}>
-      <span style={LBL}>Today's Focus</span>
-      <EditableText value={data.dashboard.todayFocus} onChange={val => update(d => ({ ...d, dashboard: { ...d.dashboard, todayFocus: val } }))} />
-    </div>
-  );
-}
-
-// ── ZONE 4: Vision band (slim cinematic strip) ───────────────────────────────
-function VisionBand() {
+/* ══════════════════════════════════════════════════════════════════════════
+   VISION — the cinematic band. The moment of privilege.
+   ══════════════════════════════════════════════════════════════════════════ */
+function Vision() {
   const [cur, setCur] = useState(0);
   const [prev, setPrev] = useState<number | null>(null);
   const busy = useRef(false);
-  const goTo = useCallback((idx: number) => {
-    if (idx === cur || busy.current) return;
-    busy.current = true; setPrev(cur); setCur(idx);
+  const go = useCallback((i: number) => {
+    if (i === cur || busy.current) return;
+    busy.current = true; setPrev(cur); setCur(i);
     setTimeout(() => { setPrev(null); busy.current = false; }, 900);
   }, [cur]);
-  useEffect(() => { const id = setInterval(() => goTo((cur + 1) % SLIDES.length), 9000); return () => clearInterval(id); }, [cur, goTo]);
-  const slide = SLIDES[cur];
+  useEffect(() => {
+    const id = setInterval(() => go((cur + 1) % SLIDES.length), 9000);
+    return () => clearInterval(id);
+  }, [cur, go]);
+  const s = SLIDES[cur];
   return (
-    <div style={{ position: "relative", overflow: "hidden", height: 130, background: "#0a0b0d" }}>
+    // The cinematic band is always a dark stage (white type over photo) in BOTH
+    // themes — so its backdrop is a constant, never a token that flips.
+    <section className="rise rise-5" style={{ position: "relative", borderRadius: 22, overflow: "hidden", minHeight: 230, background: "#1b1815", boxShadow: "var(--card-shadow)" }}>
       {prev !== null && (
-        <div key={`p${prev}`} style={{ position: "absolute", inset: 0, zIndex: 1, animation: "hFadeOut 0.9s ease forwards" }}>
-          <img src={`https://images.unsplash.com/${SLIDES[prev].photo}?auto=format&fit=crop&w=900&q=75`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.32) saturate(1.2)" }} />
-        </div>
+        <img key={`p${prev}`} src={`https://images.unsplash.com/${SLIDES[prev].photo}?auto=format&fit=crop&w=1200&q=76`} alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.42) saturate(1.05)", animation: "heroCrossFadeOut 0.9s ease forwards" }} />
       )}
-      <div key={`c${cur}`} style={{ position: "absolute", inset: 0, zIndex: 2, animation: "hFadeIn 0.9s ease forwards" }}>
-        <img src={`https://images.unsplash.com/${slide.photo}?auto=format&fit=crop&w=900&q=75`} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.32) saturate(1.2)", animation: "hKenBurns 10s ease-out forwards" }} />
-      </div>
-      <div style={{ position: "absolute", inset: 0, zIndex: 3, background: "linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }} />
-      <div style={{ position: "absolute", inset: 0, zIndex: 4, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "rgba(255,255,255,0.4)", letterSpacing: "0.14em" }}>{new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }).toUpperCase()}</span>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 8, fontWeight: 700, letterSpacing: "0.12em", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.18)", padding: "2px 7px", borderRadius: 3 }}>{slide.tag.toUpperCase()}</span>
+      <img key={`c${cur}`} src={`https://images.unsplash.com/${s.photo}?auto=format&fit=crop&w=1200&q=76`} alt=""
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "brightness(0.42) saturate(1.05)", animation: "heroCrossFadeIn 0.9s ease forwards, heroKenBurns 10s ease-out forwards" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(27,24,21,0.92) 0%, rgba(27,24,21,0.32) 58%, rgba(27,24,21,0.12) 100%)" }} />
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 230, padding: "22px 26px" }}>
+        <span style={{ alignSelf: "flex-start", fontSize: 11, fontWeight: 600, letterSpacing: "0.13em", textTransform: "uppercase", color: "#f6f2ec", background: "rgba(255,255,255,0.14)", border: "1px solid rgba(255,255,255,0.24)", padding: "5px 13px", borderRadius: 999 }}>
+          {s.tag}
+        </span>
+        <div>
+          <p style={{ ...displayFace, fontSize: "clamp(20px, 2.5vw, 30px)", fontWeight: 500, fontStyle: "italic", color: "#faf7f2", margin: "0 0 16px", maxWidth: 620, lineHeight: 1.22 }}>
+            “{s.quote}”
+          </p>
+          <div style={{ display: "flex", gap: 7 }}>
+            {SLIDES.map((_, i) => (
+              <button key={i} onClick={() => go(i)} aria-label={`Slide ${i + 1}`}
+                style={{ width: i === cur ? 30 : 8, height: 4, borderRadius: 999, border: "none", padding: 0, cursor: "pointer", background: i === cur ? "var(--ember)" : "rgba(255,255,255,0.42)", transition: "all 320ms var(--ease-soft)" }} />
+            ))}
+          </div>
         </div>
-        <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 15, color: "rgba(255,255,255,0.92)", lineHeight: 1.45, maxWidth: 460, textShadow: "0 2px 12px rgba(0,0,0,0.7)" }}>"{slide.quote}"</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 10 }}>
-          {SLIDES.map((_, i) => (
-            <button key={i} onClick={() => goTo(i)} style={{ width: i === cur ? 16 : 4, height: 3, borderRadius: 2, background: i === cur ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.25)", border: "none", cursor: "pointer", padding: 0, transition: "all 0.35s ease" }} />
-          ))}
-        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
-// ── ZONE 5: Module function bar ──────────────────────────────────────────────
-function ModuleBar({ onNavigate }: { onNavigate: (k: string) => void }) {
+/* ══════════════════════════════════════════════════════════════════════════
+   MODULES — a warm rail, not a grid of glowing tiles
+   ══════════════════════════════════════════════════════════════════════════ */
+function Modules({ onNavigate }: { onNavigate: (k: string) => void }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${MODULES.length}, 1fr)`, gap: 1, background: SEAM }}>
-      {MODULES.map(m => (
-        <button key={m.key} onClick={() => onNavigate(m.key)} style={{ background: "var(--glass-bg)", border: "none", cursor: "pointer", padding: "13px 14px", display: "flex", alignItems: "center", gap: 10, textAlign: "left", transition: "background 0.15s", minWidth: 0 }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--color-surface)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "var(--glass-bg)"; }}>
-          <div style={{ width: 28, height: 28, borderRadius: 7, background: "var(--color-surface)", border: `1px solid ${SEAM}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <m.Icon size={14} color={m.color} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>{m.label}</span>
-            <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--color-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.sub}</span>
-          </div>
-          <ArrowUpRight size={11} color="var(--color-muted)" style={{ marginLeft: "auto", flexShrink: 0 }} />
-        </button>
-      ))}
-    </div>
+    <section className="rise rise-6" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <span style={eyebrow}>Modul</span>
+      <div className="rail-x" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(168px, 1fr))", gap: 12 }}>
+        {MODULES.map(m => (
+          <button key={m.key} onClick={() => onNavigate(m.key)} className="z-card-hover"
+            style={{ ...card, padding: "18px 18px", display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-start", textAlign: "left", cursor: "pointer" }}>
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 14, background: "var(--color-surface)", border: "1px solid var(--color-border)" }}>
+              <m.Icon size={18} color="var(--color-primary)" />
+            </span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.01em" }}>{m.label}</span>
+            <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{m.sub}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
-// ── MAIN — Terminal Slab ─────────────────────────────────────────────────────
+/* ══════════════════════════════════════════════════════════════════════════
+   PAGE — asymmetric on purpose. Irregularity = decisions were made.
+   ══════════════════════════════════════════════════════════════════════════ */
 export function DashboardPage({ data, update, onNavigate }: Props) {
   return (
-    <div style={{ border: `1px solid ${SEAM}`, borderRadius: 10, overflow: "hidden", background: "var(--glass-bg)", boxShadow: "var(--card-shadow)" }}>
-      {/* Zone 1 — ticker strip */}
-      <div style={{ borderBottom: `1px solid ${SEAM}` }}><TickerStrip /></div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 26, paddingBottom: 8 }}>
+      <Opening />
 
-      {/* Zone 2 — dominant hero + readout spine */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.7fr 1fr", gap: 1, background: SEAM, borderBottom: `1px solid ${SEAM}` }}>
-        <BtcHero onNavigate={onNavigate} />
-        <div style={{ display: "grid", gridTemplateRows: "1fr 1px 1fr", background: "var(--glass-bg)" }}>
-          <SignalReadout />
-          <div style={{ background: SEAM }} />
-          <NetWorthReadout data={data} />
+      {/* Asymmetric: the hero number is wider than its companions */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.55fr 1fr", gap: 18, alignItems: "start" }}>
+        <MarketPulse onNavigate={onNavigate} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <Signal />
+          <NetWorth data={data} />
         </div>
       </div>
 
-      {/* Zone 3 — dense triad */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1, background: SEAM, borderBottom: `1px solid ${SEAM}` }}>
-        <StatusBoard data={data} />
-        <IntentionsPanel />
-        <FocusPanel data={data} update={update} />
+      {/* Reversed asymmetry so the rhythm never repeats */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.35fr", gap: 18, alignItems: "start" }}>
+        <Status data={data} />
+        <Today data={data} update={update} />
       </div>
 
-      {/* Zone 4 — vision band */}
-      <div style={{ borderBottom: `1px solid ${SEAM}` }}><VisionBand /></div>
+      <Vision />
+      <Modules onNavigate={onNavigate} />
 
-      {/* Zone 5 — module function bar */}
-      <div style={{ borderBottom: `1px solid ${SEAM}` }}><ModuleBar onNavigate={onNavigate} /></div>
-
-      {/* Zone 6 — footer status line */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 16px", gap: 12, flexWrap: "wrap", background: "var(--glass-bg)" }}>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.08em" }}>ZERØ COMMAND v6 · {new Date(data.dashboard.lastUpdated).toLocaleString("id-ID")}</span>
-        <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--color-muted)", letterSpacing: "0.1em" }}>DATA · COINGECKO · ALT.ME · OPEN-METEO</span>
-      </div>
-
-      <style>{`
-        @keyframes hFadeIn   { from{opacity:0} to{opacity:1} }
-        @keyframes hFadeOut  { from{opacity:1} to{opacity:0} }
-        @keyframes hKenBurns { from{transform:scale(1)} to{transform:scale(1.06)} }
-        @keyframes zspin     { to{transform:rotate(360deg)} }
-      `}</style>
+      <p style={{ fontSize: 12, color: "var(--color-dim)", textAlign: "right", paddingTop: 2 }}>
+        ZERØ · diperbarui {new Date(data.dashboard.lastUpdated).toLocaleString("id-ID")}
+      </p>
     </div>
   );
 }
