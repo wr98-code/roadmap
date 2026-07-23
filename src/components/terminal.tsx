@@ -1,117 +1,141 @@
-// ─── ZERØ COMMAND — terminal.tsx ──────────────────────────────────────────────
-// Shared institutional "terminal" primitives. Theme-aware (all colors are CSS
-// vars, so they work in light AND dark automatically). Use these across pages
-// for consistent Bloomberg/wealth-terminal precision:
-//   - flat paneled SLABS with hairline SEAMS (no floating cards / radius / glow)
-//   - dense rows, mono uppercase micro-labels, right-aligned tabular numerals
+// ─── ZERØ COMMAND — shared surface primitives · "ATELIER" ─────────────────────
+// These were the institutional terminal primitives (hairline seams, mono
+// micro-labels, flat panels). They now speak the Atelier language instead:
+// soft geometry, warm elevation, generous padding, display type — see
+// DESIGN_DIRECTION.md.
 //
-// Usage:
-//   <Slab>
-//     <PanelHead title="Section" right={<Badge>3 aktif</Badge>} />
-//     <SeamGrid cols="1.6fr 1fr">
-//       <Panel>…</Panel>
-//       <Panel>…</Panel>
-//     </SeamGrid>
-//   </Slab>
+// The export names and prop signatures are deliberately UNCHANGED, so every
+// page that imports them shifts to the new language at once, with no edits.
+//
+//   <Slab>                        soft card (the outer surface)
+//     <PanelHead title=… right=…> section header, display-adjacent eyebrow
+//     <SeamGrid cols="1fr 1fr">   gapped grid (no more 1px seams)
+//       <Panel>…</Panel>          soft inner tile
+//
+// Theme-aware: every colour is a CSS variable, so light and dark both work.
 
 import React from "react";
 
+/** Kept for pages that draw their own separators — now a warm, quiet line. */
 export const SEAM = "var(--color-border)";
 
-// ── Style objects (spread into inline style) ──────────────────────────────────
+// ── Style objects ─────────────────────────────────────────────────────────────
 export const tSlabStyle: React.CSSProperties = {
-  border: `1px solid ${SEAM}`, borderRadius: 10, overflow: "hidden",
-  background: "var(--glass-bg)", boxShadow: "var(--card-shadow)",
+  background: "var(--glass-bg)",
+  border: "1px solid var(--glass-border)",
+  borderRadius: 22,
+  boxShadow: "var(--card-shadow), var(--card-inset)",
+  overflow: "hidden",
 };
 export const tPanelStyle: React.CSSProperties = {
-  background: "var(--glass-bg)", padding: "14px 16px", minWidth: 0,
+  background: "var(--color-surface)",
+  borderRadius: 16,
+  padding: "16px 18px",
+  minWidth: 0,
 };
 export const tLabelStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700,
-  letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-muted)",
+  fontFamily: "var(--font-sans)",
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: "0.13em",
+  textTransform: "uppercase",
+  color: "var(--color-muted)",
 };
 export const tNumStyle: React.CSSProperties = {
-  fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", color: "var(--color-text)",
+  fontVariantNumeric: "tabular-nums",
+  color: "var(--color-text)",
+};
+/** Display face for figures and headlines. */
+export const tDisplayStyle: React.CSSProperties = {
+  fontFamily: "var(--font-display)",
+  fontOpticalSizing: "auto",
+  fontVariationSettings: "'SOFT' 32, 'WONK' 1",
+  letterSpacing: "-0.025em",
+  lineHeight: 1.05,
 };
 
-// ── Slab: the outer paneled container ─────────────────────────────────────────
+// ── Slab: the outer soft card ─────────────────────────────────────────────────
 export function Slab({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return <div style={{ ...tSlabStyle, ...style }}>{children}</div>;
 }
 
-// ── PanelHead: hairline-underlined section header (mono label + right slot) ────
+// ── PanelHead: section header. Space separates — no hairline rule. ────────────
 export function PanelHead({ title, right, style }: { title: React.ReactNode; right?: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", borderBottom: `1px solid ${SEAM}`, gap: 12, ...style }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 20px 12px", ...style }}>
       <span style={tLabelStyle}>{title}</span>
       {right}
     </div>
   );
 }
 
-// ── Panel: a flat cell (fills its seam-grid cell) ─────────────────────────────
+// ── Panel: a soft inner tile ──────────────────────────────────────────────────
 export function Panel({ children, style, onClick, className }: { children: React.ReactNode; style?: React.CSSProperties; onClick?: () => void; className?: string }) {
   return <div className={className} onClick={onClick} style={{ ...tPanelStyle, ...style }}>{children}</div>;
 }
 
-// ── SeamGrid: columns separated by 1px hairline seams ─────────────────────────
+// ── SeamGrid: gapped grid of soft tiles (was: 1px seam grid) ─────────────────
 export function SeamGrid({ cols, children, style }: { cols: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return <div style={{ display: "grid", gridTemplateColumns: cols, gap: 1, background: SEAM, ...style }}>{children}</div>;
-}
-
-// ── Divider: full-width hairline ──────────────────────────────────────────────
-export function Divider() {
-  return <div style={{ height: 1, background: SEAM }} />;
-}
-
-// ── Field: label ……… value dense row ─────────────────────────────────────────
-export function Field({ label, value, valueColor }: { label: React.ReactNode; value: React.ReactNode; valueColor?: string }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${SEAM}`, gap: 12 }}>
-      <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--color-muted)", minWidth: 0 }}>{label}</span>
-      <span style={{ ...tNumStyle, fontSize: 13, fontWeight: 600, color: valueColor || "var(--color-text)", whiteSpace: "nowrap" }}>{value}</span>
+    <div style={{ display: "grid", gridTemplateColumns: cols, gap: 12, padding: "0 16px 16px", ...style }}>
+      {children}
     </div>
   );
 }
 
-// ── Badge: small status chip ──────────────────────────────────────────────────
+// ── Divider: a quiet warm line, used sparingly ───────────────────────────────
+export function Divider() {
+  return <div style={{ height: 1, background: "var(--color-border)", margin: "2px 20px" }} />;
+}
+
+// ── Field: label ……… value ───────────────────────────────────────────────────
+export function Field({ label, value, valueColor }: { label: React.ReactNode; value: React.ReactNode; valueColor?: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "11px 0", borderBottom: "1px solid var(--color-border)" }}>
+      <span style={{ fontSize: 14, color: "var(--color-muted)", minWidth: 0 }}>{label}</span>
+      <span className="num" style={{ ...tNumStyle, fontSize: 15, fontWeight: 600, color: valueColor || "var(--color-text)", whiteSpace: "nowrap" }}>{value}</span>
+    </div>
+  );
+}
+
+// ── Badge: soft pill ─────────────────────────────────────────────────────────
 export function Badge({ children, tone = "muted" }: { children: React.ReactNode; tone?: "muted" | "gain" | "loss" | "warning" | "accent" }) {
   const map: Record<string, { c: string; bg: string }> = {
     muted:   { c: "var(--color-muted)", bg: "var(--color-surface)" },
     gain:    { c: "var(--gain)", bg: "var(--gain-soft)" },
     loss:    { c: "var(--loss)", bg: "var(--loss-soft)" },
-    warning: { c: "var(--warning)", bg: "rgba(224,162,49,0.12)" },
+    warning: { c: "var(--warning)", bg: "var(--color-surface)" },
     accent:  { c: "var(--color-primary)", bg: "var(--rail-active-bg)" },
   };
   const s = map[tone] || map.muted;
   return (
-    <span style={{ fontFamily: "var(--font-mono)", fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", color: s.c, background: s.bg, padding: "2px 7px", borderRadius: 4, whiteSpace: "nowrap" }}>
+    <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.02em", color: s.c, background: s.bg, padding: "4px 11px", borderRadius: 999, whiteSpace: "nowrap" }}>
       {children}
     </span>
   );
 }
 
-// ── Stat: KPI readout tile (label · big tabular value · optional sub) ─────────
+// ── Stat: a readout tile — the figure gets the display face ──────────────────
 export function Stat({ label, value, sub, tint, right }: { label: React.ReactNode; value: React.ReactNode; sub?: React.ReactNode; tint?: string; right?: React.ReactNode }) {
   return (
     <div style={{ ...tPanelStyle, display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <span style={tLabelStyle}>{label}</span>
         {right}
       </div>
-      <span style={{ ...tNumStyle, fontSize: 21, fontWeight: 600, letterSpacing: "-0.02em", color: tint || "var(--color-text)" }}>{value}</span>
-      {sub && <span style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--color-muted)" }}>{sub}</span>}
+      <span className="num" style={{ ...tDisplayStyle, fontSize: 26, fontWeight: 600, color: tint || "var(--color-text)" }}>{value}</span>
+      {sub && <span style={{ fontSize: 12.5, color: "var(--color-muted)" }}>{sub}</span>}
     </div>
   );
 }
 
-// ── PageTitle: consistent page heading ────────────────────────────────────────
+// ── PageTitle: every page opens in the display face ──────────────────────────
 export function PageTitle({ title, subtitle, right }: { title: string; subtitle?: string; right?: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 18 }}>
       <div>
-        <h1 style={{ fontFamily: "var(--font-sans)", fontSize: 19, fontWeight: 600, color: "var(--color-text)", letterSpacing: "-0.02em", margin: 0 }}>{title}</h1>
-        {subtitle && <p style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--color-muted)", margin: "4px 0 0", letterSpacing: "0.06em", textTransform: "uppercase" }}>{subtitle}</p>}
+        <h1 style={{ ...tDisplayStyle, fontSize: "clamp(26px, 3.2vw, 36px)", fontWeight: 600, color: "var(--color-text)", margin: 0 }}>{title}</h1>
+        {subtitle && <p style={{ ...tLabelStyle, margin: "8px 0 0" }}>{subtitle}</p>}
       </div>
       {right}
     </div>
