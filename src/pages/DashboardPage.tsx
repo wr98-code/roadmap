@@ -12,7 +12,8 @@ import {
   Zap, TrendingUp, Globe, Calendar, DollarSign, User,
   ArrowUpRight, ArrowDownRight, Eye, EyeOff, Check, BookMarked,
 } from "lucide-react";
-import { termOfDay, GLOSSARY_CATEGORIES } from "@/lib/glossary";
+import { termOfDay, GLOSSARY_CATEGORIES, defFor } from "@/lib/glossary";
+import { useRegister } from "@/lib/lang";
 import { monthTotals, currentMonth, fmtMoney, monthLabel } from "@/lib/finance";
 
 interface Props {
@@ -313,6 +314,7 @@ function NetWorth({ data }: { data: AppData }) {
    ══════════════════════════════════════════════════════════════════════════ */
 function TermOfDay({ onNavigate }: { onNavigate: (k: string) => void }) {
   const t = termOfDay();
+  const register = useRegister();
   const catInfo = GLOSSARY_CATEGORIES.find(c => c.key === t.category);
   return (
     <section className="rise rise-5" style={{ ...card, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -327,7 +329,7 @@ function TermOfDay({ onNavigate }: { onNavigate: (k: string) => void }) {
         {t.full && <span style={{ fontSize: 13, color: "var(--color-muted)" }}>{t.full}</span>}
       </div>
       <p style={{ fontSize: 14, color: "var(--color-muted)", lineHeight: 1.65, margin: 0 }}>
-        {t.def}
+        {defFor(t, register)}
       </p>
       {t.formula && (
         <p className="num" style={{ fontSize: 12.5, margin: 0, padding: "7px 11px", borderRadius: 9, background: "var(--color-surface)", color: "var(--color-text)", overflowX: "auto", whiteSpace: "nowrap", alignSelf: "flex-start", maxWidth: "100%" }}>

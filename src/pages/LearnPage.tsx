@@ -11,6 +11,7 @@ import { callClaude, hasApiKey } from '@/lib/api';
 import { cloudSet } from '@/lib/cloudStorage';
 import { Slab, Panel, SeamGrid, PanelHead, Divider, Badge, tLabelStyle } from '@/components/terminal';
 import { GLOSSARY, GLOSSARY_CATEGORIES, GlossaryCategory, searchGlossary } from '@/lib/glossary';
+import { Register, useRegister, setRegister } from '@/lib/lang';
 
 // ─── TOPIC CATALOG ────────────────────────────────────────────────────────────
 const TOPICS = [
@@ -469,6 +470,7 @@ function GlossarySection() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState<GlossaryCategory | 'all'>('all');
   const [openId, setOpenId] = useState<string | null>(null);
+  const register = useRegister();
 
   const results = useMemo(() => searchGlossary(q, cat), [q, cat]);
 
@@ -480,7 +482,30 @@ function GlossarySection() {
             <BookMarked size={13} /> KAMUS ISTILAH · BISNIS & EKONOMI
           </span>
         }
-        right={<Badge tone="muted">{GLOSSARY.length} ISTILAH</Badge>}
+        right={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {/* switch register bahasa — berlaku app-wide, tersimpan */}
+            <span style={{ display: 'inline-flex', gap: 2, background: 'var(--color-surface)', borderRadius: 999, padding: 3 }}>
+              {([['santai', 'Santai'], ['pro', 'Profesional']] as [Register, string][]).map(([r, label]) => (
+                <button
+                  key={r}
+                  onClick={() => setRegister(r)}
+                  style={{
+                    padding: '4px 12px', borderRadius: 999, border: 'none', cursor: 'pointer',
+                    fontSize: 11.5, fontFamily: 'var(--font-sans)', fontWeight: register === r ? 700 : 500,
+                    background: register === r ? 'var(--raised)' : 'transparent',
+                    color: register === r ? 'var(--color-primary)' : 'var(--color-muted)',
+                    boxShadow: register === r ? 'var(--card-shadow)' : 'none',
+                    transition: 'all var(--dur-fast) var(--ease-out)',
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </span>
+            <Badge tone="muted">{GLOSSARY.length} ISTILAH</Badge>
+          </span>
+        }
       />
       <div style={{ padding: '0 16px 6px' }}>
         <p style={{ fontSize: 12.5, color: 'var(--color-muted)', lineHeight: 1.55, margin: '0 0 12px' }}>
@@ -575,9 +600,25 @@ function GlossarySection() {
                 </button>
                 {open && (
                   <div style={{ padding: '2px 16px 15px', background: 'var(--color-surface)' }}>
-                    <p style={{ fontSize: 13.5, color: 'var(--color-text)', lineHeight: 1.7, margin: 0 }}>
-                      {t.def}
-                    </p>
+                    {/* dua register berdampingan — versi terpilih dulu; keduanya
+                        terlihat karena justru perbandingannya yang mengajarkan */}
+                    {([
+                      register === 'pro'
+                        ? [['Profesional', t.defPro ?? t.def], ['Santai', t.def]]
+                        : [['Santai', t.def], ['Profesional', t.defPro ?? t.def]],
+                    ] as [string, string][][])[0].map(([label, text], idx) => (
+                      <div key={label} style={{ marginTop: idx === 0 ? 0 : 10 }}>
+                        <span style={{
+                          fontSize: 9.5, fontWeight: 700, letterSpacing: '0.09em', textTransform: 'uppercase',
+                          color: idx === 0 ? 'var(--color-primary)' : 'var(--color-dim)',
+                        }}>
+                          {label}
+                        </span>
+                        <p style={{ fontSize: idx === 0 ? 13.5 : 12.5, color: idx === 0 ? 'var(--color-text)' : 'var(--color-muted)', lineHeight: 1.7, margin: '3px 0 0' }}>
+                          {text}
+                        </p>
+                      </div>
+                    ))}
                     {t.formula && (
                       <p className="num" style={{
                         fontSize: 12.5, margin: '9px 0 0', padding: '8px 12px', borderRadius: 9,

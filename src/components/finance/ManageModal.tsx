@@ -10,6 +10,7 @@ import {
   FinanceData, IncomeSource, FinanceCategory, newId, fmtMoney, parseAmountInput,
   CAT_KEYS, CatKey, catColor, Currency,
 } from "@/lib/finance";
+import { Register, useRegister, setRegister } from "@/lib/lang";
 import { Modal, Btn, Label, inputStyle, ColorSwatches } from "./ui";
 
 interface Props {
@@ -23,6 +24,7 @@ type Tab = "sumber" | "kategori" | "preferensi";
 export function ManageModal({ fin, setFin, onClose }: Props) {
   const [tab, setTab] = useState<Tab>("sumber");
   const [colorPickFor, setColorPickFor] = useState<string | null>(null);
+  const register = useRegister();
 
   const usedBySource = (id: string) => fin.transactions.filter((t) => t.sourceId === id).length;
   const usedByCategory = (id: string) => fin.transactions.filter((t) => t.categoryId === id).length;
@@ -193,7 +195,37 @@ export function ManageModal({ fin, setFin, onClose }: Props) {
       )}
 
       {tab === "preferensi" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <div>
+            <Label style={{ fontSize: 10 }}>Gaya bahasa</Label>
+            <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+              {([
+                ["santai", "Santai", "“BONCOS, duit masuk” — bahasa sehari-hari"],
+                ["pro", "Profesional", "“DEFISIT, pemasukan” — bahasa finansial formal"],
+              ] as [Register, string, string][]).map(([r, label, desc]) => (
+                <button
+                  key={r}
+                  onClick={() => setRegister(r)}
+                  style={{
+                    flex: "1 1 180px", textAlign: "left", padding: "10px 14px", borderRadius: 12,
+                    border: `1.5px solid ${register === r ? "var(--color-primary)" : "var(--color-border)"}`,
+                    background: register === r ? "var(--ember-soft)" : "var(--color-surface)",
+                    cursor: "pointer", fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: register === r ? "var(--color-primary)" : "var(--color-text)" }}>
+                    {label}
+                  </span>
+                  <span style={{ display: "block", fontSize: 11, color: "var(--color-muted)", marginTop: 2, lineHeight: 1.45 }}>
+                    {desc}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: 11.5, color: "var(--color-dim)", marginTop: 8, lineHeight: 1.5 }}>
+              Berlaku seketika di halaman Keuangan & Kamus Istilah — bisa diganti kapan saja.
+            </p>
+          </div>
           <div>
             <Label style={{ fontSize: 10 }}>Mata uang tampilan</Label>
             <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
