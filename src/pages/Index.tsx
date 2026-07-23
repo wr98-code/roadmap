@@ -23,6 +23,7 @@ import {
 import { AffirmationToast } from "@/components/AffirmationToast";
 import { PWAInstall } from "@/components/PWAInstall";
 import { ApiKeySettings } from "@/components/ApiKeySettings";
+import { MobileNav } from "@/components/MobileNav";
 import { DashboardPage }  from "./DashboardPage";
 import { BuildLabPage }   from "./BuildLabPage";
 import { TradingPage }    from "./TradingPage";
@@ -624,13 +625,25 @@ const Index = () => {
             </div>
           </div>
         </header>
-        <main style={{ flex:1, padding: isMobile ? "14px 12px 40px" : "20px 22px 40px", maxWidth:1240, width:"100%", margin:"0 auto" }}>
+        {/* On mobile the floating pill bar owns the bottom of the screen, so the
+            content reserves room for it (plus the device safe area). */}
+        <main
+          className={isMobile ? "snap-y" : undefined}
+          style={{
+            flex: 1,
+            padding: isMobile ? "14px 12px calc(104px + env(safe-area-inset-bottom, 0px))" : "20px 22px 40px",
+            maxWidth: 1240, width: "100%", margin: "0 auto",
+          }}
+        >
           {renderPage()}
         </main>
       </div>
 
       {/* ── RIGHT INTEL PANEL (desktop only) ── */}
       {!isMobile && <LiveIntelPanel active={active} onNavigate={navigate} />}
+
+      {/* Thumb-zone navigation — mobile only */}
+      {isMobile && <MobileNav sections={RAIL_SECTIONS} active={active} onNavigate={navigate} />}
 
       <style>{`
         @keyframes zspin { to { transform: rotate(360deg); } }

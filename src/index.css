@@ -432,6 +432,7 @@
 @keyframes heroKenBurns     { from { transform: scale(1); } to { transform: scale(1.045); } }
 @keyframes auraIn           { from { opacity: 0; transform: translateY(14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @keyframes emberPulse       { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.55; transform: scale(0.86); } }
+@keyframes sheetUp          { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
 .animate-fade-up { animation: fadeUp var(--dur-slow) var(--ease-soft) both; }
 .animate-fade-in { animation: fadeIn var(--dur-med) var(--ease-out) both; }
@@ -474,6 +475,14 @@
 ─────────────────────────────────────────────────────────────── */
 @media (max-width: 767px) {
   body, #root { overflow-x: hidden; max-width: 100vw; }
+  /* Native-feeling scroll: momentum, no rubber-band chaining behind sheets */
+  body { overscroll-behavior-y: none; -webkit-overflow-scrolling: touch; }
+  /* Tap targets stay finger-sized and never flash a grey box */
+  button, a, select, [role="button"] { -webkit-tap-highlight-color: transparent; }
+  main button, main a[href] { min-height: 44px; }
+  /* Sections arrive one at a time rather than as a compressed grid */
+  .snap-y { scroll-snap-type: y proximity; }
+  .snap-y > * { scroll-snap-align: start; scroll-margin-top: 12px; }
   /* Legacy multi-column grids collapse; new mobile layouts opt out with .keep-grid */
   main [style*="grid-template-columns"]:not(.keep-grid) { grid-template-columns: 1fr !important; }
   main img, main svg { max-width: 100%; }
