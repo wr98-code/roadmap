@@ -14,7 +14,7 @@ import { AppData, AssetEntry, LiabilityEntry } from "@/lib/store";
 import { MetricInfo } from "@/components/MetricInfo";
 import { NotesList } from "@/components/NotesList";
 import { useUsdIdr, parseAmount, toIDR, formatIDR } from "@/lib/fx";
-import { monthTotals, currentMonth, monthLabel } from "@/lib/finance";
+import { monthTotals, currentMonth, monthLabel, totalBalance, avgMonthlyExpense } from "@/lib/finance";
 import { Slab, SeamGrid, PanelHead, Stat, Field, Badge, PageTitle, tLabelStyle, tNumStyle } from "@/components/terminal";
 import { Plus, Trash2, Eye, EyeOff, Wallet, TrendingDown, Droplet, Timer } from "lucide-react";
 
@@ -68,16 +68,27 @@ export function KekayaanPage({ data, update }: Props) {
       if (v == null) { missing = true; continue; }
       liabIDR += v;
     }
-    // Cash flow dari Keuangan: sistem transaksi baru (bulan berjalan) bila ada,
-    // fallback ke ledger manual lama bila belum ada transaksi.
     const fin = data.keuangan?.finance;
     const finHasTx = (fin?.transactions?.length ?? 0) > 0;
+    // SATU SUMBER KEBENARAN KAS: total saldo kantong dari halaman Keuangan
+    // otomatis ikut sebagai aset likuid — dua halaman tidak lagi menjawab
+    // "uangku berapa" dengan angka yang tidak berhubungan.
+    // (fin.currency = format tampilan saja — nilai dipakai apa adanya,
+    //  konsisten dengan janji di Kelola > Preferensi.)
+    const kantongIDR = fin ? totalBalance(fin) : 0;
+    if (fin && (finHasTx || kantongIDR !== 0)) {
+      assetIDR += kantongIDR;
+      liqIDR += kantongIDR;
+      byCat["Kas"] = (byCat["Kas"] || 0) + kantongIDR;
+    }
+    // Cash flow: sistem transaksi baru (bulan berjalan) bila ada, fallback
+    // ledger manual lama. Nilai finance TIDAK dikonversi kurs (display-only).
     let incomeIDR: number;
     let expenseIDR: number;
     if (fin && finHasTx) {
       const t = monthTotals(fin, currentMonth());
-      incomeIDR = toIDR(t.masuk, fin.currency, usdIdr) ?? t.masuk;
-      expenseIDR = toIDR(t.keluar, fin.currency, usdIdr) ?? t.keluar;
+      incomeIDR = t.masuk;
+      expenseIDR = t.keluar;
     } else {
       incomeIDR = (data.keuangan?.incomeLog ?? []).reduce((s, e) => {
         const v = toIDR(parseAmount(e.jumlah), e.mataUang || "IDR", usdIdr);
@@ -86,13 +97,22 @@ export function KekayaanPage({ data, update }: Props) {
       expenseIDR = (data.keuangan?.pengeluaran ?? []).reduce((s, e) => s + parseAmount(e.jumlah), 0);
     }
     const net = assetIDR - liabIDR;
-    const runwayMonths = expenseIDR > 0 ? liqIDR / expenseIDR : null;
+    // Runway: SATU definisi dengan halaman Keuangan — rata-rata pengeluaran
+    // bulan PENUH (bulan berjalan yang parsial menyesatkan: tanggal 2 dengan
+    // jajan 25rb membuat runway "2000 bulan"). Fallback ke pengeluaran ledger
+    // lama bila belum ada bulan penuh tercatat.
+    const avgExpense = fin ? avgMonthlyExpense(fin) : null;
+    const runwayDivisor = avgExpense ?? (expenseIDR > 0 ? expenseIDR : null);
+    const runwayMonths = runwayDivisor ? liqIDR / runwayDivisor : null;
     const savingsRate = incomeIDR > 0 ? (incomeIDR - expenseIDR) / incomeIDR : null;
-    return { assetIDR, liabIDR, liqIDR, net, byCat, missing, incomeIDR, expenseIDR, runwayMonths, savingsRate, finHasTx };
+    return { assetIDR, liabIDR, liqIDR, net, byCat, missing, incomeIDR, expenseIDR, runwayMonths, savingsRate, finHasTx, kantongIDR };
   }, [w, data.keuangan, usdIdr]);
 
-  const hasAssets = w.assets.length > 0;
-  const hasAny = w.assets.length > 0 || w.liabilities.length > 0;
+  // kas kantong otomatis dihitung sebagai aset — neraca "hidup" begitu
+  // founder mencatat transaksi, tanpa harus input aset manual dulu
+  const hasKantong = calc.kantongIDR !== 0 || calc.finHasTx;
+  const hasAssets = w.assets.length > 0 || hasKantong;
+  const hasAny = w.assets.length > 0 || w.liabilities.length > 0 || hasKantong;
   const needsRate = w.assets.some(a => a.mataUang === "USD") || w.liabilities.some(l => l.mataUang === "USD");
 
   // ── Mutations ──
@@ -214,7 +234,7 @@ export function KekayaanPage({ data, update }: Props) {
           <Stat
             label={<span style={{ display: "inline-flex", alignItems: "center" }}>Runway<MetricInfo termId="runway">Di sini: aset likuid ÷ pengeluaran bulanan{calc.finHasTx ? ` (transaksi ${monthLabel(currentMonth(), true)})` : " (ledger Keuangan)"}.</MetricInfo></span>}
             value={calc.runwayMonths != null ? (hidden ? "•• bln" : `${calc.runwayMonths.toFixed(1)} bln`) : "—"}
-            sub={calc.runwayMonths == null ? "catat pengeluaran di Keuangan" : "aset likuid ÷ biaya/bln"}
+            sub={calc.runwayMonths == null ? "catat pengeluaran di Keuangan" : "aset likuid ÷ rata-rata keluar/bln"}
             right={<IconBox Icon={Timer} tint="var(--gold)" />}
           />
         </SeamGrid>
@@ -262,8 +282,28 @@ export function KekayaanPage({ data, update }: Props) {
               </button>
             </div>
             <div style={{ padding: "4px 14px 12px" }}>
+              {/* baris otomatis: kas dari halaman Keuangan — readonly, satu
+                  sumber kebenaran. JANGAN input ulang kas kantong manual. */}
+              {hasKantong && (
+                <div style={{
+                  display: "flex", gap: 8, alignItems: "center", padding: "10px 11px",
+                  margin: "8px 0 4px", borderRadius: 10,
+                  background: "var(--color-surface)", border: "1px dashed var(--color-border)",
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: CAT_COLOR["Kas"], flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--color-text)" }}>Kas di kantong</div>
+                    <div style={{ fontSize: 10, color: "var(--color-muted)" }}>
+                      otomatis dari halaman Keuangan — jangan diinput ulang manual di sini
+                    </div>
+                  </div>
+                  <span className="num" style={{ ...num, fontSize: 13, fontWeight: 600 }}>{money(calc.kantongIDR, hidden)}</span>
+                </div>
+              )}
               {w.assets.length === 0 ? (
-                <Empty text="Belum ada aset. Klik Tambah untuk mulai isi neraca." />
+                hasKantong
+                  ? <Empty text="Aset lain (kripto, saham, properti, piutang) bisa ditambah manual di sini." />
+                  : <Empty text="Belum ada aset. Klik Tambah untuk mulai isi neraca." />
               ) : (
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   {w.assets.map((a, i) => (
@@ -277,7 +317,7 @@ export function KekayaanPage({ data, update }: Props) {
                         <select value={a.kategori} onChange={e => updAsset(a.id, { kategori: e.target.value })} style={{ ...inputStyle, padding: "5px 7px", fontSize: 11 }}>
                           {ASSET_CATS.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
-                        <input value={a.jumlah} onChange={e => updAsset(a.id, { jumlah: e.target.value })} placeholder="0" inputMode="decimal" className="num" style={{ ...inputStyle, flex: 1, minWidth: 90, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", textAlign: "right" }} />
+                        <input value={a.jumlah} onChange={e => updAsset(a.id, { jumlah: e.target.value })} placeholder="cth: 5jt" inputMode="decimal" className="num" title={a.jumlah ? `terbaca: ${formatIDR(parseAmount(a.jumlah))}${a.mataUang === "USD" ? " (sebelum kurs)" : ""}` : undefined} style={{ ...inputStyle, flex: 1, minWidth: 90, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", textAlign: "right" }} />
                         <select value={a.mataUang} onChange={e => updAsset(a.id, { mataUang: e.target.value })} style={{ ...inputStyle, padding: "5px 7px", fontSize: 11 }}>
                           <option value="IDR">IDR</option><option value="USD">USD</option>
                         </select>
@@ -308,7 +348,7 @@ export function KekayaanPage({ data, update }: Props) {
                   {w.liabilities.map((l, i) => (
                     <div key={l.id} style={{ display: "flex", gap: 6, alignItems: "center", padding: "10px 0", borderBottom: i < w.liabilities.length - 1 ? SEAM_LINE : "none" }}>
                       <input value={l.label} onChange={e => updLiab(l.id, { label: e.target.value })} style={{ ...inputStyle, flex: 1, border: "none", background: "transparent", padding: "2px 0", fontWeight: 500 }} />
-                      <input value={l.jumlah} onChange={e => updLiab(l.id, { jumlah: e.target.value })} placeholder="0" inputMode="decimal" className="num" style={{ ...inputStyle, width: 100, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", textAlign: "right" }} />
+                      <input value={l.jumlah} onChange={e => updLiab(l.id, { jumlah: e.target.value })} placeholder="cth: 5jt" inputMode="decimal" className="num" title={l.jumlah ? `terbaca: ${formatIDR(parseAmount(l.jumlah))}${l.mataUang === "USD" ? " (sebelum kurs)" : ""}` : undefined} style={{ ...inputStyle, width: 100, fontFamily: "var(--font-mono)", fontVariantNumeric: "tabular-nums", textAlign: "right" }} />
                       <select value={l.mataUang} onChange={e => updLiab(l.id, { mataUang: e.target.value })} style={{ ...inputStyle, padding: "5px 7px", fontSize: 11 }}>
                         <option value="IDR">IDR</option><option value="USD">USD</option>
                       </select>
@@ -332,7 +372,7 @@ export function KekayaanPage({ data, update }: Props) {
               <MetricInfo termId="alokasi-aset" />
             </div>
             <div style={{ padding: "14px" }}>
-              {hasAssets && allocRows.length ? (
+              {allocRows.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                   {allocRows.map(([cat, val]) => {
                     const pct = calc.assetIDR > 0 ? (val / calc.assetIDR) * 100 : 0;
@@ -366,9 +406,15 @@ export function KekayaanPage({ data, update }: Props) {
             <div style={{ padding: "6px 14px 14px" }}>
               {calc.incomeIDR > 0 || calc.expenseIDR > 0 ? (
                 <>
+                  {/* jujur soal cakupan angka: bulan berjalan vs total ledger lama */}
+                  <p style={{ fontFamily: "var(--font-sans)", fontSize: 10.5, color: "var(--color-muted)", margin: "8px 0 0" }}>
+                    {calc.finHasTx
+                      ? `dari transaksi ${monthLabel(currentMonth(), true)} di halaman Keuangan`
+                      : "dari ledger manual lama — TOTAL keseluruhan, bukan bulanan"}
+                  </p>
                   <Field label="Income" value={money(calc.incomeIDR, hidden)} valueColor="var(--gain)" />
                   <Field label="Pengeluaran" value={money(calc.expenseIDR, hidden)} valueColor="var(--loss)" />
-                  <Field label="Net / bulan" value={money(calc.incomeIDR - calc.expenseIDR, hidden)} valueColor={calc.incomeIDR - calc.expenseIDR >= 0 ? "var(--gain)" : "var(--loss)"} />
+                  <Field label={calc.finHasTx ? "Net / bulan" : "Net"} value={money(calc.incomeIDR - calc.expenseIDR, hidden)} valueColor={calc.incomeIDR - calc.expenseIDR >= 0 ? "var(--gain)" : "var(--loss)"} />
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10 }}>
                     <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, color: "var(--color-muted)", display: "flex", alignItems: "center" }}>
                       Savings Rate<MetricInfo termId="savings-rate" />

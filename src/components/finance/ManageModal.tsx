@@ -246,8 +246,8 @@ export function ManageModal({ fin, setFin, onClose }: Props) {
               ))}
             </div>
             <p style={{ fontSize: 11.5, color: "var(--color-dim)", marginTop: 8, lineHeight: 1.5 }}>
-              Hanya format tampilan — angka TIDAK dikonversi (tanpa API kurs).
-              Contoh: {fmtMoney(1500000, fin.currency)}.
+              Hanya format tampilan — angka TIDAK pernah dikonversi kurs, di halaman
+              mana pun (termasuk Wealth). Contoh: {fmtMoney(1500000, fin.currency)}.
             </p>
           </div>
         </div>

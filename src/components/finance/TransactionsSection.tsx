@@ -3,12 +3,12 @@
 // edit lewat modal, hapus = langsung + toast "Urungkan" (soft-delete UX,
 // bukan dialog konfirmasi — dipakai berkali-kali sehari).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, Pencil, Trash2, ReceiptText, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   FinanceData, FinanceTransaction, TxType, parseAmountInput, fmtMoney,
-  monthLabel, monthOf, todayStr, catColor,
+  monthLabel, monthOf, todayStr, catColor, accountBreakdown,
 } from "@/lib/finance";
 import { useT } from "@/lib/lang";
 import { Card, Label, Chip, Btn, Modal, Field, inputStyle, EmptyState } from "./ui";
@@ -43,6 +43,12 @@ export function TransactionsSection({
   const accOf = (id?: string) => fin.accounts.find((a) => a.id === id);
   const catOf = (id?: string) => fin.categories.find((c) => c.id === id);
   const srcOf = (id?: string) => fin.sources.find((s) => s.id === id);
+
+  // Filter kantong dipasang → tampilkan SEMUA bulan otomatis: pengguna sedang
+  // merekonsiliasi saldo, dan saldo dibentuk seluruh riwayat, bukan satu bulan.
+  useEffect(() => {
+    if (accountFilter) setAllMonths(true);
+  }, [accountFilter]);
 
   const filtered = useMemo(() => {
     return [...fin.transactions]
@@ -124,6 +130,43 @@ export function TransactionsSection({
         </div>
       </div>
 
+      {/* STRIP REKONSILIASI — jawaban atas "kenapa saldo kantong ini segini":
+          persamaan lengkap saldo kantong terfilter, selalu bisa dicek mata */}
+      {accountFilter && accOf(accountFilter) && (() => {
+        const a = accOf(accountFilter)!;
+        const bd = accountBreakdown(fin, accountFilter);
+        const Item = ({ label, val, tone }: { label: string; val: number; tone?: string }) => (
+          <span style={{ whiteSpace: "nowrap" }}>
+            <span style={{ color: "var(--color-dim)" }}>{label} </span>
+            <span className="num" style={{ fontWeight: 700, color: tone ?? "var(--color-text)" }}>{fmtMoney(val, cur)}</span>
+          </span>
+        );
+        return (
+          <div style={{
+            background: "var(--color-surface)", borderRadius: 14, padding: "11px 14px",
+            marginBottom: 14, display: "flex", flexWrap: "wrap", gap: "6px 14px",
+            alignItems: "baseline", fontSize: 12,
+          }}>
+            <span style={{ fontWeight: 700, color: "var(--color-text)" }}>Saldo {a.name} =</span>
+            <Item label="awal" val={bd.initial} />
+            <Item label="+ masuk" val={bd.masuk} tone="var(--gain)" />
+            <Item label="− keluar" val={bd.keluar} tone="var(--loss)" />
+            {(bd.transferIn > 0 || bd.transferOut > 0) && (
+              <>
+                <Item label="+ transfer masuk" val={bd.transferIn} />
+                <Item label="− transfer keluar" val={bd.transferOut} />
+              </>
+            )}
+            <span style={{ whiteSpace: "nowrap" }}>
+              <span style={{ color: "var(--color-dim)" }}>= </span>
+              <span className="num" style={{ fontWeight: 700, fontSize: 13.5, color: bd.balance < 0 ? "var(--loss)" : "var(--color-text)" }}>
+                {fmtMoney(bd.balance, cur)}
+              </span>
+            </span>
+          </div>
+        );
+      })()}
+
       {/* filter aktif dari seksi lain (klik kartu kantong / baris kategori) */}
       {activeFilters && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center", marginBottom: 14 }}>
@@ -176,8 +219,14 @@ export function TransactionsSection({
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {txs.map((t) => {
-                    const amountColor = t.type === "masuk" ? "var(--gain)" : t.type === "keluar" ? "var(--loss)" : "var(--color-text)";
-                    const sign = t.type === "masuk" ? "+" : t.type === "keluar" ? "−" : "";
+                    // transfer: netral secara umum, tapi RELATIF terhadap kantong
+                    // yang sedang difilter arahnya jelas +/− (register per-akun)
+                    let amountColor = t.type === "masuk" ? "var(--gain)" : t.type === "keluar" ? "var(--loss)" : "var(--color-text)";
+                    let sign = t.type === "masuk" ? "+" : t.type === "keluar" ? "−" : "";
+                    if (t.type === "transfer" && accountFilter) {
+                      if (t.toAccountId === accountFilter) { sign = "+"; amountColor = "var(--gain)"; }
+                      else if (t.accountId === accountFilter) { sign = "−"; amountColor = "var(--loss)"; }
+                    }
                     return (
                       <div
                         key={t.id}

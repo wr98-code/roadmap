@@ -52,7 +52,7 @@ function spendingPaceInsight(fin: FinanceData, month: string): { pct: number; be
 export function SummaryHero({ fin, month, setMonth, onOpenManage, compact }: Props) {
   const cur = fin.currency;
   const t = useT();
-  const { masuk, keluar, net, txCount } = monthTotals(fin, month);
+  const { masuk, keluar, net, txCount, transferCount } = monthTotals(fin, month);
   const isCurrent = month === currentMonth();
   const hasData = txCount > 0;
   const runway = runwayMonths(fin);
@@ -214,6 +214,7 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage, compact }: Pro
             <div style={{ display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
               <span style={{ fontSize: 11.5, color: "var(--color-muted)" }}>
                 <span className="num">{txCount}</span> transaksi
+                {transferCount > 0 && <> · <span className="num">{transferCount}</span> transfer</>}
               </span>
               {monthProgress !== null && !compact && (
                 <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>| = posisi hari ini</span>
@@ -226,7 +227,7 @@ export function SummaryHero({ fin, month, setMonth, onOpenManage, compact }: Pro
                     color: runway < 2 ? "var(--loss)" : runway < 4 ? "var(--warning)" : "var(--gain)",
                   }}
                 >
-                  RUNWAY ≈ <span className="num">&nbsp;{runway >= 24 ? "24+" : runway.toFixed(1).replace(".", ",")}</span>&nbsp;BULAN
+                  RUNWAY KAS ≈ <span className="num">&nbsp;{runway >= 24 ? "24+" : runway.toFixed(1).replace(".", ",")}</span>&nbsp;BULAN
                   <MetricInfo termId="runway">{t("runway.caption")}</MetricInfo>
                 </span>
               )}

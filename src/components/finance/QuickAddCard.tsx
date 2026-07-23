@@ -8,7 +8,7 @@
 // - memori catatan→kategori, repeat pill transaksi terakhir
 // - feedback langsung: toast + ringkasan ikut update, fokus balik ke amount
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDownRight, ArrowUpRight, ArrowLeftRight, Plus, Repeat, Coins } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -48,15 +48,56 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
   const [amountStr, setAmountStr] = useState("");
   const [note, setNote] = useState("");
   const [date, setDate] = useState(todayStr());
+  // user sudah menyentuh tanggal sendiri? (kalau tidak, tanggal disegarkan
+  // saat submit — form yang dibiarkan terbuka melewati tengah malam tidak
+  // boleh diam-diam mencatat ke tanggal/bulan kemarin)
+  const [manualDate, setManualDate] = useState(false);
   const [accountId, setAccountId] = useState<string>(
     () => (lastTx && activeAccounts.some((a) => a.id === lastTx.accountId) ? lastTx.accountId : activeAccounts[0]?.id ?? "")
   );
   const [toAccountId, setToAccountId] = useState<string>("");
-  const [sourceId, setSourceId] = useState<string>(() => lastMasuk?.sourceId ?? fin.sources[0]?.id ?? "");
+  // Pemasukan PERTAMA sengaja TANPA default sumber — validasi "wajib pilih
+  // sumber" harus benar-benar memaksa satu pilihan sadar (kalau default =
+  // Trading, pemasukan gaji pertama diam-diam masuk chart P&L trading).
+  const [sourceId, setSourceId] = useState<string>(() =>
+    lastMasuk?.sourceId && fin.sources.some((s) => s.id === lastMasuk.sourceId) ? lastMasuk.sourceId : ""
+  );
   const [categoryId, setCategoryId] = useState<string>(
     () => lastKeluar?.categoryId ?? fin.categories.find((c) => !c.kind)?.id ?? fin.categories[0]?.id ?? ""
   );
   const [manualCat, setManualCat] = useState(false); // user sudah pilih kategori sendiri?
+  // jejak persisten entri terakhir (toast hilang dalam hitungan detik)
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+
+  // ── Penjaga state basi: entitas terpilih bisa DIHAPUS/DIARSIP dari seksi
+  // lain sementara form ini tetap mounted. Tanpa penjaga ini, transaksi bisa
+  // tercatat ke id hantu — uang "hilang" dari semua kantong. ──
+  useEffect(() => {
+    if (accountId && !activeAccounts.some((a) => a.id === accountId)) {
+      setAccountId(activeAccounts[0]?.id ?? "");
+    }
+    if (toAccountId && !activeAccounts.some((a) => a.id === toAccountId)) {
+      setToAccountId("");
+    }
+    if (sourceId && !fin.sources.some((s) => s.id === sourceId)) {
+      setSourceId(""); // paksa pilihan sadar lagi
+    }
+    if (categoryId && !fin.categories.some((c) => c.id === categoryId)) {
+      setCategoryId(fin.categories.find((c) => !c.kind)?.id ?? fin.categories[0]?.id ?? "");
+      setManualCat(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fin.accounts, fin.sources, fin.categories]);
+
+  // Saat beralih ke mode Masuk, default kantong = kantong PEMASUKAN terakhir
+  // (bukan kantong transaksi apa pun terakhir — jajan kopi dari Cash tidak
+  // boleh membuat transferan BCA berikutnya diam-diam mendarat di Cash).
+  useEffect(() => {
+    if (type === "masuk" && lastMasuk && activeAccounts.some((a) => a.id === lastMasuk.accountId)) {
+      setAccountId(lastMasuk.accountId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type]);
 
   const parsed = parseAmountInput(amountStr);
   const catsByUsage = useMemo(() => categoriesByUsage(fin), [fin]);
@@ -109,13 +150,24 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
 
   const submit = () => {
     if (!parsed) { toast.error("Jumlah belum valid — coba: 25rb, 1,5jt, atau 10rb+5rb"); amountRef.current?.focus(); return; }
-    if (!accountId) { toast.error("Pilih kantong dulu"); return; }
-    if (type === "masuk" && !sourceId) { toast.error("Pemasukan wajib pilih SUMBER (Trading / Bisnis / …)"); return; }
+    // validasi terhadap DAFTAR AKTIF, bukan sekadar truthy — id basi ditolak
+    if (!accountId || !activeAccounts.some((a) => a.id === accountId)) {
+      toast.error("Pilih kantong dulu"); return;
+    }
+    if (type === "masuk" && (!sourceId || !fin.sources.some((s) => s.id === sourceId))) {
+      toast.error("Pemasukan wajib pilih SUMBER (Trading / Bisnis / …)"); return;
+    }
     if (type === "transfer") {
-      if (!toAccountId) { toast.error("Pilih kantong tujuan transfer"); return; }
+      if (!toAccountId || !activeAccounts.some((a) => a.id === toAccountId)) { toast.error("Pilih kantong tujuan transfer"); return; }
       if (toAccountId === accountId) { toast.error("Kantong asal dan tujuan tidak boleh sama"); return; }
     }
-    if (type === "keluar" && !categoryId) { toast.error("Pilih kategori dulu"); return; }
+    if (type === "keluar" && (!categoryId || !fin.categories.some((c) => c.id === categoryId))) {
+      toast.error("Pilih kategori dulu"); return;
+    }
+
+    // tanggal segar bila user tidak pernah menyentuhnya (anti tengah-malam basi)
+    const txDate = manualDate ? date : todayStr();
+    if (!manualDate && date !== txDate) setDate(txDate);
 
     const tx: FinanceTransaction = {
       id: newId(),
@@ -126,19 +178,21 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
       sourceId: type === "masuk" ? sourceId : undefined,
       categoryId: type === "keluar" ? categoryId : undefined,
       note: note.trim() || undefined,
-      date,
+      date: txDate,
       createdAt: new Date().toISOString(),
     };
     setFin((f) => ({ ...f, transactions: [...f.transactions, tx] }));
 
     const accName = activeAccounts.find((a) => a.id === accountId)?.name ?? "";
+    // konfirmasi berlabel eksplisit — arah & sumber tidak boleh ambigu
     const desc =
       type === "masuk"
-        ? `+${fmtMoney(parsed, cur)} → ${accName} (${fin.sources.find((s) => s.id === sourceId)?.name ?? ""})`
+        ? `+${fmtMoney(parsed, cur)} masuk ke ${accName} · sumber ${fin.sources.find((s) => s.id === sourceId)?.name ?? ""}`
         : type === "keluar"
-          ? `−${fmtMoney(parsed, cur)} dari ${accName}`
-          : `${fmtMoney(parsed, cur)} ${accName} → ${activeAccounts.find((a) => a.id === toAccountId)?.name ?? ""}`;
-    toast.success(`Tercatat — ${desc}`);
+          ? `−${fmtMoney(parsed, cur)} dari ${accName} · ${fin.categories.find((c) => c.id === categoryId)?.name ?? ""}`
+          : `${fmtMoney(parsed, cur)} dipindah ${accName} → ${activeAccounts.find((a) => a.id === toAccountId)?.name ?? ""}`;
+    toast.success(`Tercatat: ${desc}`);
+    setLastSaved(desc);
 
     // clear minimal: jumlah + catatan saja, konteks lain dipertahankan
     setAmountStr("");
@@ -149,7 +203,11 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
 
   const cfg = TYPE_CFG[type];
   const inlineCreate = (kind: "kategori" | "sumber") => {
-    const name = window.prompt(kind === "kategori" ? "Nama kategori baru:" : "Nama sumber pemasukan baru:")?.trim();
+    const name = window.prompt(
+      kind === "kategori"
+        ? "Nama kategori pengeluaran baru:"
+        : "Nama sumber pemasukan baru — JENIS penghasilan (mis. Freelance, Sewa), BUKAN nama bank/e-wallet (itu Kantong):"
+    )?.trim();
     if (!name) return;
     const id = newId();
     if (kind === "kategori") {
@@ -260,23 +318,43 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
             {recentNotes.map((n) => <option key={n} value={n} />)}
           </datalist>
 
-          {/* tanggal */}
+          {/* tanggal — chip/input manual menandai manualDate (anti tanggal basi) */}
           <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 10, flexWrap: "wrap" }}>
-            <Chip small active={date === todayStr()} onClick={() => setDate(todayStr())}>Hari ini</Chip>
-            <Chip small active={date === yesterday()} onClick={() => setDate(yesterday())}>Kemarin</Chip>
+            <Chip small active={!manualDate || date === todayStr()} onClick={() => { setDate(todayStr()); setManualDate(false); }}>Hari ini</Chip>
+            <Chip small active={manualDate && date === yesterday()} onClick={() => { setDate(yesterday()); setManualDate(true); }}>Kemarin</Chip>
             <input
               type="date"
               value={date}
               max={todayStr()}
-              onChange={(e) => e.target.value && setDate(e.target.value)}
+              onChange={(e) => { if (e.target.value) { setDate(e.target.value); setManualDate(true); } }}
               className="num"
               style={{ ...inputStyle, width: 148, padding: "5px 10px", fontSize: 12.5 }}
             />
           </div>
         </div>
 
-        {/* Kolom kanan: kantong + kategori/sumber */}
+        {/* Kolom kanan — urutan mengikuti cara berpikir: untuk pemasukan,
+            DARI mana (sumber) dulu, baru KE kantong mana disimpannya */}
         <div style={{ flex: "1.5 1 310px", minWidth: 270, display: "flex", flexDirection: "column", gap: 13 }}>
+          {type === "masuk" && (
+            <div>
+              <Label style={{ fontSize: 10, color: "var(--gain)" }}>{t("qa.sumberLabel")}</Label>
+              <div style={{ fontSize: 10.5, color: "var(--color-dim)", marginTop: 3, lineHeight: 1.45 }}>
+                jenis asal uangnya — bank & e-wallet itu KANTONG (di bawah), bukan sumber
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
+                {fin.sources.map((s) => (
+                  <Chip key={s.id} active={sourceId === s.id} color={catColor(s.color)} onClick={() => setSourceId(s.id)}>
+                    <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 3, flexShrink: 0, background: catColor(s.color) }} /> {s.name}
+                  </Chip>
+                ))}
+                <Chip onClick={() => inlineCreate("sumber")} title="Buat sumber baru">
+                  <Plus size={11} /> Baru
+                </Chip>
+              </div>
+            </div>
+          )}
+
           {/* kantong asal/tujuan */}
           <div>
             <Label style={{ fontSize: 10 }}>
@@ -315,28 +393,23 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
             </div>
           )}
 
-          {type === "masuk" && (
-            <div>
-              <Label style={{ fontSize: 10, color: "var(--gain)" }}>{t("qa.sumberLabel")}</Label>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 7 }}>
-                {fin.sources.map((s) => (
-                  <Chip key={s.id} active={sourceId === s.id} color={catColor(s.color)} onClick={() => setSourceId(s.id)}>
-                    <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: 3, flexShrink: 0, background: catColor(s.color) }} /> {s.name}
-                  </Chip>
-                ))}
-                <Chip onClick={() => inlineCreate("sumber")} title="Buat sumber baru">
-                  <Plus size={11} /> Baru
-                </Chip>
-              </div>
-            </div>
-          )}
-
           <div style={{ display: "flex", gap: 10, alignItems: "center", marginTop: "auto", flexWrap: "wrap" }}>
+            {/* tujuan tertulis DI tombol — konfirmasi arah tepat sebelum menekan */}
             <Btn
               onClick={submit}
-              style={{ background: cfg.soft, color: cfg.color, border: `1.5px solid ${cfg.color}`, padding: "10px 24px", fontSize: 14 }}
+              style={{ background: cfg.soft, color: cfg.color, border: `1.5px solid ${cfg.color}`, padding: "10px 20px", fontSize: 14 }}
             >
               <cfg.Icon size={14} /> Simpan {cfg.label}
+              {(() => {
+                const nm = (id: string) => activeAccounts.find((a) => a.id === id)?.name;
+                const to = type === "masuk" ? nm(accountId) : type === "keluar" ? nm(accountId) : (nm(accountId) && nm(toAccountId) ? `${nm(accountId)}→${nm(toAccountId)}` : undefined);
+                if (!to) return null;
+                return (
+                  <span style={{ fontWeight: 500, opacity: 0.85, maxWidth: 150, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {type === "masuk" ? `→ ${to}` : type === "keluar" ? `dari ${to}` : to}
+                  </span>
+                );
+              })()}
             </Btn>
             {/* repeat pills */}
             {repeatPills.length > 0 && type === "keluar" && (
@@ -353,6 +426,13 @@ export function QuickAddCard({ fin, setFin, bare }: Props) {
               </div>
             )}
           </div>
+
+          {/* jejak persisten entri terakhir — toast hilang, baris ini tidak */}
+          {lastSaved && (
+            <div className="num" style={{ fontSize: 11, color: "var(--color-dim)", lineHeight: 1.5 }}>
+              Terakhir tercatat: {lastSaved}
+            </div>
+          )}
         </div>
       </div>
     </Card>

@@ -13,8 +13,9 @@ import {
 import { toast } from "sonner";
 import {
   FinanceData, FinanceAccount, AccountType, ACCOUNT_TYPES, ACCOUNT_TYPE_LABEL,
-  CatKey, catColor, CAT_KEYS, accountBalance, totalBalance, accountTxCount,
-  fmtMoney, newId,
+  CatKey, catColor, CAT_KEYS, accountBalance, accountBreakdown, totalBalance,
+  accountTxCount, monthTotals, currentMonth, fmtMoney, newId,
+  parseBalanceInput,
 } from "@/lib/finance";
 import { useT } from "@/lib/lang";
 import { MetricInfo } from "@/components/MetricInfo";
@@ -58,6 +59,8 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
   const active = fin.accounts.filter((a) => !a.archived);
   const archived = fin.accounts.filter((a) => a.archived);
   const total = totalBalance(fin);
+  const monthNet = monthTotals(fin, currentMonth()).net;
+  const archivedTotal = archived.reduce((s, a) => s + accountBalance(fin, a.id), 0);
 
   // kelompokkan per tipe, urutan tetap — mudah discan
   const groups = TYPE_ORDER
@@ -74,7 +77,13 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
     if (!draft) return;
     const name = draft.name.trim();
     if (!name) { toast.error("Nama kantong belum diisi"); return; }
-    const initial = Number(draft.initialBalance.replace(/\./g, "").replace(",", ".")) || 0;
+    // SATU parser dengan form transaksi — "5jt"/"500rb"/"5.000.000" semua sah.
+    // Input tak terbaca DITOLAK dengan jelas, tidak pernah diam-diam jadi 0.
+    const initial = parseBalanceInput(draft.initialBalance);
+    if (initial === null) {
+      toast.error(`Saldo awal "${draft.initialBalance}" tidak terbaca — contoh format: 5jt · 500rb · 5.000.000`);
+      return;
+    }
     if (draft.id) {
       setFin((f) => ({
         ...f,
@@ -97,37 +106,71 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
 
   const toggleArchive = (id: string, archive: boolean) => {
     if (archive && active.length <= 1) { toast.error("Minimal satu kantong aktif"); return; }
+    // Arsip mengeluarkan saldo dari TOTAL — jangan diam-diam bila saldonya ≠ 0
+    const bal = accountBalance(fin, id);
+    if (archive && Math.round(bal) !== 0) {
+      const name = fin.accounts.find((a) => a.id === id)?.name ?? "kantong ini";
+      if (!window.confirm(
+        `Saldo ${name} (${fmtMoney(bal, cur)}) akan BERHENTI dihitung di TOTAL SALDO selama diarsip. ` +
+        `Riwayat & saldonya tetap utuh dan bisa diaktifkan lagi kapan saja. Lanjut arsipkan?`
+      )) return;
+    }
     setFin((f) => ({ ...f, accounts: f.accounts.map((a) => (a.id === id ? { ...a, archived: archive } : a)) }));
     if (accountFilter === id) setAccountFilter(null);
     setDraft(null);
     setConfirmDelete(false);
-    toast.success(archive ? "Kantong diarsipkan — riwayat tetap utuh" : "Kantong diaktifkan lagi");
+    toast.success(archive
+      ? (Math.round(bal) !== 0 ? `Diarsipkan — ${fmtMoney(bal, cur)} tidak lagi dihitung di TOTAL SALDO` : "Kantong diarsipkan — riwayat tetap utuh")
+      : "Kantong diaktifkan lagi — saldonya kembali dihitung di TOTAL SALDO");
   };
 
   const hardDelete = (id: string) => {
     const acc = fin.accounts.find((a) => a.id === id);
     if (!acc) return;
     if (!acc.archived && active.length <= 1) { toast.error("Minimal satu kantong aktif"); return; }
-    setFin((f) => ({
-      ...f,
-      accounts: f.accounts.filter((a) => a.id !== id),
-      // transaksi yang menyentuh kantong ini ikut terhapus (sudah dikonfirmasi)
-      transactions: f.transactions.filter((t) => t.accountId !== id && t.toAccountId !== id),
-    }));
+    setFin((f) => {
+      // JAGA SALDO KANTONG LAIN: record transfer yang menyentuh kantong ini
+      // ikut terhapus, jadi efek bersihnya ke tiap kantong lain dikompensasi
+      // ke saldo awal mereka — saldo kantong yang TIDAK dihapus tidak berubah.
+      const delta = new Map<string, number>();
+      for (const t of f.transactions) {
+        if (t.type !== "transfer") continue;
+        if (t.accountId === id && t.toAccountId && t.toAccountId !== id) {
+          // kantong lain pernah MENERIMA dari kantong ini — uang itu nyata di sana
+          delta.set(t.toAccountId, (delta.get(t.toAccountId) ?? 0) + t.amount);
+        } else if (t.toAccountId === id && t.accountId !== id) {
+          // kantong lain pernah MENGIRIM ke kantong ini — pengurangan itu nyata
+          delta.set(t.accountId, (delta.get(t.accountId) ?? 0) - t.amount);
+        }
+      }
+      return {
+        ...f,
+        accounts: f.accounts
+          .filter((a) => a.id !== id)
+          .map((a) => (delta.has(a.id) ? { ...a, initialBalance: a.initialBalance + delta.get(a.id)! } : a)),
+        transactions: f.transactions.filter((t) => t.accountId !== id && t.toAccountId !== id),
+      };
+    });
     if (accountFilter === id) setAccountFilter(null);
     setDraft(null);
     setConfirmDelete(false);
-    toast.success(`Kantong "${acc.name}" dan transaksinya dihapus`);
+    toast.success(`Kantong "${acc.name}" dihapus — saldo kantong lain tidak berubah`);
   };
 
   const editing = draft?.id ? fin.accounts.find((a) => a.id === draft.id) : undefined;
   const editingTxCount = editing ? accountTxCount(fin, editing.id) : 0;
 
   const AccountCard = ({ a }: { a: FinanceAccount }) => {
-    const bal = accountBalance(fin, a.id);
+    const bd = accountBreakdown(fin, a.id);
+    const bal = bd.balance;
     const selected = accountFilter === a.id;
     const Icon = TYPE_ICONS[a.type] ?? Coins;
     const color = catColor(a.color);
+    // angka tidak pernah misterius: rinciannya selalu satu hover/klik jauhnya
+    const rincian =
+      `Saldo awal ${fmtMoney(bd.initial, cur)} + Masuk ${fmtMoney(bd.masuk, cur)} − Keluar ${fmtMoney(bd.keluar, cur)}` +
+      (bd.transferIn || bd.transferOut ? ` + Transfer masuk ${fmtMoney(bd.transferIn, cur)} − Transfer keluar ${fmtMoney(bd.transferOut, cur)}` : "") +
+      ` = ${fmtMoney(bal, cur)}`;
     return (
       <div
         onClick={() => setAccountFilter(selected ? null : a.id)}
@@ -167,8 +210,13 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
             <Pencil size={12.5} />
           </button>
         </div>
-        <div className="num" style={{ fontSize: 17, fontWeight: 700, marginTop: 10, color: bal < 0 ? "var(--loss)" : "var(--color-text)" }}>
-          {fmtMoney(bal, cur)}
+        <div style={{ marginTop: 9 }} title={rincian}>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-dim)" }}>
+            Saldo kini
+          </div>
+          <div className="num" style={{ fontSize: 17, fontWeight: 700, marginTop: 2, color: bal < 0 ? "var(--loss)" : "var(--color-text)" }}>
+            {fmtMoney(bal, cur)}
+          </div>
         </div>
       </div>
     );
@@ -180,17 +228,25 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
         <Label>Kantong</Label>
         <span style={{ fontSize: 11.5, color: "var(--color-dim)" }}>{t("acc.sub")}</span>
         <div style={{ flex: 1 }} />
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", color: "var(--color-muted)" }}>
-            {t("acc.total")}
-          </span>
-          <span className="num" style={{ fontSize: 21, fontWeight: 700, color: "var(--color-text)" }}>
-            {fmtMoney(total, cur)}
-          </span>
-          <MetricInfo termId="net-worth">
-            Total saldo kantong aktif = sisi kas dari net worth-mu. Neraca lengkap
-            (aset lain + utang) ada di halaman Wealth.
-          </MetricInfo>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 8, justifyContent: "flex-end" }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", color: "var(--color-muted)" }}>
+              {t("acc.total")}
+            </span>
+            <span className="num" style={{ fontSize: 21, fontWeight: 700, color: "var(--color-text)" }}>
+              {fmtMoney(total, cur)}
+            </span>
+            <MetricInfo termId="net-worth">
+              Jumlah saldo kini semua kantong aktif (saldo awal + seluruh mutasi).
+              Angka ini otomatis muncul sebagai baris aset "Kas di kantong" di
+              halaman Wealth.
+            </MetricInfo>
+          </div>
+          {/* jembatan stok vs aliran: kenapa TOTAL ≠ surplus bulan ini */}
+          <div className="num" style={{ fontSize: 10.5, color: "var(--color-dim)", marginTop: 2 }}>
+            termasuk saldo awal · bulan ini {fmtMoney(monthNet, cur, true)}
+            {archivedTotal !== 0 && <> · arsip {fmtMoney(archivedTotal, cur)}</>}
+          </div>
         </div>
       </div>
 
@@ -339,17 +395,59 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
             <Field label="Warna identitas">
               <ColorSwatches value={draft.color} onChange={(color) => setDraft({ ...draft, color })} />
             </Field>
-            <Field label={draft.id ? "Saldo awal (penyesuaian)" : "Isinya sekarang berapa?"}>
+            <Field label={draft.id ? "Saldo awal" : "Isinya sekarang berapa?"}>
               <input
                 value={draft.initialBalance}
                 onChange={(e) => setDraft({ ...draft, initialBalance: e.target.value })}
                 onKeyDown={(e) => e.key === "Enter" && save()}
                 inputMode="decimal"
-                placeholder="0"
+                placeholder="cth: 5jt · 500rb · 5.000.000"
                 className="num"
                 style={inputStyle}
               />
+              {/* preview parser — salah ketik langsung terlihat, tidak pernah 0 diam-diam */}
+              {(() => {
+                const p = parseBalanceInput(draft.initialBalance);
+                if (draft.initialBalance.trim() === "") return null;
+                if (p === null) {
+                  return <span style={{ fontSize: 11, color: "var(--loss)", fontWeight: 600 }}>Tidak terbaca — pakai format 5jt, 500rb, atau 5.000.000</span>;
+                }
+                const delta = editing ? accountBreakdown(fin, editing.id).balance - editing.initialBalance : 0;
+                return (
+                  <span className="num" style={{ fontSize: 11.5, color: "var(--gain)", fontWeight: 600 }}>
+                    = {fmtMoney(p, cur)}
+                    {editing && <span style={{ color: "var(--color-muted)", fontWeight: 500 }}> · saldo kini akan menjadi {fmtMoney(p + delta, cur)}</span>}
+                  </span>
+                );
+              })()}
+              {draft.id && (
+                <span style={{ fontSize: 11, color: "var(--color-dim)", lineHeight: 1.5 }}>
+                  Ini saldo SEBELUM semua transaksi tercatat — bukan saldo sekarang.
+                </span>
+              )}
             </Field>
+
+            {/* kasus paling umum: kartu tidak cocok dengan saldo bank asli */}
+            {draft.id && editing && (
+              <Btn
+                variant="ghost"
+                onClick={() => {
+                  const raw = window.prompt(
+                    `Saldo asli di ${editing.name} sekarang berapa? (cth: 5,5jt)\n` +
+                    `Saldo awal akan dihitung mundur otomatis supaya kartu cocok.`
+                  )?.trim();
+                  if (!raw) return;
+                  const target = parseBalanceInput(raw);
+                  if (target === null) { toast.error(`"${raw}" tidak terbaca — pakai format 5jt / 500rb / 5.000.000`); return; }
+                  const delta = accountBreakdown(fin, editing.id).balance - editing.initialBalance;
+                  setDraft({ ...draft, initialBalance: String(target - delta) });
+                  toast.success(`Saldo awal disetel ${fmtMoney(target - delta, cur)} — saldo kini akan pas ${fmtMoney(target, cur)}`);
+                }}
+                style={{ alignSelf: "flex-start" }}
+              >
+                Samakan dengan saldo bank sekarang…
+              </Btn>
+            )}
 
             <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
               <Btn onClick={save} style={{ flex: 1 }}>{draft.id ? "Simpan" : "Buat Kantong"}</Btn>
@@ -369,7 +467,8 @@ export function AccountsSection({ fin, setFin, accountFilter, setAccountFilter, 
                   <div style={{ background: "var(--loss-soft)", borderRadius: 13, padding: 13 }}>
                     <p style={{ fontSize: 13, color: "var(--color-text)", marginBottom: 10, lineHeight: 1.5 }}>
                       Hapus <b>{editing.name}</b> beserta <b>{editingTxCount} transaksi</b> yang
-                      menyentuhnya? Tidak bisa dibatalkan.
+                      menyentuhnya? Saldo kantong LAIN tidak akan berubah (transfer
+                      terkait dikompensasi otomatis ke saldo awalnya). Tidak bisa dibatalkan.
                     </p>
                     <div style={{ display: "flex", gap: 8 }}>
                       <Btn variant="danger" onClick={() => hardDelete(draft.id!)}>Ya, hapus semua</Btn>

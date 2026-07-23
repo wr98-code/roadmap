@@ -65,9 +65,17 @@ export function useUsdIdr(): number | null {
   return rate;
 }
 
-/** Parse a loose money string ("Rp 3.750.000", "1,200.50") to a number. */
+/** Parse a loose money string ("Rp 3.750.000", "1,200.50", "5jt", "500rb") to a number.
+ *  Dukungan sufiks SAMA dengan parser Keuangan (parseAmountInput) — sebelumnya
+ *  "5jt" dibaca 5 (huruf dibuang diam-diam) dan merusak Net Worth jutaan kali lipat. */
 export function parseAmount(s: string): number {
   if (!s) return 0;
+  const compact = s.toLowerCase().replace(/\s+/g, "");
+  const suffix = compact.match(/^(?:rp)?([0-9.,]+)(rb|ribu|k|jt|juta)$/);
+  if (suffix) {
+    const mult = suffix[2] === "jt" || suffix[2] === "juta" ? 1e6 : 1e3;
+    return parseAmount(suffix[1]) * mult;
+  }
   // strip everything but digits, separators
   const cleaned = s.replace(/[^0-9.,]/g, "");
   if (!cleaned) return 0;
@@ -91,11 +99,13 @@ export function parseAmount(s: string): number {
   return isNaN(n) ? 0 : n;
 }
 
-/** Convert an amount in a currency to IDR using the live rate. */
+/** Convert an amount in a currency to IDR using the live rate.
+ *  Mata uang dinormalisasi ("usd", " US$ " → USD) — field lama berupa teks
+ *  bebas, dan "usd" huruf kecil sempat dihitung sebagai Rupiah mentah. */
 export function toIDR(amount: number, currency: string, usdIdr: number | null): number | null {
-  if (currency === "IDR") return amount;
-  if (currency === "USD") return usdIdr != null ? amount * usdIdr : null;
-  return amount; // unknown currency: treat as base
+  const c = (currency || "").trim().toUpperCase();
+  if (c.includes("USD") || c.includes("$")) return usdIdr != null ? amount * usdIdr : null;
+  return amount; // IDR / kosong / tak dikenal: nilai apa adanya (basis Rupiah)
 }
 
 export function formatIDR(n: number): string {

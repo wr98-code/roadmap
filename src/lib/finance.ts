@@ -172,6 +172,23 @@ export function migrateFinance(raw: Partial<FinanceData> | undefined | null): Fi
     ...c,
     color: VALID_KEYS.has(c.color) ? c.color : CAT_KEYS[i % CAT_KEYS.length],
   }));
+  // GUARD UANG HILANG: transaksi yang menunjuk kantong yang tidak ada
+  // (blob korup parsial / bug lama) → rekonstruksi kantong placeholder
+  // dengan ID YANG SAMA supaya saldonya tetap terhitung dan terlihat.
+  // (Sumber/kategori hantu SENGAJA dibiarkan — UI menampilkannya jujur
+  //  sebagai "Tanpa sumber"/"Tanpa kategori" dan bukan uang yang hilang.)
+  const knownAcc = new Set(fin.accounts.map((a) => a.id));
+  const ghosts = new Set<string>();
+  for (const t of fin.transactions) {
+    if (t.accountId && !knownAcc.has(t.accountId)) ghosts.add(t.accountId);
+    if (t.toAccountId && !knownAcc.has(t.toAccountId)) ghosts.add(t.toAccountId);
+  }
+  for (const id of ghosts) {
+    fin.accounts.push({
+      id, name: "Kantong terpulihkan", type: "other", color: "muted",
+      initialBalance: 0, createdAt: new Date().toISOString(),
+    });
+  }
   return fin;
 }
 
@@ -242,11 +259,18 @@ export function fmtCompact(n: number, currency: Currency = "IDR"): string {
 }
 
 /**
- * Parser jumlah friction-minimal:
- * - sufiks IDR: "25rb"/"25k" → 25.000 · "1,5jt"/"1.5jt"/"2m" → juta
+ * Parser jumlah friction-minimal — SATU-SATUNYA parser uang di app
+ * (dipakai QuickAdd, edit transaksi, saldo awal kantong, limit kategori,
+ * dan lewat fx.ts juga aset/utang Wealth):
+ * - sufiks: "25rb"/"25ribu"/"25k" → ribu · "1,5jt"/"1,5juta" → juta
+ *   (sufiks tunggal "m" DITOLAK: parser lama membacanya juta padahal
+ *   label chart "M" berarti miliar — ambigu 1000x, lebih baik error keras)
  * - penjumlahan/pengurangan inline: "15rb+10rb-5rb"
- * - koma ATAU titik sebagai desimal ("1,5" = "1.5"), "1.250.000" = ribuan
- * Return null bila tidak bisa diparse / hasil ≤ 0.
+ * - "1.250.000" = titik ribuan (boleh + desimal koma: "1.250.000,50")
+ * - "1,250,000" = koma ribuan gaya EN (boleh + desimal titik: "1,250.50")
+ * - selain pola ribuan di atas: koma ATAU titik tunggal = desimal
+ * Return null bila tidak bisa diparse / hasil ≤ 0 — pemanggil WAJIB
+ * menolak dan memberi tahu pengguna, JANGAN pernah fallback 0 diam-diam.
  */
 export function parseAmountInput(input: string): number | null {
   if (!input) return null;
@@ -261,19 +285,37 @@ export function parseAmountInput(input: string): number | null {
     if (term.startsWith("+")) term = term.slice(1);
     else if (term.startsWith("-")) { sign = -1; term = term.slice(1); }
     let mult = 1;
-    const suffix = term.match(/(rb|k|jt|m|juta|ribu)$/);
+    const suffix = term.match(/(rb|ribu|k|jt|juta)$/);
     if (suffix) {
-      mult = suffix[1] === "jt" || suffix[1] === "m" || suffix[1] === "juta" ? 1e6 : 1e3;
+      mult = suffix[1] === "jt" || suffix[1] === "juta" ? 1e6 : 1e3;
       term = term.slice(0, -suffix[1].length);
     }
     let num: number;
-    if (/^\d{1,3}(\.\d{3})+$/.test(term)) num = Number(term.replace(/\./g, ""));
-    else num = Number(term.replace(",", "."));
+    if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(term)) {
+      // titik ribuan (id), koma desimal opsional
+      num = Number(term.replace(/\./g, "").replace(",", "."));
+    } else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(term)) {
+      // koma ribuan (en), titik desimal opsional
+      num = Number(term.replace(/,/g, ""));
+    } else {
+      num = Number(term.replace(",", "."));
+    }
     if (!isFinite(num) || term === "") return null;
     total += sign * num * mult;
   }
   if (!isFinite(total) || total <= 0) return null;
   return Math.round(total * 100) / 100;
+}
+
+/**
+ * Parser untuk field SALDO (saldo awal kantong): seperti parseAmountInput
+ * tapi kosong/"0" = 0 yang sah. Return null bila tidak bisa diparse —
+ * pemanggil WAJIB menolak & memberi tahu pengguna, JANGAN diam-diam 0.
+ */
+export function parseBalanceInput(input: string): number | null {
+  const s = input.trim();
+  if (!s || s === "0") return 0;
+  return parseAmountInput(s);
 }
 
 // ── Kalkulasi ─────────────────────────────────────────────────────────────────
@@ -303,19 +345,22 @@ export interface MonthTotals {
   masuk: number;
   keluar: number;
   net: number;
+  /** hanya transaksi masuk/keluar — dasar "bulan ini ada data arus kas" */
   txCount: number;
+  /** transfer antar kantong (bukan arus kas) — dilaporkan terpisah */
+  transferCount: number;
 }
 
-/** Total masuk/keluar bulan tertentu — transfer TIDAK dihitung. */
+/** Total masuk/keluar bulan tertentu — transfer TIDAK dihitung sebagai arus kas. */
 export function monthTotals(fin: FinanceData, monthKey: string): MonthTotals {
-  let masuk = 0, keluar = 0, txCount = 0;
+  let masuk = 0, keluar = 0, txCount = 0, transferCount = 0;
   for (const t of fin.transactions) {
     if (monthOf(t.date) !== monthKey) continue;
-    txCount++;
-    if (t.type === "masuk") masuk += t.amount;
-    else if (t.type === "keluar") keluar += t.amount;
+    if (t.type === "masuk") { masuk += t.amount; txCount++; }
+    else if (t.type === "keluar") { keluar += t.amount; txCount++; }
+    else transferCount++;
   }
-  return { masuk, keluar, net: masuk - keluar, txCount };
+  return { masuk, keluar, net: masuk - keluar, txCount, transferCount };
 }
 
 export interface CategorySlice {
@@ -469,21 +514,28 @@ export function sourceDailySeries(fin: FinanceData, monthKey: string, sourceId: 
 }
 
 /**
- * Runway = total saldo ÷ rata-rata pengeluaran bulanan (maks 3 bulan penuh
- * terakhir yang punya pengeluaran). null bila belum ada data cukup — jujur,
- * tidak mengarang.
+ * Rata-rata pengeluaran bulanan dari maks 3 BULAN PENUH terakhir yang punya
+ * pengeluaran (bulan berjalan yang parsial sengaja tidak dipakai — pembagi
+ * dari bulan setengah jalan menghasilkan runway yang menyesatkan).
+ * null bila belum ada bulan penuh dengan pengeluaran — jujur, tidak mengarang.
+ * Dipakai runway di Keuangan DAN Wealth supaya kedua halaman satu definisi.
  */
-export function runwayMonths(fin: FinanceData): number | null {
+export function avgMonthlyExpense(fin: FinanceData): number | null {
   const cur = currentMonth();
   const spends: number[] = [];
   for (let i = 1; i <= 6 && spends.length < 3; i++) {
-    const m = shiftMonth(cur, -i);
-    const { keluar } = monthTotals(fin, m);
+    const { keluar } = monthTotals(fin, shiftMonth(cur, -i));
     if (keluar > 0) spends.push(keluar);
   }
   if (!spends.length) return null;
   const avg = spends.reduce((a, b) => a + b, 0) / spends.length;
-  if (avg <= 0) return null;
+  return avg > 0 ? avg : null;
+}
+
+/** Runway kas = total saldo kantong ÷ rata-rata pengeluaran bulanan. */
+export function runwayMonths(fin: FinanceData): number | null {
+  const avg = avgMonthlyExpense(fin);
+  if (avg === null) return null;
   const bal = totalBalance(fin);
   if (bal <= 0) return 0;
   return bal / avg;
@@ -494,6 +546,34 @@ export function accountTxCount(fin: FinanceData, accountId: string): number {
   return fin.transactions.filter(
     (t) => t.accountId === accountId || t.toAccountId === accountId
   ).length;
+}
+
+export interface AccountBreakdown {
+  initial: number;
+  masuk: number;
+  keluar: number;
+  transferIn: number;
+  transferOut: number;
+  balance: number;
+}
+
+/**
+ * Rincian "kenapa saldo kantong ini segini": saldo awal + total masuk −
+ * total keluar + transfer masuk − transfer keluar = saldo kini.
+ * Untuk transparansi penuh di UI — angka tidak pernah misterius.
+ */
+export function accountBreakdown(fin: FinanceData, accountId: string): AccountBreakdown {
+  const initial = fin.accounts.find((a) => a.id === accountId)?.initialBalance ?? 0;
+  let masuk = 0, keluar = 0, transferIn = 0, transferOut = 0;
+  for (const t of fin.transactions) {
+    if (t.type === "masuk" && t.accountId === accountId) masuk += t.amount;
+    else if (t.type === "keluar" && t.accountId === accountId) keluar += t.amount;
+    else if (t.type === "transfer") {
+      if (t.accountId === accountId) transferOut += t.amount;
+      if (t.toAccountId === accountId) transferIn += t.amount;
+    }
+  }
+  return { initial, masuk, keluar, transferIn, transferOut, balance: initial + masuk - keluar + transferIn - transferOut };
 }
 
 /** Memori catatan → kategori: note yang sama otomatis pilih kategori terakhirnya. */
